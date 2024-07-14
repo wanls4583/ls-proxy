@@ -1,0 +1,88 @@
+.header-wrap {
+    display: flex;
+    align-items: center;
+    padding: 8px 16px;
+    -webkit-app-region: drag;
+
+    .left-wrap {
+        flex: 1;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        padding: 0 10px;
+        border: 1px solid #464646;
+        border-radius: 6px;
+        background-color: #363636;
+
+        .iconfont {
+            cursor: pointer;
+            -webkit-app-region: no-drag;
+
+            &:hover {
+                color: #999;
+            }
+        }
+
+        .hostname {
+            -webkit-app-region: no-drag;
+        }
+
+        .proxy-wrap {
+            flex: 1;
+            display: flex;
+            align-items: center;
+
+            .iconfont {
+                margin-left: 8px;
+                font-size: 12px;
+            }
+
+            .dot {
+                width: 8px;
+                height: 8px;
+                margin-right: 5px;
+                border-radius: 50%;
+                background-color: #999;
+
+                &.active {
+                    animation-duration: 0.5s;
+                    animation-name: dotAni;
+                    animation-iteration-count: infinite;
+                    animation-direction: alternate;
+                }
+            }
+        }
+
+        .btn-wrap {
+            display: flex;
+            align-items: center;
+
+            .iconfont {
+                margin-left: 16px;
+
+                &.active {
+                    color: rgb(31, 220, 31);
+                }
+            }
+        }
+    }
+
+    .right-wrap {
+        width: 100px;
+        height: 30px;
+        display: flex;
+        align-items: center;
+        margin-left: 10px;
+        -webkit-app-region: no-drag;
+    }
+}
+
+@keyframes dotAni {
+    from {
+        background-color: rgba(31, 220, 31, 1);
+    }
+
+    to {
+        background-color: rgba(31, 220, 31, 0);
+    }
+}

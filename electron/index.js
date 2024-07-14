@@ -12,8 +12,11 @@ if (require('electron-squirrel-startup')) {
 
 function createWindow(name, url, type, parent) {
   const win = new BrowserWindow({
-    // transparent: true,
-    frame: false,
+    backgroundColor: '#2b2b2b',
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      height: 46
+    },
     show: false,
     parent: parent,
     webPreferences: {
