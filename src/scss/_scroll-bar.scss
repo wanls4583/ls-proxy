@@ -1,0 +1,79 @@
+.scroll-mini {
+    &.my-scroll-bar-v {
+        width: 6px;
+    }
+
+    &.my-scroll-bar-h {
+        height: 6px;
+    }
+
+    &::-webkit-scrollbar {
+        width: 6px;
+        height: 6px;
+    }
+}
+
+.scroll-small {
+    &.my-scroll-bar-v {
+        width: 10px;
+    }
+
+    &.my-scroll-bar-h {
+        height: 10px;
+    }
+
+    &::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
+}
+
+.scroll-bar-v,
+.scroll-bar-h {
+    position: absolute;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 0.8s;
+
+    &:active {
+        .my-scroll-slider {
+            background-color: var(--my-scrollbarSlider-activeBackground);
+        }
+    }
+
+    &.my-scroll-visible,
+    &.my-scroll-clicked {
+        opacity: 1;
+    }
+}
+
+.scroll-bar-v {
+    top: 0;
+    bottom: 0;
+    right: 0;
+    width: 14px;
+
+    .my-scroll-slider {
+        width: 100%;
+    }
+}
+
+.scroll-bar-h {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 14px;
+
+    .my-scroll-slider {
+        height: 100%;
+    }
+}
+
+.scroll-slider {
+    position: absolute;
+    background-color: var(--my-scrollbarSlider-background);
+
+    &:hover {
+        background-color: var(--my-scrollbarSlider-hoverBackground);
+    }
+}
