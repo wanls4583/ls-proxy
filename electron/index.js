@@ -10,36 +10,6 @@ if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
-function createWindow(name, url, type, parent) {
-  const win = new BrowserWindow({
-    backgroundColor: '#2b2b2b',
-    titleBarStyle: 'hidden',
-    titleBarOverlay: {
-      height: 46
-    },
-    show: false,
-    parent: parent,
-    webPreferences: {
-      nodeIntegration: true,
-      enableRemoteModule: true,
-      contextIsolation: false,
-      preload: path.join(__dirname, 'preload.js'),
-    },
-  });
-  // win.maximize(); //最大化
-  main.enable(win.webContents);
-  wins[name] = win;
-  if (type === 'remote') {
-    win.loadURL(url);
-  } else {
-    win.loadFile(url);
-  }
-  if (process.argv[2] === 'development') {
-    win.webContents.openDevTools();
-  }
-  return win;
-}
-
 app.whenReady().then(() => {
   initProtocol();
   initEvent();
@@ -59,6 +29,47 @@ app.whenReady().then(() => {
     mainWin.show();
   }
 });
+
+
+function createWindow(name, url, type, parent) {
+  const win = new BrowserWindow({
+    backgroundColor: '#2b2b2b',
+    titleBarStyle: 'hidden',
+    // titleBarOverlay: {
+    //   height: 46
+    // },
+    trafficLightPosition: { x: 10, y: 14 },
+    show: false,
+    parent: parent,
+    webPreferences: {
+      nodeIntegration: true,
+      enableRemoteModule: true,
+      contextIsolation: false,
+      preload: path.join(__dirname, 'preload.js'),
+    },
+  });
+
+  main.enable(win.webContents);
+  win.setMinimumSize(700, 500)
+  wins[name] = win;
+
+  if (type === 'remote') {
+    win.loadURL(url);
+  } else {
+    win.loadFile(url);
+  }
+
+  win.on('enter-full-screen', (e) => {
+    win.webContents.send('enter-full-screen')
+  })
+  win.on('leave-full-screen', (e) => {
+    win.webContents.send('leave-full-screen')
+  })
+
+  // win.webContents.openDevTools();
+
+  return win;
+}
 
 function initEvent() {
   app.on('window-all-closed', function () {
