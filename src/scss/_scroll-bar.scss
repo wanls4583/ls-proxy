@@ -1,9 +1,9 @@
 .scroll-mini {
-    &.my-scroll-bar-v {
+    &.scroll-bar-v {
         width: 6px;
     }
 
-    &.my-scroll-bar-h {
+    &.scroll-bar-h {
         height: 6px;
     }
 
@@ -14,11 +14,11 @@
 }
 
 .scroll-small {
-    &.my-scroll-bar-v {
+    &.scroll-bar-v {
         width: 10px;
     }
 
-    &.my-scroll-bar-h {
+    &.scroll-bar-h {
         height: 10px;
     }
 
@@ -35,14 +35,8 @@
     opacity: 0;
     transition: opacity 0.8s;
 
-    &:active {
-        .my-scroll-slider {
-            background-color: var(--my-scrollbarSlider-activeBackground);
-        }
-    }
-
-    &.my-scroll-visible,
-    &.my-scroll-clicked {
+    &.scroll-visible,
+    &.scroll-clicked {
         opacity: 1;
     }
 }
@@ -51,9 +45,9 @@
     top: 0;
     bottom: 0;
     right: 0;
-    width: 14px;
+    width: 10px;
 
-    .my-scroll-slider {
+    .scroll-slider {
         width: 100%;
     }
 }
@@ -62,18 +56,24 @@
     left: 0;
     right: 0;
     bottom: 0;
-    height: 14px;
+    height: 10px;
 
-    .my-scroll-slider {
+    .scroll-slider {
         height: 100%;
     }
 }
 
 .scroll-slider {
     position: absolute;
-    background-color: var(--my-scrollbarSlider-background);
+    background-color: #606060;
+    border-radius: 10px;
 
     &:hover {
-        background-color: var(--my-scrollbarSlider-hoverBackground);
+        background-color: #aeaeae;
+    }
+
+    &:active,
+    &.active {
+        background-color: #c3c3c3;
     }
 }

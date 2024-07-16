@@ -1,6 +1,6 @@
 <template>
-	<div :class="{'my-scroll-clicked': hSliderClicked}" @mousedown="onHBarDown" class="my-scroll-bar-h" ref="bar" v-show="_hScrollAble">
-		<div :style="{width: _hSliderWidth + 'px', left: _vSliderLeft + 'px'}" @mousedown="onHsliderDown" class="my-scroll-slider"></div>
+	<div :class="{'scroll-clicked': hSliderClicked}" @mousedown="onHBarDown" class="scroll-bar-h" ref="bar" v-show="_hScrollAble">
+		<div :style="{width: _hSliderWidth + 'px', left: _vSliderLeft + 'px'}" @mousedown="onHsliderDown" class="scroll-slider" :class="{ active: this.hSliderClicked }"></div>
 	</div>
 </template>
 <script>
@@ -91,21 +91,21 @@ export default {
 			}
 		},
 		onHsliderDown(e) {
-			this.vSliderMouseObj = e;
+			this.hSliderMouseObj = e;
 			this.startVSliderLeft = this._vSliderLeft;
 			this.hSliderClicked = true;
 		},
 		onDocumentMouseMove(e) {
 			// 之前按住了滚动条，在未松手的情况，此时即使鼠标移出滚动条范围进行滑动，滚动条也应该滚动
-			if (this.vSliderMouseObj) {
+			if (this.hSliderMouseObj) {
 				let maxScrollLeft1 = this.barWidth - this._hSliderWidth;
-				let delta = e.clientX - this.vSliderMouseObj.clientX;
+				let delta = e.clientX - this.hSliderMouseObj.clientX;
 				let left = this.startVSliderLeft;
 				left += delta;
 				left = left < 0 ? 0 : left;
 				left = left > maxScrollLeft1 ? maxScrollLeft1 : left;
 				this.startVSliderLeft += delta;
-				this.vSliderMouseObj = e;
+				this.hSliderMouseObj = e;
 				this.moveScrollLeft = this.getScrollLeft(left);
 				if (this.moveScrollLeft && !this.moveHsliderTask) {
 					this.moveHsliderTask = globalData.scheduler.addUiTask(() => {
@@ -123,7 +123,7 @@ export default {
 		onDocumentMouseUp(e) {
 			globalData.scheduler.removeUiTask(this.moveHsliderTask);
 			this.hSliderClicked = false;
-			this.vSliderMouseObj = null;
+			this.hSliderMouseObj = null;
 			this.moveHsliderTask = null;
 		},
 	},
