@@ -5,16 +5,43 @@
         <span class="label">{{ item.label }}</span>
       </div>
     </div>
-    <div class="table-content-wrap" ref="wrap" @mouseenter="showScrollBar" @mouseleave="hideScrollBar" @mousemove="showScrollBar" @wheel.stop="onWheel">
-      <div class="table-content" ref="content" :style="{ transform: 'translate3d(0,' + _top + ',0)' }">
-        <div class="row" v-for="row in renderList" :key="row.lineId" :style="{ top: row.top }" :class="{ even: row.line % 2 === 0 }">
+    <div
+      class="table-content-wrap"
+      ref="wrap"
+      @mouseenter="showScrollBar"
+      @mouseleave="hideScrollBar"
+      @mousemove="showScrollBar"
+      @wheel.stop="onWheel"
+    >
+      <div
+        class="table-content"
+        ref="content"
+        :style="{ transform: 'translate3d(0,' + _top + ',0)' }"
+      >
+        <div
+          class="row"
+          v-for="row in renderList"
+          :key="row.lineId"
+          :style="{ top: row.top }"
+          :class="{ even: row.line % 2 === 0 }"
+        >
           <div class="cell" v-for="(item, index) in columns" :key="index" :style="cellStyle(item)">
             <span class="label">{{ row[item.prop] }}</span>
           </div>
         </div>
       </div>
-      <v-scroll-bar :height="contentHeight" :scrollTop="scrollTop" :class="{ 'scroll-visible': scrollVisible }" @scroll="onVScroll" />
-      <h-scroll-bar :width="contentWidth" :scrollLeft="scrollLeft" :class="{ 'scroll-visible': scrollVisible }" @scroll="onHScroll" />
+      <v-scroll-bar
+        :height="contentHeight"
+        :scrollTop="scrollTop"
+        :class="{ 'scroll-visible': scrollVisible }"
+        @scroll="onVScroll"
+      />
+      <h-scroll-bar
+        :width="contentWidth"
+        :scrollLeft="scrollLeft"
+        :class="{ 'scroll-visible': scrollVisible }"
+        @scroll="onHScroll"
+      />
     </div>
   </div>
 </template>
@@ -22,6 +49,8 @@
 <script>
 import HScrollBar from './HScrollBar.vue'
 import VScrollBar from './VScrollBar.vue'
+
+const dataList = []
 export default {
   components: {
     HScrollBar,
@@ -37,7 +66,7 @@ export default {
         },
         {
           label: 'URL',
-          width: '40%',
+          width: '300%',
           prop: 'url'
         },
         {
@@ -66,7 +95,6 @@ export default {
           prop: 'size'
         }
       ],
-      dataList: [],
       renderList: [],
       renderedCb: [],
       wrapHeight: 0,
@@ -104,17 +132,6 @@ export default {
     }
   },
   watch: {
-    'dataList.length': {
-      handler() {
-        if (this.dataList.length > this.maxLines) {
-          // 防止内存溢出
-          this.dataList = this.dataList.slice(-this.maxLines)
-        }
-        this.contentHeight = this.dataList.length * this.cellheight
-        this.setStartLine(this.scrollTop)
-        this.render()
-      }
-    },
     startLine: {
       handler() {
         this.render()
@@ -143,18 +160,25 @@ export default {
   methods: {
     init() {
       for (let i = 1; i <= 1000; i++) {
-        this.dataList.push({
+        dataList.push({
           url: 'https://www.baidu.com/' + i
         })
       }
+      this.setContentHeight()
     },
     initResizeEvent() {
       this.resizeObserver = new ResizeObserver(entries => {
-        if (this.$refs.wrap && this.$refs.wrap.clientHeight) {
-          this.getDomSize()
-          this.setStartLine(this.scrollTop)
-          this.onHScroll(this.scrollLeft)
+        if (this.resizeTimer) {
+          return
         }
+        this.resizeTimer = setTimeout(() => {
+          if (this.$refs.wrap && this.$refs.wrap.clientHeight) {
+            this.getDomSize()
+            this.setStartLine(this.scrollTop)
+            this.onHScroll(this.scrollLeft)
+          }
+          this.resizeTimer = null
+        }, 30)
       })
       this.resizeObserver.observe(this.$refs.wrap)
     },
@@ -195,15 +219,15 @@ export default {
         preRenderLineMap[item.line] = index
       })
 
-      for (let i = 0, line = this.startLine; i <= this.maxVisibleLines && line <= this.dataList.length; i++, line++) {
+      for (let i = 0, line = this.startLine; i <= this.maxVisibleLines && line <= dataList.length; i++, line++) {
         lines++
       }
 
-      for (let i = 0, line = this.startLine; i < lines && line <= this.dataList.length; i++, line++) {
+      for (let i = 0, line = this.startLine; i < lines && line <= dataList.length; i++, line++) {
         let index = preRenderLineMap[line]
         if (index > -1 && index < lines) {
           // 尽量保持新的列表和旧的列表相同索引对应的行不变，减少渲染时顶部行的删除操作
-          this.renderList[index] = _getRowObj.call(this, this.dataList[line - 1], line)
+          this.renderList[index] = _getRowObj.call(this, dataList[line - 1], line)
         } else {
           toRenderLines.push(line)
         }
@@ -214,7 +238,7 @@ export default {
       for (let i = 0; i < lines; i++) {
         if (!this.renderList[i]) {
           let line = toRenderLines.pop()
-          this.renderList[i] = _getRowObj.call(this, this.dataList[line - 1], line)
+          this.renderList[i] = _getRowObj.call(this, dataList[line - 1], line)
         }
       }
 
@@ -225,6 +249,9 @@ export default {
         obj.lineId = this.lineId++
         return obj
       }
+    },
+    setContentHeight() {
+      this.contentHeight = dataList.length * this.cellheight
     },
     setStartLine(scrollTop) {
       let startLine = 1
@@ -264,6 +291,7 @@ export default {
             this.scrollDeltaY = 0
           } else if (this.scrollDeltaX) {
             this.onHScroll(this.scrollLeft + this.scrollDeltaX)
+            this.scrollDeltaX = 0
           } else if (Date.now() - this.wheelTime > 2000) {
             globalData.scheduler.removeUiTask(this.wheelTask)
             this.wheelTask = null

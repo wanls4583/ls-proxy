@@ -1,5 +1,5 @@
 <template>
-  <div :class="{ 'scroll-clicked': vSliderClicked }" @mousedown="onVBarDown" class="scroll-bar-v" ref="bar" v-show="_vScrollAble">
+  <div :class="{ 'scroll-clicked': vSliderClicked, hide: !_vScrollAble}" @mousedown="onVBarDown" class="scroll-bar-v" ref="bar">
     <div :style="{ height: _vSliderHeight + 'px', top: _vSliderTop + 'px' }" @mousedown="onVsliderDown" class="scroll-slider" :class="{ active: this.vSliderClicked }"></div>
   </div>
 </template>

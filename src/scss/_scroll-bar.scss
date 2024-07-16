@@ -39,6 +39,16 @@
     &.scroll-clicked {
         opacity: 1;
     }
+
+    &.hide {
+        background-color: transparent;
+        pointer-events: none;
+
+        .scroll-slider {
+            background-color: transparent;
+            pointer-events: none;
+        }
+    }
 }
 
 .scroll-bar-v {
