@@ -47,10 +47,13 @@
 </template>
 
 <script>
+import { h } from 'vue'
+import { getStringFromU8Array } from '../common/utils'
 import HScrollBar from './HScrollBar.vue'
 import VScrollBar from './VScrollBar.vue'
 
 const dataList = []
+const dataIdMap = {}
 export default {
   components: {
     HScrollBar,
@@ -66,7 +69,7 @@ export default {
         },
         {
           label: 'URL',
-          width: '300%',
+          width: '300px',
           prop: 'url'
         },
         {
@@ -116,7 +119,7 @@ export default {
       return column => {
         let style = {}
         if (column.width) {
-          style['min-width'] = column.width
+          style['width'] = column.width
           style.flex = `1 1 ${column.width}`
         } else {
           style.flex = `1 1 auto`
@@ -148,6 +151,7 @@ export default {
   },
   created() {
     this.init()
+    this.initSocket()
   },
   mounted() {
     this.getDomSize()
@@ -159,11 +163,11 @@ export default {
   },
   methods: {
     init() {
-      for (let i = 1; i <= 1000; i++) {
-        dataList.push({
-          url: 'https://www.baidu.com/' + i
-        })
-      }
+      // for (let i = 1; i <= 1000; i++) {
+      //   dataList.push({
+      //     url: 'https://www.baidu.com/' + i
+      //   })
+      // }
       this.setContentHeight()
     },
     initResizeEvent() {
@@ -181,6 +185,115 @@ export default {
         }, 30)
       })
       this.resizeObserver.observe(this.$refs.wrap)
+    },
+    initSocket() {
+      this.socket = new WebSocket("ws://localhost:8000");
+      this.socket.addEventListener("open", (event) => {
+        this.socket.send("Hello Server!");
+      });
+      this.socket.addEventListener("close", (event) => {
+        this.initSocket();
+      });
+      this.socket.addEventListener("message", (event) => {
+        const data = event.data
+        if (data instanceof Blob) {
+          data.arrayBuffer().then(buffer => {
+            let dataObj = this.getDataObj(new Uint8Array(buffer))
+            if (!dataIdMap[dataObj.id]) {
+              dataIdMap[dataObj.id] = dataObj
+              dataList.push(dataObj)
+              this.setContentHeight()
+            }
+            this.render()
+          })
+        }
+      });
+    },
+    getDataObj(u8Array) {
+      let dataObj = {}
+      let reqOrRes = u8Array[0] //1:req, 2:res
+      dataObj.id = u8Array[8]
+      dataObj.id |= u8Array[7] << 1 * 8
+      dataObj.id |= u8Array[6] << 2 * 8
+      dataObj.id |= u8Array[5] << 3 * 8
+      dataObj.id |= u8Array[4] << 4 * 8
+      dataObj.id |= u8Array[3] << 5 * 8
+      dataObj.id |= u8Array[2] << 6 * 8
+      dataObj.id |= u8Array[1] << 7 * 8
+      u8Array = u8Array.slice(9)
+
+      if (reqOrRes == 1) {
+        this.getReqDataObj(dataObj, u8Array)
+      } else {
+        if (dataIdMap[dataObj.id]) {
+          dataObj = dataIdMap[dataObj.id]
+          this.getResDataObj(dataObj, u8Array)
+        }
+      }
+
+      return dataObj
+    },
+    getReqDataObj(dataObj, u8Array) {
+      let index = u8Array.search([13, 10, 13, 10]) // \r\n\r\n
+      let head, body, spaceIndex, lineIndex
+
+      head = u8Array.slice(0, index)
+      body = u8Array.slice(index + 4)
+
+      spaceIndex = u8Array.search(32)
+      dataObj.method = getStringFromU8Array(head.slice(0, spaceIndex))
+
+      head = head.slice(spaceIndex + 1)
+      spaceIndex = head.search(32)
+      dataObj.path = getStringFromU8Array(head.slice(0, spaceIndex))
+
+      head = head.slice(spaceIndex + 1)
+      lineIndex = head.search([13, 10]) // \r\n
+      dataObj.protocol = getStringFromU8Array(head.slice(0, lineIndex))
+
+      head = head.slice(lineIndex + 2)
+      dataObj.reqHeader = {}
+      this.getHttpHeader(dataObj.reqHeader, head)
+
+      dataObj.status = 'Pending'
+
+      if (dataObj.reqHeader.Host) {
+        dataObj.url = dataObj.reqHeader.Host + dataObj.path
+      }
+    },
+    getResDataObj(dataObj, u8Array) {
+      let index = u8Array.search([13, 10, 13, 10]) // \r\n\r\n
+      let head, body, spaceIndex, lineIndex
+
+      head = u8Array.slice(0, index)
+      body = u8Array.slice(index + 4)
+
+      spaceIndex = u8Array.search(32)
+      head = head.slice(spaceIndex + 1)
+      spaceIndex = head.search(32)
+      dataObj.status = getStringFromU8Array(head.slice(0, spaceIndex))
+
+      lineIndex = head.search([13, 10])
+      head = head.slice(lineIndex + 2)
+
+      dataObj.resHeader = {}
+      this.getHttpHeader(dataObj.resHeader, head)
+    },
+    getHttpHeader(reqHeader, head) {
+      let lineIndex = -1, colonIndex = -1, line, prop, value
+
+      while (head.length) {
+        lineIndex = head.search([13, 10])
+        if (lineIndex < 0) {
+          break
+        }
+        line = head.slice(0, lineIndex)
+        colonIndex = line.search([58, 32]) //': '
+        prop = getStringFromU8Array(line.slice(0, colonIndex))
+        value = getStringFromU8Array(line.slice(colonIndex + 2))
+        reqHeader[prop] = value
+        head = head.slice(lineIndex + 2)
+      }
     },
     getDomSize() {
       this.wrapHeight = this.$refs.wrap.clientHeight
