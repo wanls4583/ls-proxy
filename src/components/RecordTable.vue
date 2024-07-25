@@ -199,6 +199,12 @@ export default {
         if (data instanceof Blob) {
           data.arrayBuffer().then(buffer => {
             let dataObj = this.getDataObj(new Uint8Array(buffer))
+            if (!dataObj) {
+              return
+            }
+            if (!dataObj.url) {
+              console.log('eror data:', dataObj)
+            }
             if (!dataIdMap[dataObj.id]) {
               dataIdMap[dataObj.id] = dataObj
               dataList.push(dataObj)
@@ -211,24 +217,50 @@ export default {
     },
     getDataObj(u8Array) {
       let dataObj = {}
-      let reqOrRes = u8Array[0] //1:req, 2:res
-      dataObj.id = u8Array[8]
-      dataObj.id |= u8Array[7] << 1 * 8
-      dataObj.id |= u8Array[6] << 2 * 8
-      dataObj.id |= u8Array[5] << 3 * 8
-      dataObj.id |= u8Array[4] << 4 * 8
-      dataObj.id |= u8Array[3] << 5 * 8
-      dataObj.id |= u8Array[2] << 6 * 8
-      dataObj.id |= u8Array[1] << 7 * 8
-      u8Array = u8Array.slice(9)
+      let msgType = u8Array[8] //1:req, 2:res
 
-      if (reqOrRes == 1) {
-        this.getReqDataObj(dataObj, u8Array)
-      } else {
-        if (dataIdMap[dataObj.id]) {
-          dataObj = dataIdMap[dataObj.id]
-          this.getResDataObj(dataObj, u8Array)
+      dataObj.id = u8Array[7]
+      dataObj.id |= u8Array[6] << 1 * 8
+      dataObj.id |= u8Array[5] << 2 * 8
+      dataObj.id |= u8Array[4] << 3 * 8
+      dataObj.id |= u8Array[3] << 4 * 8
+      dataObj.id |= u8Array[2] << 5 * 8
+      dataObj.id |= u8Array[1] << 6 * 8
+      dataObj.id |= u8Array[0] << 7 * 8
+      dataObj.u8Array = u8Array
+
+      if (msgType == 1 || msgType == 2) {
+        switch (u8Array[9]) {
+          case 1: dataObj.protocol = 'http:'; break;
+          case 2: dataObj.protocol = 'https:'; break;
+          case 3: dataObj.protocol = 'ws:'; break;
+          case 4: dataObj.protocol = 'wss:'; break;
         }
+        u8Array = u8Array.slice(10)
+      } else {
+        u8Array = u8Array.slice(9)
+      }
+
+      if (msgType == 1) { // req
+        this.getReqDataObj(dataObj, u8Array)
+      } else if (msgType == 2) { // res
+        if (!dataIdMap[dataObj.id]) {
+          return null
+        }
+        dataObj = dataIdMap[dataObj.id]
+        this.getResDataObj(dataObj, u8Array)
+      } else if (msgType == 3) { // ip
+        if (!dataIdMap[dataObj.id]) {
+          return null
+        }
+        dataObj = dataIdMap[dataObj.id]
+        this.getIpDataObj(dataObj, u8Array)
+      } else if (msgType == 4) { // status
+        if (!dataIdMap[dataObj.id]) {
+          return null
+        }
+        dataObj = dataIdMap[dataObj.id]
+        this.getStatusDataObj(dataObj, u8Array)
       }
 
       return dataObj
@@ -239,6 +271,7 @@ export default {
 
       head = u8Array.slice(0, index)
       body = u8Array.slice(index + 4)
+      dataObj.size = '0 B'
 
       spaceIndex = u8Array.search(32)
       dataObj.method = getStringFromU8Array(head.slice(0, spaceIndex))
@@ -249,7 +282,7 @@ export default {
 
       head = head.slice(spaceIndex + 1)
       lineIndex = head.search([13, 10]) // \r\n
-      dataObj.protocol = getStringFromU8Array(head.slice(0, lineIndex))
+      dataObj.version = getStringFromU8Array(head.slice(0, lineIndex))
 
       head = head.slice(lineIndex + 2)
       dataObj.reqHeader = {}
@@ -258,7 +291,7 @@ export default {
       dataObj.status = 'Pending'
 
       if (dataObj.reqHeader.Host) {
-        dataObj.url = dataObj.reqHeader.Host + dataObj.path
+        dataObj.url = dataObj.protocol + '//' + dataObj.reqHeader.Host + dataObj.path
       }
     },
     getResDataObj(dataObj, u8Array) {
@@ -267,6 +300,7 @@ export default {
 
       head = u8Array.slice(0, index)
       body = u8Array.slice(index + 4)
+      dataObj.size = this.getSize(u8Array.length)
 
       spaceIndex = u8Array.search(32)
       head = head.slice(spaceIndex + 1)
@@ -278,6 +312,14 @@ export default {
 
       dataObj.resHeader = {}
       this.getHttpHeader(dataObj.resHeader, head)
+    },
+    getIpDataObj(dataObj, u8Array) {
+      dataObj.ip = getStringFromU8Array(u8Array)
+    },
+    getStatusDataObj(dataObj, u8Array) {
+      if (u8Array[0] == 3 || u8Array[0] == 4) {
+        dataObj.status = 'fail'
+      }
     },
     getHttpHeader(reqHeader, head) {
       let lineIndex = -1, colonIndex = -1, line, prop, value
@@ -294,6 +336,27 @@ export default {
         reqHeader[prop] = value
         head = head.slice(lineIndex + 2)
       }
+    },
+    getSize(size) {
+      const G = 1024 * 1024 * 1024
+      const M = 1024 * 1024
+      const K = 1024
+      let result = '', unit = ''
+      if (size >= G) {
+        result = (size / G).toFixed(1)
+        unit = 'GB'
+      } else if (size > M) {
+        result = (size / M).toFixed(1)
+        unit = 'MB'
+      } else if (size > K) {
+        result = (size / K).toFixed(1)
+        unit = 'KB'
+      } else {
+        result = size + ''
+        unit = 'B'
+      }
+      result = result.replace(/\.0$/, '') + ' ' + unit
+      return result
     },
     getDomSize() {
       this.wrapHeight = this.$refs.wrap.clientHeight
