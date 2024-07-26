@@ -41,3 +41,32 @@ export const getStringFromU8Array = function (uint8array) {
     var string = new TextDecoder().decode(uint8array);
     return string
 }
+
+export const u8To16Uint = function (uint8array) {
+    let num = uint8array[1]
+    num |= uint8array[0] << 1 * 8
+
+    return num
+}
+
+export const u8To32Uint = function (uint8array) {
+    let num = uint8array[3]
+    num |= uint8array[2] << 1 * 8
+    num |= uint8array[1] << 2 * 8
+    num |= uint8array[0] << 3 * 8
+
+    return num
+}
+
+export const u8To64Uint = function (uint8array) {
+    let num = uint8array[7]
+    num |= uint8array[6] << 1 * 8
+    num |= uint8array[5] << 2 * 8
+    num |= uint8array[4] << 3 * 8
+    num |= uint8array[3] << 4 * 8
+    num |= uint8array[2] << 5 * 8
+    num |= uint8array[1] << 6 * 8
+    num |= uint8array[0] << 7 * 8
+
+    return num
+}

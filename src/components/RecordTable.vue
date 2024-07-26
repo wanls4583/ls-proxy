@@ -47,13 +47,15 @@
 </template>
 
 <script>
-import { h } from 'vue'
-import { getStringFromU8Array } from '../common/utils'
+import { getStringFromU8Array, u8To64Uint } from '../common/utils'
 import HScrollBar from './HScrollBar.vue'
 import VScrollBar from './VScrollBar.vue'
 
-const dataList = []
-const dataIdMap = {}
+const [MSG_REQ, MSG_RES, MSG_DNS, MSG_STATUS, MSG_TIME] = [1, 2, 3, 4, 5];
+const [STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT] = [1, 2];
+
+let dataList = []
+let dataIdMap = {}
 export default {
   components: {
     HScrollBar,
@@ -90,12 +92,14 @@ export default {
         {
           label: '时长',
           width: '60px',
-          prop: 'duration'
+          prop: 'duration',
+          style: { 'text-align': 'right' }
         },
         {
           label: '大小',
           width: '60px',
-          prop: 'size'
+          prop: 'size',
+          style: { 'text-align': 'right' }
         }
       ],
       renderList: [],
@@ -111,7 +115,7 @@ export default {
       scrollVisible: false,
       startLine: 1,
       maxLines: 10000000,
-      lineId: 0
+      processing: false
     }
   },
   computed: {
@@ -124,6 +128,7 @@ export default {
         } else {
           style.flex = `1 1 auto`
         }
+        column.style && Object.assign(style, column.style)
         return style
       }
     },
@@ -151,7 +156,6 @@ export default {
   },
   created() {
     this.init()
-    this.initSocket()
   },
   mounted() {
     this.getDomSize()
@@ -160,15 +164,22 @@ export default {
   },
   beforeDestroy() {
     this.resizeObserver?.unobserve(this.$refs.wrap)
+    clearTimeout(this.initSocketTimer)
   },
   methods: {
     init() {
-      // for (let i = 1; i <= 1000; i++) {
-      //   dataList.push({
-      //     url: 'https://www.baidu.com/' + i
-      //   })
-      // }
-      this.setContentHeight()
+      this.initDB()
+      this.clearTable()
+    },
+    initDB() {
+      if (window.require) {
+        const Nedb = window.require('nedb')
+        const path = window.require('path')
+        const { app } = window.require('@electron/remote');
+        const filename = path.join(app.getAppPath(), 'electron/nedb.db')
+        this.nedb = new Nedb({ filename: filename })
+        this.nedb.loadDatabase()
+      }
     },
     initResizeEvent() {
       this.resizeObserver = new ResizeObserver(entries => {
@@ -187,12 +198,18 @@ export default {
       this.resizeObserver.observe(this.$refs.wrap)
     },
     initSocket() {
+      clearTimeout(this.initSocketTimer)
       this.socket = new WebSocket("ws://localhost:8000");
       this.socket.addEventListener("open", (event) => {
-        this.socket.send("Hello Server!");
+        this.socket.send("start");
       });
       this.socket.addEventListener("close", (event) => {
-        this.initSocket();
+        if (this.processing) {
+          clearTimeout(this.initSocketTimer)
+          this.initSocketTimer = setTimeout(() => {
+            this.initSocket();
+          }, 500)
+        }
       });
       this.socket.addEventListener("message", (event) => {
         const data = event.data
@@ -207,6 +224,7 @@ export default {
             }
             if (!dataIdMap[dataObj.id]) {
               dataIdMap[dataObj.id] = dataObj
+              dataObj.lineId = dataObj.id
               dataList.push(dataObj)
               this.setContentHeight()
             }
@@ -219,14 +237,7 @@ export default {
       let dataObj = {}
       let msgType = u8Array[8] //1:req, 2:res
 
-      dataObj.id = u8Array[7]
-      dataObj.id |= u8Array[6] << 1 * 8
-      dataObj.id |= u8Array[5] << 2 * 8
-      dataObj.id |= u8Array[4] << 3 * 8
-      dataObj.id |= u8Array[3] << 4 * 8
-      dataObj.id |= u8Array[2] << 5 * 8
-      dataObj.id |= u8Array[1] << 6 * 8
-      dataObj.id |= u8Array[0] << 7 * 8
+      dataObj.id = u8To64Uint(u8Array)
       dataObj.u8Array = u8Array
 
       if (msgType == 1 || msgType == 2) {
@@ -241,26 +252,32 @@ export default {
         u8Array = u8Array.slice(9)
       }
 
-      if (msgType == 1) { // req
+      if (msgType == MSG_REQ) { // req
         this.getReqDataObj(dataObj, u8Array)
-      } else if (msgType == 2) { // res
+      } else if (msgType == MSG_RES) { // res
         if (!dataIdMap[dataObj.id]) {
           return null
         }
         dataObj = dataIdMap[dataObj.id]
         this.getResDataObj(dataObj, u8Array)
-      } else if (msgType == 3) { // ip
+      } else if (msgType == MSG_DNS) { // ip
         if (!dataIdMap[dataObj.id]) {
           return null
         }
         dataObj = dataIdMap[dataObj.id]
         this.getIpDataObj(dataObj, u8Array)
-      } else if (msgType == 4) { // status
+      } else if (msgType == MSG_STATUS) { // status
         if (!dataIdMap[dataObj.id]) {
           return null
         }
         dataObj = dataIdMap[dataObj.id]
         this.getStatusDataObj(dataObj, u8Array)
+      } else if (msgType == MSG_TIME) {
+        if (!dataIdMap[dataObj.id]) {
+          return null
+        }
+        dataObj = dataIdMap[dataObj.id]
+        this.getTimeDataObj(dataObj, u8Array)
       }
 
       return dataObj
@@ -271,6 +288,11 @@ export default {
 
       head = u8Array.slice(0, index)
       body = u8Array.slice(index + 4)
+      if (this.nedb) {
+        this.nedb.insert({ id: dataObj.id, reqHead: Array.from(head), reqBody: Array.from(body) }, (err, doc) => {
+          // console.log(err, doc)
+        })
+      }
       dataObj.size = '0 B'
 
       spaceIndex = u8Array.search(32)
@@ -300,6 +322,11 @@ export default {
 
       head = u8Array.slice(0, index)
       body = u8Array.slice(index + 4)
+      if (this.nedb) {
+        this.nedb.update({ id: dataObj.id }, { $set: { resHead: Array.from(head), resBody: Array.from(body) } }, {}, (err, doc) => {
+          // console.log(err, doc)
+        })
+      }
       dataObj.size = this.getSize(u8Array.length)
 
       spaceIndex = u8Array.search(32)
@@ -317,9 +344,32 @@ export default {
       dataObj.ip = getStringFromU8Array(u8Array)
     },
     getStatusDataObj(dataObj, u8Array) {
-      if (u8Array[0] == 3 || u8Array[0] == 4) {
+      if (u8Array[0] == STATUS_FAIL_CONNECT || u8Array[0] == STATUS_FAIL_SSL_CONNECT) {
         dataObj.status = 'fail'
       }
+    },
+    getTimeDataObj(dataObj, u8Array) {
+      const H = 60 * 60 * 1000
+      const M = 60 * 1000
+      const S = 1000
+      let result = '', unit = ''
+      let duration = u8To64Uint(u8Array) // 微妙
+      duration = Math.floor(duration / 1000) // 毫秒
+      if (duration >= H) {
+        result = (duration / H).toFixed(2)
+        unit = 'h'
+      } else if (duration > M) {
+        result = (duration / M).toFixed(2)
+        unit = 'min'
+      } else if (duration > S) {
+        result = (duration / S).toFixed(2)
+        unit = 's'
+      } else {
+        result = duration + ''
+        unit = 'ms'
+      }
+      result = result.replace(/\.00$/, '') + ' ' + unit
+      dataObj.duration = result
     },
     getHttpHeader(reqHeader, head) {
       let lineIndex = -1, colonIndex = -1, line, prop, value
@@ -362,6 +412,23 @@ export default {
       this.wrapHeight = this.$refs.wrap.clientHeight
       this.wrapWidth = this.$refs.wrap.clientWidth
       this.contentWidth = this.$refs.content.scrollWidth
+    },
+    setContentHeight() {
+      this.contentHeight = dataList.length * this.cellheight
+    },
+    setStartLine(scrollTop) {
+      let startLine = 1
+      let maxScrollTop = this.contentHeight - this.wrapHeight
+      scrollTop = Math.round(scrollTop)
+      scrollTop = scrollTop < 0 ? 0 : scrollTop
+      maxScrollTop = maxScrollTop < 0 ? 0 : maxScrollTop
+      if (scrollTop > maxScrollTop) {
+        scrollTop = maxScrollTop
+      }
+      startLine = Math.floor(scrollTop / this.cellheight)
+      this.deltaTop = startLine * this.cellheight
+      this.startLine = startLine + 1
+      this.scrollTop = scrollTop
     },
     showScrollBar() {
       this.scrollVisible = true
@@ -422,26 +489,27 @@ export default {
         let obj = Object.assign({}, item)
         obj.top = (line - this.startLine) * this.cellheight + 'px'
         obj.line = line
-        obj.lineId = this.lineId++
         return obj
       }
     },
-    setContentHeight() {
-      this.contentHeight = dataList.length * this.cellheight
+    clearTable() {
+      dataList = []
+      dataIdMap = {}
+      this.renderList = []
+      this.nedb && this.nedb.remove({}, { multi: true })
+      this.setContentHeight()
+      this.setStartLine(0)
+      this.render()
     },
-    setStartLine(scrollTop) {
-      let startLine = 1
-      let maxScrollTop = this.contentHeight - this.wrapHeight
-      scrollTop = Math.round(scrollTop)
-      scrollTop = scrollTop < 0 ? 0 : scrollTop
-      maxScrollTop = maxScrollTop < 0 ? 0 : maxScrollTop
-      if (scrollTop > maxScrollTop) {
-        scrollTop = maxScrollTop
+    startSocket(flag) {
+      this.processing = flag
+      if (flag) {
+        this.initSocket()
+      } else {
+        // this.socket.close()
+        // 调用socket.close方法，浏览器不一定会关闭连接，只是停止接收数据，等到一定时候才断开连接
+        this.socket.send("close")
       }
-      startLine = Math.floor(scrollTop / this.cellheight)
-      this.deltaTop = startLine * this.cellheight
-      this.startLine = startLine + 1
-      this.scrollTop = scrollTop
     },
     onVScroll(scrollTop) {
       this.scrollTop = scrollTop

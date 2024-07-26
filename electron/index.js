@@ -11,6 +11,7 @@ if (require('electron-squirrel-startup')) {
 }
 
 app.whenReady().then(() => {
+  main.initialize()
   initProtocol();
   initEvent();
   _createWindow();

@@ -12,11 +12,19 @@
         </el-tooltip>
       </div>
       <div class="btn-wrap">
-        <i class="iconfont icon-gateway" :class="{ active: gatewayAactive }" @click="onClickGateWay"></i>
+        <i
+          class="iconfont icon-gateway"
+          :class="{ active: gatewayAactive }"
+          @click="onClickGateWay"
+        ></i>
         <i class="iconfont icon-mirror" :class="{ active: mirrorAactive }" @click="onClickMirror"></i>
         <i class="iconfont icon-pen" :class="{ active: penAactive }" @click="onClickPen"></i>
         <i class="iconfont icon-bug" :class="{ active: bugAactive }" @click="onClickBug"></i>
-        <i class="iconfont icon-network" :class="{ active: networkAactive }" @click="onClickNetwork"></i>
+        <i
+          class="iconfont icon-network"
+          :class="{ active: networkAactive }"
+          @click="onClickNetwork"
+        ></i>
         <i class="iconfont icon-ssl" :class="{ active: sslAactive }" @click="onClickSll"></i>
       </div>
     </div>
@@ -25,7 +33,7 @@
         <div class="btn btn-primary" style="width: 67px" @click="onStart">
           <span>{{ processing ? '停止' : '启动' }}</span>
         </div>
-        <div class="btn btn-primary">
+        <div class="btn btn-primary" @click="onClear">
           <i class="iconfont icon-delete"></i>
         </div>
       </div>
@@ -97,6 +105,10 @@ export default {
     },
     onStart() {
       this.processing = !this.processing
+      this.$emit('start', this.processing)
+    },
+    onClear() {
+      this.$emit('clear')
     }
   }
 }
