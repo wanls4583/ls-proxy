@@ -97,6 +97,11 @@ export default {
           prop: 'processName'
         },
         {
+          label: '本地端口',
+          width: '80px',
+          prop: 'port'
+        },
+        {
           label: '服务器IP',
           width: '140px',
           prop: 'ip'
@@ -430,40 +435,20 @@ export default {
     },
     getClientPath(dataObj) { // 获取客户端程路径
       if (window.require) {
-        const { spawn, exec } = window.require('node:child_process');
-        let cmd = spawn(`lsof -i tcp:${dataObj.port}`, [], { shell: true })
-        cmd.stdout.on('data', (data) => {
-          if (data?.length) {
-            data = getStringFromU8Array(data)
-            let lines = data.split(/\r\n|\n|\r/)
-            // server      587 lisong   18u  IPv4 0x60d5c5a789f17bb1 
-            lines.forEach(line => {
-              let r = /^(\w+)\s*(\d+)/.exec(line)
-              if (r?.length) {
-                if (r[2] != dataObj.pid) {
-                  dataObj.processName = r[1]
-                  dataObj.clientPid = r[2]
-                  _getClientPathByPid(dataObj.clientPid)
-                }
-              }
-            })
+        // console.log('port:', dataObj.port)
+        const findProcess = window.require('find-process');
+        findProcess('port', dataObj.port).then(function (list) {
+          if (list.length) {
+            dataObj.processId = list[0].pid
+            dataObj.processName = list[0].name
+            dataObj.processPath = list[0].bin
+            // console.log('port-result:', dataObj.port)
+          } else {
+            // console.log('port-result:null:', dataObj.port)
           }
+        }, function (err) {
+          console.log('find-process-err:', err.stack || err, ':', dataObj.port);
         })
-        // cmd.stderr.on('data', (data) => {
-        //   console.error(`stderr: ${data}`);
-        // });
-        // cmd.on('close', (code) => {
-        //   console.log(`child process exited with code ${code}`);
-        // })
-
-        function _getClientPathByPid(pid) {
-          exec(`which \`ps -o comm= -p ${pid}\``, (err, data, stderr) => {
-            if (data?.length) {
-              dataObj.clientPath = data.replace(/\r|\n/g, '')
-              console.log('path: ', dataObj.clientPath)
-            }
-          })
-        }
       }
     },
     getSize(size) {
