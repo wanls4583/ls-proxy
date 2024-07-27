@@ -51,7 +51,7 @@ function createWindow(name, url, type, parent) {
   });
 
   main.enable(win.webContents);
-  win.setMinimumSize(700, 500)
+  win.setMinimumSize(800, 500)
   wins[name] = win;
 
   if (type === 'remote') {

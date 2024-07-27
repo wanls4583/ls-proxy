@@ -1,8 +1,10 @@
 <template>
   <div class="record-table-wrap">
-    <div class="th-row" ref="title">
-      <div class="th-cell" v-for="(item, index) in columns" :key="index" :style="cellStyle(item)">
-        <span class="label">{{ item.label }}</span>
+    <div class="table-title-wrap" ref="title">
+      <div class="th-row">
+        <div class="th-cell" v-for="(item, index) in columns" :key="index" :style="cellStyle(item)">
+          <span class="label">{{ item.label }}</span>
+        </div>
       </div>
     </div>
     <div
@@ -47,11 +49,11 @@
 </template>
 
 <script>
-import { getStringFromU8Array, u8To64Uint } from '../common/utils'
+import { getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint } from '../common/utils'
 import HScrollBar from './HScrollBar.vue'
 import VScrollBar from './VScrollBar.vue'
 
-const [MSG_REQ, MSG_RES, MSG_DNS, MSG_STATUS, MSG_TIME] = [1, 2, 3, 4, 5];
+const [MSG_REQ, MSG_RES, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT] = [1, 2, 3, 4, 5, 6, 7];
 const [STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT] = [1, 2];
 
 let dataList = []
@@ -64,6 +66,11 @@ export default {
   data() {
     return {
       columns: [
+        {
+          label: 'ID',
+          width: '60px',
+          prop: 'id'
+        },
         {
           label: '类型',
           width: '60px',
@@ -85,19 +92,24 @@ export default {
           prop: 'status'
         },
         {
+          label: '应用程序',
+          width: '100px',
+          prop: 'processName'
+        },
+        {
           label: '服务器IP',
           width: '140px',
           prop: 'ip'
         },
         {
           label: '时长',
-          width: '60px',
+          width: '80px',
           prop: 'duration',
           style: { 'text-align': 'right' }
         },
         {
           label: '大小',
-          width: '60px',
+          width: '80px',
           prop: 'size',
           style: { 'text-align': 'right' }
         }
@@ -240,17 +252,21 @@ export default {
       dataObj.id = u8To64Uint(u8Array)
       dataObj.u8Array = u8Array
 
-      if (msgType == 1 || msgType == 2) {
-        switch (u8Array[9]) {
+      let index = 9;
+      if (msgType == MSG_REQ) {
+        switch (u8Array[index++]) {
           case 1: dataObj.protocol = 'http:'; break;
           case 2: dataObj.protocol = 'https:'; break;
           case 3: dataObj.protocol = 'ws:'; break;
           case 4: dataObj.protocol = 'wss:'; break;
         }
-        u8Array = u8Array.slice(10)
-      } else {
-        u8Array = u8Array.slice(9)
+        dataObj.pid = u8To32Uint(u8Array.slice(index, index + 4)); // 代理服务器进程号
+        index += 4;
+        dataObj.port = u8To16Uint(u8Array.slice(index, index + 2)); // 客户端端口号
+        index += 2;
+        this.getClientPath(dataObj)
       }
+      u8Array = u8Array.slice(index)
 
       if (msgType == MSG_REQ) { // req
         this.getReqDataObj(dataObj, u8Array)
@@ -272,12 +288,24 @@ export default {
         }
         dataObj = dataIdMap[dataObj.id]
         this.getStatusDataObj(dataObj, u8Array)
-      } else if (msgType == MSG_TIME) {
+      } else if (msgType == MSG_TIME) { // duration
         if (!dataIdMap[dataObj.id]) {
           return null
         }
         dataObj = dataIdMap[dataObj.id]
         this.getTimeDataObj(dataObj, u8Array)
+      } else if (msgType == MSG_CIPHER) { // cipher
+        if (!dataIdMap[dataObj.id]) {
+          return null
+        }
+        dataObj = dataIdMap[dataObj.id]
+        this.getCipherDataObj(dataObj, u8Array)
+      } else if (msgType == MSG_CERT) { // cert
+        if (!dataIdMap[dataObj.id]) {
+          return null
+        }
+        dataObj = dataIdMap[dataObj.id]
+        this.getCertDataObj(dataObj, u8Array)
       }
 
       return dataObj
@@ -371,6 +399,19 @@ export default {
       result = result.replace(/\.00$/, '') + ' ' + unit
       dataObj.duration = result
     },
+    getCipherDataObj(dataObj, u8Array) {
+      let list = getStringFromU8Array(u8Array)
+      if (list.length) {
+        list = list.split(';')
+        dataObj.cipher = list[0]
+        dataObj.cipherList = list.slice(1)
+      }
+    },
+    getCertDataObj(dataObj, u8Array) {
+      if (this.nedb) {
+        this.nedb.update({ id: dataObj.id }, { $set: { cert: Array.from(u8Array) } }, {})
+      }
+    },
     getHttpHeader(reqHeader, head) {
       let lineIndex = -1, colonIndex = -1, line, prop, value
 
@@ -385,6 +426,44 @@ export default {
         value = getStringFromU8Array(line.slice(colonIndex + 2))
         reqHeader[prop] = value
         head = head.slice(lineIndex + 2)
+      }
+    },
+    getClientPath(dataObj) { // 获取客户端程路径
+      if (window.require) {
+        const { spawn, exec } = window.require('node:child_process');
+        let cmd = spawn(`lsof -i tcp:${dataObj.port}`, [], { shell: true })
+        cmd.stdout.on('data', (data) => {
+          if (data?.length) {
+            data = getStringFromU8Array(data)
+            let lines = data.split(/\r\n|\n|\r/)
+            // server      587 lisong   18u  IPv4 0x60d5c5a789f17bb1 
+            lines.forEach(line => {
+              let r = /^(\w+)\s*(\d+)/.exec(line)
+              if (r?.length) {
+                if (r[2] != dataObj.pid) {
+                  dataObj.processName = r[1]
+                  dataObj.clientPid = r[2]
+                  _getClientPathByPid(dataObj.clientPid)
+                }
+              }
+            })
+          }
+        })
+        // cmd.stderr.on('data', (data) => {
+        //   console.error(`stderr: ${data}`);
+        // });
+        // cmd.on('close', (code) => {
+        //   console.log(`child process exited with code ${code}`);
+        // })
+
+        function _getClientPathByPid(pid) {
+          exec(`which \`ps -o comm= -p ${pid}\``, (err, data, stderr) => {
+            if (data?.length) {
+              dataObj.clientPath = data.replace(/\r|\n/g, '')
+              console.log('path: ', dataObj.clientPath)
+            }
+          })
+        }
       }
     },
     getSize(size) {
@@ -411,7 +490,7 @@ export default {
     getDomSize() {
       this.wrapHeight = this.$refs.wrap.clientHeight
       this.wrapWidth = this.$refs.wrap.clientWidth
-      this.contentWidth = this.$refs.content.scrollWidth
+      this.contentWidth = this.$refs.title.scrollWidth
     },
     setContentHeight() {
       this.contentHeight = dataList.length * this.cellheight
@@ -527,6 +606,7 @@ export default {
       this.scrollDeltaX = e.deltaX
       this.wheelTime = Date.now()
       this.wheelEvent = e
+      this.onHScroll(this.scrollLeft + this.scrollDeltaX)
       if ((this.scrollDeltaY || this.scrollDeltaX) && !this.wheelTask) {
         // 滑轮事件太密集，影响渲染性能，使用UI事件列表来控制
         this.wheelTask = globalData.scheduler.addUiTask(() => {
@@ -534,8 +614,8 @@ export default {
             this.setStartLine(this.scrollTop + this.scrollDeltaY)
             this.scrollDeltaY = 0
           } else if (this.scrollDeltaX) {
-            this.onHScroll(this.scrollLeft + this.scrollDeltaX)
-            this.scrollDeltaX = 0
+            // this.onHScroll(this.scrollLeft + this.scrollDeltaX)
+            // this.scrollDeltaX = 0
           } else if (Date.now() - this.wheelTime > 2000) {
             globalData.scheduler.removeUiTask(this.wheelTask)
             this.wheelTask = null

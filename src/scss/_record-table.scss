@@ -8,6 +8,7 @@
     .row,
     .th-row {
         display: flex;
+        position: absolute;
 
         .cell,
         .th-cell {
@@ -39,7 +40,6 @@
     }
 
     .row {
-        position: absolute;
         min-width: 100%;
 
         &.even {
@@ -53,6 +53,12 @@
         overflow: hidden;
         border-top: 1px solid #464646;
         border-bottom: 1px solid #464646;
+    }
+
+    .table-title-wrap {
+        position: relative;
+        height: 32px;
+        overflow: hidden;
     }
 
     .table-content-wrap {
