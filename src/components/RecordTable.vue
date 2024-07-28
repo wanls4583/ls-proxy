@@ -53,11 +53,13 @@ import { getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint } from '../com
 import HScrollBar from './HScrollBar.vue'
 import VScrollBar from './VScrollBar.vue'
 
-const [MSG_REQ, MSG_RES, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT] = [1, 2, 3, 4, 5, 6, 7];
+const [MSG_REQ, MSG_RES, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT, MSG_PORT] = [1, 2, 3, 4, 5, 6, 7, 8];
 const [STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT] = [1, 2];
 
 let dataList = []
 let dataIdMap = {}
+let dataPortMap = {}
+let dataPortingMap = {}
 export default {
   components: {
     HScrollBar,
@@ -211,6 +213,7 @@ export default {
     },
     initSocket() {
       clearTimeout(this.initSocketTimer)
+      clearTimeout(this.pingTimer)
       this.socket = new WebSocket("ws://localhost:8000");
       this.socket.addEventListener("open", (event) => {
         this.socketState = 'open'
@@ -218,12 +221,13 @@ export default {
       });
       this.socket.addEventListener("close", (event) => {
         this.socketState = 'close'
-        if (this.processing) {
-          clearTimeout(this.initSocketTimer)
-          this.initSocketTimer = setTimeout(() => {
-            this.initSocket();
-          }, 500)
-        }
+        clearTimeout(this.pingTimer)
+        // if (this.processing) {
+        //   clearTimeout(this.initSocketTimer)
+        //   this.initSocketTimer = setTimeout(() => {
+        //     this.initSocket();
+        //   }, 500)
+        // }
       });
       this.socket.addEventListener("message", (event) => {
         const data = event.data
@@ -245,16 +249,28 @@ export default {
             this.render()
           })
         }
+
+        clearTimeout(this.pingTimer)
+        this.pingTimer = setTimeout(() => {
+          if (this.processing && this.socketState == 'open') {
+            this.socket.send('ping')
+          }
+        }, 10000) // 10秒检测一次心跳
       });
     },
     getDataObj(u8Array) {
       let dataObj = {}
-      let msgType = u8Array[8] //1:req, 2:res
+      let msgType = u8Array[0]
 
-      dataObj.id = u8To64Uint(u8Array)
+      if (msgType > MSG_PORT) {
+        return
+      }
+
       dataObj.u8Array = u8Array
+      dataObj.id = u8To64Uint(u8Array.slice(1))
+      dataObj.sockId = u8To64Uint(u8Array.slice(9))
 
-      let index = 9;
+      let index = 17;
       if (msgType == MSG_REQ) {
         switch (u8Array[index++]) {
           case 1: dataObj.protocol = 'http:'; break;
@@ -308,6 +324,9 @@ export default {
         }
         dataObj = dataIdMap[dataObj.id]
         this.getCertDataObj(dataObj, u8Array)
+      } else if (msgType == MSG_PORT) {
+        this.getPortDataObj(dataObj, u8Array)
+        return null
       }
 
       return dataObj
@@ -414,6 +433,10 @@ export default {
         this.nedb.update({ id: dataObj.id }, { $set: { cert: Array.from(u8Array) } }, {})
       }
     },
+    getPortDataObj(dataObj, u8Array) {
+      dataObj.port = u8To16Uint(u8Array); // 客户端端口号
+      this.getClientPath(dataObj)
+    },
     getHttpHeader(reqHeader, head) {
       let lineIndex = -1, colonIndex = -1, line, prop, value
 
@@ -431,14 +454,32 @@ export default {
       }
     },
     getClientPath(dataObj) { // 获取客户端程路径
+      let cacheObj = dataPortMap[dataObj.sockId]
+      if (cacheObj) {
+        dataObj.processName = cacheObj.processName
+        dataObj.processPath = cacheObj.processPath
+        return
+      }
+      if (dataPortingMap[dataObj.sockId]) {
+        dataPortingMap[dataObj.sockId].push(dataObj)
+        return
+      }
       if (window.require) {
-        // console.log('port:', dataObj.port)
         const findProcess = window.require('find-process');
+        dataPortingMap[dataObj.sockId] = [dataObj]
+        // console.log('port:', dataObj.port)
         findProcess(dataObj.pid ? 'pid' : 'port', dataObj.pid || dataObj.port).then(function (list) {
           if (list.length) {
-            dataObj.processName = list[0].name
-            dataObj.processPath = list[0].bin
-            // console.log('port-result:', dataObj.port)
+            dataPortingMap[dataObj.sockId].forEach(obj => {
+              obj.processName = list[0].name
+              obj.processPath = list[0].bin
+            })
+            delete dataPortingMap[dataObj.sockId]
+
+            dataPortMap[dataObj.sockId] = { processName: dataObj.processName, processPath: dataObj.processPath }
+            setTimeout(() => {
+              delete dataPortMap[dataObj.sockId]
+            }, 5000)
           } else {
             // console.log('port-result:null:', dataObj.pid, dataObj.port)
           }
@@ -569,6 +610,7 @@ export default {
         // 调用socket.close方法，浏览器不一定会关闭连接，只是停止接收数据，等到一定时候才断开连接
         this.socket.send("close")
         clearTimeout(this.initSocketTimer)
+        clearTimeout(this.pingTimer)
         setTimeout(() => {
           this.socketState == 'open' && this.socket.close()
         }, 500);
