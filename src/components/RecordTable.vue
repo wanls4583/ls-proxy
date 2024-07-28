@@ -97,11 +97,6 @@ export default {
           prop: 'processName'
         },
         {
-          label: '本地端口',
-          width: '80px',
-          prop: 'port'
-        },
-        {
           label: '服务器IP',
           width: '140px',
           prop: 'ip'
@@ -218,9 +213,11 @@ export default {
       clearTimeout(this.initSocketTimer)
       this.socket = new WebSocket("ws://localhost:8000");
       this.socket.addEventListener("open", (event) => {
+        this.socketState = 'open'
         this.socket.send("start");
       });
       this.socket.addEventListener("close", (event) => {
+        this.socketState = 'close'
         if (this.processing) {
           clearTimeout(this.initSocketTimer)
           this.initSocketTimer = setTimeout(() => {
@@ -437,17 +434,16 @@ export default {
       if (window.require) {
         // console.log('port:', dataObj.port)
         const findProcess = window.require('find-process');
-        findProcess('port', dataObj.port).then(function (list) {
+        findProcess(dataObj.pid ? 'pid' : 'port', dataObj.pid || dataObj.port).then(function (list) {
           if (list.length) {
-            dataObj.processId = list[0].pid
             dataObj.processName = list[0].name
             dataObj.processPath = list[0].bin
             // console.log('port-result:', dataObj.port)
           } else {
-            // console.log('port-result:null:', dataObj.port)
+            // console.log('port-result:null:', dataObj.pid, dataObj.port)
           }
         }, function (err) {
-          console.log('find-process-err:', err.stack || err, ':', dataObj.port);
+          console.log('find-process-err:', err.stack || err, ':', dataObj.pid, dataObj.port);
         })
       }
     },
@@ -569,10 +565,13 @@ export default {
       this.processing = flag
       if (flag) {
         this.initSocket()
-      } else {
-        // this.socket.close()
+      } else if (this.socketState == 'open') {
         // 调用socket.close方法，浏览器不一定会关闭连接，只是停止接收数据，等到一定时候才断开连接
         this.socket.send("close")
+        clearTimeout(this.initSocketTimer)
+        setTimeout(() => {
+          this.socketState == 'open' && this.socket.close()
+        }, 500);
       }
     },
     onVScroll(scrollTop) {
