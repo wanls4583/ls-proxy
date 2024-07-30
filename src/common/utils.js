@@ -43,30 +43,13 @@ export const getStringFromU8Array = function (uint8array) {
 }
 
 export const u8To16Uint = function (uint8array) {
-    let num = uint8array[1]
-    num |= uint8array[0] << 1 * 8
-
-    return num
+    return new DataView(uint8array.buffer).getUint16()
 }
 
 export const u8To32Uint = function (uint8array) {
-    let num = uint8array[3]
-    num |= uint8array[2] << 1 * 8
-    num |= uint8array[1] << 2 * 8
-    num |= uint8array[0] << 3 * 8
-
-    return num
+    return new DataView(uint8array.buffer).getUint32()
 }
 
 export const u8To64Uint = function (uint8array) {
-    let num = uint8array[7]
-    num |= uint8array[6] << 1 * 8
-    num |= uint8array[5] << 2 * 8
-    num |= uint8array[4] << 3 * 8
-    num |= uint8array[3] << 4 * 8
-    num |= uint8array[2] << 5 * 8
-    num |= uint8array[1] << 6 * 8
-    num |= uint8array[0] << 7 * 8
-
-    return num
+    return new DataView(uint8array.buffer).getBigUint64()
 }

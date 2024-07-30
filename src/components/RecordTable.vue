@@ -15,35 +15,15 @@
       @mousemove="showScrollBar"
       @wheel.stop="onWheel"
     >
-      <div
-        class="table-content"
-        ref="content"
-        :style="{ transform: 'translate3d(0,' + _top + ',0)' }"
-      >
-        <div
-          class="row"
-          v-for="row in renderList"
-          :key="row.lineId"
-          :style="{ top: row.top }"
-          :class="{ even: row.line % 2 === 0 }"
-        >
+      <div class="table-content" ref="content" :style="{ transform: 'translate3d(0,' + _top + ',0)' }">
+        <div class="row" v-for="row in renderList" :key="row.lineId" :style="{ top: row.top }" :class="{ even: row.line % 2 === 0 }">
           <div class="cell" v-for="(item, index) in columns" :key="index" :style="cellStyle(item)">
             <span class="label">{{ row[item.prop] }}</span>
           </div>
         </div>
       </div>
-      <v-scroll-bar
-        :height="contentHeight"
-        :scrollTop="scrollTop"
-        :class="{ 'scroll-visible': scrollVisible }"
-        @scroll="onVScroll"
-      />
-      <h-scroll-bar
-        :width="contentWidth"
-        :scrollLeft="scrollLeft"
-        :class="{ 'scroll-visible': scrollVisible }"
-        @scroll="onHScroll"
-      />
+      <v-scroll-bar :height="contentHeight" :scrollTop="scrollTop" :class="{ 'scroll-visible': scrollVisible }" @scroll="onVScroll" />
+      <h-scroll-bar :width="contentWidth" :scrollLeft="scrollLeft" :class="{ 'scroll-visible': scrollVisible }" @scroll="onHScroll" />
     </div>
   </div>
 </template>
@@ -53,8 +33,20 @@ import { getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint } from '../com
 import HScrollBar from './HScrollBar.vue'
 import VScrollBar from './VScrollBar.vue'
 
-const [MSG_REQ, MSG_RES, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT, MSG_PORT] = [1, 2, 3, 4, 5, 6, 7, 8];
-const [STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT] = [1, 2];
+const [MSG_REQ, MSG_RES, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT, MSG_PORT] = [1, 2, 3, 4, 5, 6, 7, 8]
+const [STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT] = [1, 2]
+const [
+  TIME_DNS_START,
+  TIME_DNS_END,
+  TIME_CONNECT_START,
+  TIME_CONNECT_END,
+  TIME_CONNECT_SSL_START,
+  TIME_CONNECT_SSL_END,
+  TIME_REQ_START,
+  TIME_REQ_END,
+  TIME_RES_START,
+  TIME_RES_END
+] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 
 let dataList = []
 let dataIdMap = {}
@@ -189,7 +181,7 @@ export default {
       if (window.require) {
         const Nedb = window.require('nedb')
         const path = window.require('path')
-        const { app } = window.require('@electron/remote');
+        const { app } = window.require('@electron/remote')
         const filename = path.join(app.getAppPath(), 'electron/nedb.db')
         this.nedb = new Nedb({ filename: filename })
         this.nedb.loadDatabase()
@@ -214,22 +206,22 @@ export default {
     initSocket() {
       clearTimeout(this.initSocketTimer)
       clearTimeout(this.pingTimer)
-      this.socket = new WebSocket("ws://localhost:8000");
-      this.socket.addEventListener("open", (event) => {
+      this.socket = new WebSocket('ws://localhost:8000')
+      this.socket.addEventListener('open', event => {
         this.socketState = 'open'
-        this.socket.send("start");
-      });
-      this.socket.addEventListener("close", (event) => {
+        this.socket.send('start')
+      })
+      this.socket.addEventListener('close', event => {
         this.socketState = 'close'
         clearTimeout(this.pingTimer)
-        // if (this.processing) {
-        //   clearTimeout(this.initSocketTimer)
-        //   this.initSocketTimer = setTimeout(() => {
-        //     this.initSocket();
-        //   }, 500)
-        // }
-      });
-      this.socket.addEventListener("message", (event) => {
+        if (this.processing) {
+          clearTimeout(this.initSocketTimer)
+          this.initSocketTimer = setTimeout(() => {
+            this.initSocket()
+          }, 1000)
+        }
+      })
+      this.socket.addEventListener('message', event => {
         const data = event.data
         if (data instanceof Blob) {
           data.arrayBuffer().then(buffer => {
@@ -256,7 +248,7 @@ export default {
             this.socket.send('ping')
           }
         }, 10000) // 10秒检测一次心跳
-      });
+      })
     },
     getDataObj(u8Array) {
       let dataObj = {}
@@ -267,58 +259,73 @@ export default {
       }
 
       dataObj.u8Array = u8Array
-      dataObj.id = u8To64Uint(u8Array.slice(1))
-      dataObj.sockId = u8To64Uint(u8Array.slice(9))
+      dataObj.id = u8To64Uint(u8Array.slice(1)) + ''
+      dataObj.sockId = u8To64Uint(u8Array.slice(9)) + ''
 
-      let index = 17;
+      let index = 17
       if (msgType == MSG_REQ) {
         switch (u8Array[index++]) {
-          case 1: dataObj.protocol = 'http:'; break;
-          case 2: dataObj.protocol = 'https:'; break;
-          case 3: dataObj.protocol = 'ws:'; break;
-          case 4: dataObj.protocol = 'wss:'; break;
+          case 1:
+            dataObj.protocol = 'http:'
+            break
+          case 2:
+            dataObj.protocol = 'https:'
+            break
+          case 3:
+            dataObj.protocol = 'ws:'
+            break
+          case 4:
+            dataObj.protocol = 'wss:'
+            break
         }
-        dataObj.pid = u8To32Uint(u8Array.slice(index, index + 4)); // 代理服务器进程号
-        index += 4;
-        dataObj.port = u8To16Uint(u8Array.slice(index, index + 2)); // 客户端端口号
-        index += 2;
+        dataObj.pid = u8To32Uint(u8Array.slice(index, index + 4)) // 代理服务器进程号
+        index += 4
+        dataObj.port = u8To16Uint(u8Array.slice(index, index + 2)) // 客户端端口号
+        index += 2
         this.getClientPath(dataObj)
       }
       u8Array = u8Array.slice(index)
 
-      if (msgType == MSG_REQ) { // req
+      if (msgType == MSG_REQ) {
+        // req
         this.getReqDataObj(dataObj, u8Array)
-      } else if (msgType == MSG_RES) { // res
+      } else if (msgType == MSG_RES) {
+        // res
         if (!dataIdMap[dataObj.id]) {
           return null
         }
         dataObj = dataIdMap[dataObj.id]
         this.getResDataObj(dataObj, u8Array)
-      } else if (msgType == MSG_DNS) { // ip
+      } else if (msgType == MSG_DNS) {
+        // ip
         if (!dataIdMap[dataObj.id]) {
           return null
         }
         dataObj = dataIdMap[dataObj.id]
         this.getIpDataObj(dataObj, u8Array)
-      } else if (msgType == MSG_STATUS) { // status
+      } else if (msgType == MSG_STATUS) {
+        // status
         if (!dataIdMap[dataObj.id]) {
           return null
         }
         dataObj = dataIdMap[dataObj.id]
         this.getStatusDataObj(dataObj, u8Array)
-      } else if (msgType == MSG_TIME) { // duration
+      } else if (msgType == MSG_TIME) {
+        // duration
         if (!dataIdMap[dataObj.id]) {
           return null
         }
         dataObj = dataIdMap[dataObj.id]
         this.getTimeDataObj(dataObj, u8Array)
-      } else if (msgType == MSG_CIPHER) { // cipher
+      } else if (msgType == MSG_CIPHER) {
+        // cipher
         if (!dataIdMap[dataObj.id]) {
           return null
         }
         dataObj = dataIdMap[dataObj.id]
         this.getCipherDataObj(dataObj, u8Array)
-      } else if (msgType == MSG_CERT) { // cert
+      } else if (msgType == MSG_CERT) {
+        // cert
         if (!dataIdMap[dataObj.id]) {
           return null
         }
@@ -398,11 +405,63 @@ export default {
       }
     },
     getTimeDataObj(dataObj, u8Array) {
+      let timeType = u8Array[0]
+      let time = u8To64Uint(u8Array.slice(1))
+      dataObj.times = dataObj.times || {}
+      dataObj.times[timeType] = time
+      console.log(dataObj.id, timeType, time, u8Array.slice(1).toString())
+
+      if (timeType === TIME_RES_END) {
+        let startTime = 0n
+        if (dataObj.times[TIME_DNS_START]) {
+          startTime = dataObj.times[TIME_DNS_START]
+        } else if (dataObj.times[TIME_CONNECT_START]) {
+          startTime = dataObj.times[TIME_CONNECT_START]
+        } else {
+          console.log('time fail:', dataObj.id, dataObj)
+        }
+        if (time - startTime > 0) {
+          dataObj.duration = this.getTImeDisplay(time - startTime)
+        } else {
+          console.log('time fail:', dataObj.id, dataObj)
+        }
+      }
+    },
+    getCipherDataObj(dataObj, u8Array) {
+      let list = getStringFromU8Array(u8Array)
+      if (list.length) {
+        list = list.split(';')
+        dataObj.tlsVersion = list[0]
+        dataObj.cipher = list[1]
+        dataObj.cipherList = list.slice(2)
+      }
+    },
+    getCertDataObj(dataObj, u8Array) {
+      if (window.require) {
+        // const { X509Certificate } = window.require('node:crypto')
+        // const pem = getStringFromU8Array(u8Array)
+        // try {
+        //   const x509 = new X509Certificate(pem)
+        //   console.log(x509)
+        // } catch (e) {
+        //   console.err(e)
+        // }
+      }
+      if (this.nedb) {
+        this.nedb.update({ id: dataObj.id }, { $set: { cert: Array.from(u8Array) } }, {})
+      }
+    },
+    getPortDataObj(dataObj, u8Array) {
+      dataObj.port = u8To16Uint(u8Array) // 客户端端口号
+      this.getClientPath(dataObj)
+    },
+    getTImeDisplay(duration) {
       const H = 60 * 60 * 1000
       const M = 60 * 1000
       const S = 1000
-      let result = '', unit = ''
-      let duration = u8To64Uint(u8Array) // 微妙
+      let result = '',
+        unit = ''
+      duration = duration + '' // BigInt转换成字符串
       duration = Math.floor(duration / 1000) // 毫秒
       if (duration >= H) {
         result = (duration / H).toFixed(2)
@@ -418,27 +477,14 @@ export default {
         unit = 'ms'
       }
       result = result.replace(/\.00$/, '') + ' ' + unit
-      dataObj.duration = result
-    },
-    getCipherDataObj(dataObj, u8Array) {
-      let list = getStringFromU8Array(u8Array)
-      if (list.length) {
-        list = list.split(';')
-        dataObj.cipher = list[0]
-        dataObj.cipherList = list.slice(1)
-      }
-    },
-    getCertDataObj(dataObj, u8Array) {
-      if (this.nedb) {
-        this.nedb.update({ id: dataObj.id }, { $set: { cert: Array.from(u8Array) } }, {})
-      }
-    },
-    getPortDataObj(dataObj, u8Array) {
-      dataObj.port = u8To16Uint(u8Array); // 客户端端口号
-      this.getClientPath(dataObj)
+      return result
     },
     getHttpHeader(reqHeader, head) {
-      let lineIndex = -1, colonIndex = -1, line, prop, value
+      let lineIndex = -1,
+        colonIndex = -1,
+        line,
+        prop,
+        value
 
       while (head.length) {
         lineIndex = head.search([13, 10])
@@ -453,7 +499,8 @@ export default {
         head = head.slice(lineIndex + 2)
       }
     },
-    getClientPath(dataObj) { // 获取客户端程路径
+    getClientPath(dataObj) {
+      // 获取客户端程路径
       let cacheObj = dataPortMap[dataObj.sockId]
       if (cacheObj) {
         dataObj.processName = cacheObj.processName
@@ -465,34 +512,38 @@ export default {
         return
       }
       if (window.require) {
-        const findProcess = window.require('find-process');
+        const findProcess = window.require('find-process')
         dataPortingMap[dataObj.sockId] = [dataObj]
         // console.log('port:', dataObj.port)
-        findProcess(dataObj.pid ? 'pid' : 'port', dataObj.pid || dataObj.port).then(function (list) {
-          if (list.length) {
-            dataPortingMap[dataObj.sockId].forEach(obj => {
-              obj.processName = list[0].name
-              obj.processPath = list[0].bin
-            })
-            delete dataPortingMap[dataObj.sockId]
+        findProcess(dataObj.pid ? 'pid' : 'port', dataObj.pid || dataObj.port).then(
+          function (list) {
+            if (list.length) {
+              dataPortingMap[dataObj.sockId].forEach(obj => {
+                obj.processName = list[0].name
+                obj.processPath = list[0].bin
+              })
+              delete dataPortingMap[dataObj.sockId]
 
-            dataPortMap[dataObj.sockId] = { processName: dataObj.processName, processPath: dataObj.processPath }
-            setTimeout(() => {
-              delete dataPortMap[dataObj.sockId]
-            }, 5000)
-          } else {
-            // console.log('port-result:null:', dataObj.pid, dataObj.port)
+              dataPortMap[dataObj.sockId] = { processName: dataObj.processName, processPath: dataObj.processPath }
+              setTimeout(() => {
+                delete dataPortMap[dataObj.sockId]
+              }, 5000)
+            } else {
+              // console.log('port-result:null:', dataObj.pid, dataObj.port)
+            }
+          },
+          function (err) {
+            console.log('find-process-err:', err.stack || err, ':', dataObj.pid, dataObj.port)
           }
-        }, function (err) {
-          console.log('find-process-err:', err.stack || err, ':', dataObj.pid, dataObj.port);
-        })
+        )
       }
     },
     getSize(size) {
       const G = 1024 * 1024 * 1024
       const M = 1024 * 1024
       const K = 1024
-      let result = '', unit = ''
+      let result = '',
+        unit = ''
       if (size >= G) {
         result = (size / G).toFixed(1)
         unit = 'GB'
@@ -608,12 +659,12 @@ export default {
         this.initSocket()
       } else if (this.socketState == 'open') {
         // 调用socket.close方法，浏览器不一定会关闭连接，只是停止接收数据，等到一定时候才断开连接
-        this.socket.send("close")
+        this.socket.send('close')
         clearTimeout(this.initSocketTimer)
         clearTimeout(this.pingTimer)
         setTimeout(() => {
           this.socketState == 'open' && this.socket.close()
-        }, 500);
+        }, 500)
       }
     },
     onVScroll(scrollTop) {
