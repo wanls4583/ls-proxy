@@ -71,6 +71,11 @@ export default {
       }
     },
     initEvent() {
+      this.eventBus.$on('socket-close', () => {
+        if (this.processing) {
+          this.onStart()
+        }
+      })
       if (window.require) {
         const { ipcRenderer } = window.require('electron')
         ipcRenderer.on('enter-full-screen', () => {
@@ -105,10 +110,10 @@ export default {
     },
     onStart() {
       this.processing = !this.processing
-      this.$emit('start', this.processing)
+      this.eventBus.$emit('start-listen', this.processing)
     },
     onClear() {
-      this.$emit('clear')
+      this.eventBus.$emit('clear-table')
     }
   }
 }

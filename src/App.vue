@@ -1,9 +1,9 @@
 <template>
   <div id="app">
     <div class="right-wrap">
-      <ls-header @clear="onClear" @start="onStart" />
+      <ls-header />
       <type-filter />
-      <record-table ref="table" />
+      <record-table />
     </div>
   </div>
 </template>
@@ -20,12 +20,6 @@ export default {
     RecordTable,
   },
   methods: {
-    onClear() {
-      this.$refs.table.clearTable()
-    },
-    onStart(val) {
-      this.$refs.table.startSocket(val)
-    }
   }
 }
 </script>

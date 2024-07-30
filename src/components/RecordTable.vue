@@ -2,7 +2,13 @@
   <div class="record-table-wrap">
     <div class="table-title-wrap" ref="title">
       <div class="th-row">
-        <div class="th-cell" v-for="(item, index) in columns" :key="index" :style="cellStyle(item)">
+        <div
+          class="th-cell"
+          v-for="(item, index) in columns"
+          :key="index"
+          :style="cellStyle(item)"
+          :class="item.cellClass"
+        >
           <span class="label">{{ item.label }}</span>
         </div>
       </div>
@@ -15,15 +21,41 @@
       @mousemove="showScrollBar"
       @wheel.stop="onWheel"
     >
-      <div class="table-content" ref="content" :style="{ transform: 'translate3d(0,' + _top + ',0)' }">
-        <div class="row" v-for="row in renderList" :key="row.lineId" :style="{ top: row.top }" :class="{ even: row.line % 2 === 0 }">
-          <div class="cell" v-for="(item, index) in columns" :key="index" :style="cellStyle(item)">
+      <div
+        class="table-content"
+        ref="content"
+        :style="{ transform: 'translate3d(0,' + _top + ',0)' }"
+      >
+        <div
+          class="row"
+          v-for="row in renderList"
+          :key="row.lineId"
+          :style="{ top: row.top }"
+          :class="{ even: row.line % 2 === 0 }"
+        >
+          <div
+            class="cell"
+            v-for="(item, index) in columns"
+            :key="index"
+            :style="cellStyle(item)"
+            :class="item.cellClass"
+          >
             <span class="label">{{ row[item.prop] }}</span>
           </div>
         </div>
       </div>
-      <v-scroll-bar :height="contentHeight" :scrollTop="scrollTop" :class="{ 'scroll-visible': scrollVisible }" @scroll="onVScroll" />
-      <h-scroll-bar :width="contentWidth" :scrollLeft="scrollLeft" :class="{ 'scroll-visible': scrollVisible }" @scroll="onHScroll" />
+      <v-scroll-bar
+        :height="contentHeight"
+        :scrollTop="scrollTop"
+        :class="{ 'scroll-visible': scrollVisible }"
+        @scroll="onVScroll"
+      />
+      <h-scroll-bar
+        :width="contentWidth"
+        :scrollLeft="scrollLeft"
+        :class="{ 'scroll-visible': scrollVisible }"
+        @scroll="onHScroll"
+      />
     </div>
   </div>
 </template>
@@ -63,7 +95,8 @@ export default {
         {
           label: 'ID',
           width: '60px',
-          prop: 'id'
+          prop: 'id',
+          cellClass: ['aequilate-font']
         },
         {
           label: '类型',
@@ -87,19 +120,21 @@ export default {
         },
         {
           label: '应用程序',
-          width: '100px',
+          width: '140px',
           prop: 'processName'
         },
         {
           label: '服务器IP',
           width: '140px',
-          prop: 'ip'
+          prop: 'ip',
+          cellClass: ['aequilate-font']
         },
         {
           label: '时长',
           width: '80px',
           prop: 'duration',
-          style: { 'text-align': 'right' }
+          style: { 'text-align': 'right' },
+          cellClass: ['aequilate-font']
         },
         {
           label: '大小',
@@ -175,6 +210,7 @@ export default {
   methods: {
     init() {
       this.initDB()
+      this.initEvent()
       this.clearTable()
     },
     initDB() {
@@ -186,6 +222,14 @@ export default {
         this.nedb = new Nedb({ filename: filename })
         this.nedb.loadDatabase()
       }
+    },
+    initEvent() {
+      this.eventBus.$on('start-listen', (val) => {
+        this.startSocket(val)
+      })
+      this.eventBus.$on('clear-table', () => {
+        this.clearTable()
+      })
     },
     initResizeEvent() {
       this.resizeObserver = new ResizeObserver(entries => {
@@ -214,12 +258,19 @@ export default {
       this.socket.addEventListener('close', event => {
         this.socketState = 'close'
         clearTimeout(this.pingTimer)
+        console.log('scoket close:', event)
         if (this.processing) {
           clearTimeout(this.initSocketTimer)
           this.initSocketTimer = setTimeout(() => {
             this.initSocket()
           }, 1000)
         }
+      })
+      this.socket.addEventListener('error', event => {
+        this.socketState = 'close'
+        this.startSocket(false)
+        this.eventBus.$emit('socket-close')
+        console.log('scoket err:', event)
       })
       this.socket.addEventListener('message', event => {
         const data = event.data
@@ -247,7 +298,7 @@ export default {
           if (this.processing && this.socketState == 'open') {
             this.socket.send('ping')
           }
-        }, 10000) // 10秒检测一次心跳
+        }, 5000) // 5秒检测一次心跳
       })
     },
     getDataObj(u8Array) {
@@ -409,7 +460,7 @@ export default {
       let time = u8To64Uint(u8Array.slice(1))
       dataObj.times = dataObj.times || {}
       dataObj.times[timeType] = time
-      console.log(dataObj.id, timeType, time, u8Array.slice(1).toString())
+      // console.log(dataObj.id + ':', timeType, time, u8Array.slice(1).toString())
 
       if (timeType === TIME_RES_END) {
         let startTime = 0n
@@ -417,10 +468,12 @@ export default {
           startTime = dataObj.times[TIME_DNS_START]
         } else if (dataObj.times[TIME_CONNECT_START]) {
           startTime = dataObj.times[TIME_CONNECT_START]
+        } else if (dataObj.times[TIME_REQ_START]) {
+          startTime = dataObj.times[TIME_REQ_START]
         } else {
           console.log('time fail:', dataObj.id, dataObj)
         }
-        if (time - startTime > 0) {
+        if (startTime && time - startTime > 0) {
           dataObj.duration = this.getTImeDisplay(time - startTime)
         } else {
           console.log('time fail:', dataObj.id, dataObj)
@@ -658,13 +711,9 @@ export default {
       if (flag) {
         this.initSocket()
       } else if (this.socketState == 'open') {
-        // 调用socket.close方法，浏览器不一定会关闭连接，只是停止接收数据，等到一定时候才断开连接
-        this.socket.send('close')
         clearTimeout(this.initSocketTimer)
         clearTimeout(this.pingTimer)
-        setTimeout(() => {
-          this.socketState == 'open' && this.socket.close()
-        }, 500)
+        this.socket.close()
       }
     },
     onVScroll(scrollTop) {
@@ -682,23 +731,23 @@ export default {
       this.scrollDeltaY = e.deltaY
       this.scrollDeltaX = e.deltaX
       this.wheelTime = Date.now()
-      this.wheelEvent = e
       this.onHScroll(this.scrollLeft + this.scrollDeltaX)
-      if ((this.scrollDeltaY || this.scrollDeltaX) && !this.wheelTask) {
-        // 滑轮事件太密集，影响渲染性能，使用UI事件列表来控制
-        this.wheelTask = globalData.scheduler.addUiTask(() => {
-          if (this.scrollDeltaY) {
-            this.setStartLine(this.scrollTop + this.scrollDeltaY)
-            this.scrollDeltaY = 0
-          } else if (this.scrollDeltaX) {
-            // this.onHScroll(this.scrollLeft + this.scrollDeltaX)
-            // this.scrollDeltaX = 0
-          } else if (Date.now() - this.wheelTime > 2000) {
-            globalData.scheduler.removeUiTask(this.wheelTask)
-            this.wheelTask = null
-          }
-        })
-      }
+      this.setStartLine(this.scrollTop + this.scrollDeltaY)
+      // if ((this.scrollDeltaY || this.scrollDeltaX) && !this.wheelTask) {
+      //   // 滑轮事件太密集，影响渲染性能，使用UI事件列表来控制
+      //   this.wheelTask = globalData.scheduler.addUiTask(() => {
+      //     if (this.scrollDeltaY) {
+      //       this.setStartLine(this.scrollTop + this.scrollDeltaY)
+      //       this.scrollDeltaY = 0
+      //     } else if (this.scrollDeltaX) {
+      //       this.onHScroll(this.scrollLeft + this.scrollDeltaX)
+      //       this.scrollDeltaX = 0
+      //     } else if (Date.now() - this.wheelTime > 2000) {
+      //       globalData.scheduler.removeUiTask(this.wheelTask)
+      //       this.wheelTask = null
+      //     }
+      //   })
+      // }
     }
   }
 }
