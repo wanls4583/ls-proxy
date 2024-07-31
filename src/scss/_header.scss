@@ -14,7 +14,7 @@
         border-radius: 4px;
         background-color: #363636;
 
-        .iconfont {
+        .icon {
             cursor: pointer;
             -webkit-app-region: no-drag;
 
@@ -32,7 +32,7 @@
             display: flex;
             align-items: center;
 
-            .iconfont {
+            .icon {
                 margin-left: 8px;
                 font-size: 12px;
             }
@@ -57,7 +57,7 @@
             display: flex;
             align-items: center;
 
-            .iconfont {
+            .icon {
                 margin-left: 16px;
 
                 &.active {

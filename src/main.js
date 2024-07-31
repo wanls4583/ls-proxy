@@ -6,6 +6,8 @@ import 'element-ui/lib/theme-chalk/index.css';
 import './scss/index.scss';
 import Scheduler from './common/scheduler';
 import { kmpSearch } from './common/utils';
+import './assets/font/icon'
+import './assets/font/ext-icon'
 
 Vue.use(ElementUI);
 Vue.config.productionTip = false;

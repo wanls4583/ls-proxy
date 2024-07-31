@@ -1,3 +1,33 @@
+// 拥有图标的文件扩展名
+export const extList = [
+    '3g2', '3gp', '7z',
+    'aac', 'adt', 'ai', 'aiff', 'aly', 'amiga', 'amr', 'ape', 'apk', 'arj', 'asf', 'asm', 'asx', 'au', 'avc', 'avi', 'avs',
+    'bak', 'bas', 'bat', 'bmp', 'bom',
+    'c', 'cda', 'cdr', 'chm', 'cmd', 'com', 'cpp', 'css', 'csv',
+    'dat', 'ddb', 'dif', 'divx', 'dll', 'doc', 'docm', 'docx', 'dot', 'dotm', 'dotx', 'dsl', 'dv', 'dvd', 'dvdaudio', 'dwg', 'dxf',
+    'emf', 'env', 'eot', 'eps', 'exe', 'exif',
+    'f4v', 'flc', 'fli', 'flv', 'fon', 'font', 'for', 'fpx',
+    'gif', 'gz',
+    'hdri', 'hlp', 'htm', 'html',
+    'int', 'iso',
+    'jpeg', 'jpg', 'js', 'json',
+    'ksp',
+    'lib', 'lic', 'lst', 'lua',
+    'm4v', 'mac', 'map', 'md', 'mdf', 'mht', 'mhtml', 'mid', 'midi', 'mkv', 'mmf', 'mod', 'mov', 'mp3', 'mp3pro', 'mp4', 'mpa', 'mpe', 'mpeg', 'mpeg-1', 'mpeg-2', 'mpeg-4', 'mpeg1', 'mpeg2', 'mpeg4', 'mpg', 'msg', 'mts', 'mux',
+    'navi',
+    'obj', 'ogg', 'otf',
+    'pas', 'pcd', 'pcx', 'pdf', 'pic', 'png', 'ppt', 'pptx', 'proe', 'prt', 'psd', 'py',
+    'qsv', 'quicktime',
+    'ra', 'ram', 'rar', 'raw', 'realaudio', 'rm', 'rmvb', 'rp', 'rtf',
+    's48', 'sacd', 'sch', 'sh', 'stp', 'svcd', 'svg', 'swf', 'sys',
+    'tga', 'tiff', 'tmp', 'ttc', 'ttf', 'txt',
+    'ufo',
+    'vcd', 'vob', 'voc', 'vqf',
+    'wav', 'wdl', 'webm', 'wki', 'wma', 'wmf', 'wmv', 'wmvhd', 'woff', 'woff2', 'wps', 'wpt',
+    'x_t', 'xls', 'xlsm', 'xlsx', 'xlt', 'xltm', 'xltx', 'xmind', 'xml', 'xv', 'xvid',
+    'z', 'zip'
+];
+
 //KMP 算法核心（获取失败连接数组）
 function getFlink(p) {
     var flink = [-1, 0]; //为-1是为了标记第一个位置（方便之后使用flink去匹配）

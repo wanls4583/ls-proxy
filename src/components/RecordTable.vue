@@ -61,9 +61,10 @@
 </template>
 
 <script>
-import { getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint } from '../common/utils'
+import { extList, getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint } from '../common/utils'
 import HScrollBar from './HScrollBar.vue'
 import VScrollBar from './VScrollBar.vue'
+import SvgIcon from './Svg.vue'
 
 const [MSG_REQ, MSG_RES, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT, MSG_PORT] = [1, 2, 3, 4, 5, 6, 7, 8]
 const [STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT] = [1, 2]
@@ -87,7 +88,8 @@ let dataPortingMap = {}
 export default {
   components: {
     HScrollBar,
-    VScrollBar
+    VScrollBar,
+    SvgIcon
   },
   data() {
     return {
@@ -446,6 +448,8 @@ export default {
 
       dataObj.resHeader = {}
       this.getHttpHeader(dataObj.resHeader, head)
+
+      dataObj.type = this.getFileType(dataObj).toUpperCase() || '?'
     },
     getIpDataObj(dataObj, u8Array) {
       dataObj.ip = getStringFromU8Array(u8Array)
@@ -617,6 +621,41 @@ export default {
       this.wrapHeight = this.$refs.wrap.clientHeight
       this.wrapWidth = this.$refs.wrap.clientWidth
       this.contentWidth = this.$refs.title.scrollWidth
+    },
+    getFileType(dataObj) {
+      let path = dataObj.path
+      let ext = path.lastIndexOf('/')
+      path = path.slice(ext + 1)
+      ext = /^[\w\.\-\@]+\.([a-zA-Z0-9\_\-]+)/.exec(path)
+      ext = ext && ext[1]
+      if (ext && extList.includes(ext)) {
+        return ext
+      } else {
+        let contentType = dataObj.resHeader['Content-Type'] || ''
+        let type = null
+        if (!type) {
+          if (contentType.startsWith('application/json')) {
+            type = 'json'
+          } else if (contentType.startsWith('text/')) {
+            if (contentType.indexOf('html')) {
+              type = 'html'
+            } else if (contentType.indexOf('xml')) {
+              type = 'xml'
+            } else {
+              type = 'txt'
+            }
+          } else if (contentType.startsWith('image/')) {
+            type = 'image'
+          } else if (contentType.startsWith('audio/')) {
+            type = 'audio'
+          } else if (contentType.startsWith('video/')) {
+            type = 'video'
+          } else {
+            type = ''
+          }
+        }
+        return type
+      }
     },
     setContentHeight() {
       this.contentHeight = dataList.length * this.cellheight
