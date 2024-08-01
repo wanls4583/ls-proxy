@@ -1,0 +1,72 @@
+.detail-overview-wrap {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+
+  .overview-title {
+    flex-shrink: 0;
+    display: flex;
+    height: 30px;
+    line-height: 30px;
+    border-top: 1px solid #464646;
+    border-bottom: 1px solid #464646;
+
+    .label {
+      border-right: 1px solid #464646;
+      width: 160px;
+      flex-shrink: 0;
+      padding-left: 10px;
+    }
+
+    .value {
+      flex-grow: 1;
+      padding-left: 10px;
+    }
+  }
+
+  .overview-tree {
+    flex-grow: 1;
+    overflow: auto;
+
+    .el-tree {
+      color: #dfdfdf;
+      background-color: transparent;
+    }
+
+    .el-tree-node {
+      .el-tree-node__content {
+        background: transparent;
+      }
+
+      &.is-current {
+        &>.el-tree-node__content {
+          background: #c48e1a !important;
+        }
+      }
+    }
+
+    .el-tree-node__content {
+      position: relative;
+
+      .value {
+        position: absolute;
+        left: 170px;
+        top: 0;
+        right: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        line-height: 26px;
+      }
+    }
+  }
+
+  .el-tree-node__expand-icon+.overview-tree-node {
+    user-select: none;
+  }
+
+  .el-tree-node__expand-icon.is-leaf+.overview-tree-node {
+    user-select: inherit;
+  }
+
+}

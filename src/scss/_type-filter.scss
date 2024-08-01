@@ -1,8 +1,9 @@
 .type-filter-wrap {
     display: flex;
     align-items: center;
+    height: 32px;
     border-top: 1px solid #464646;
-    padding: 6px;
+    padding: 0 6px;
 
     .type-group {
         display: flex;

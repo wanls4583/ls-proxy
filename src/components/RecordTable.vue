@@ -32,6 +32,7 @@
           :key="row.lineId"
           :style="{ top: row.top }"
           :class="{ even: row.line % 2 === 0 }"
+          @click="onClickRow(row)"
         >
           <div
             class="cell"
@@ -56,6 +57,7 @@
         :class="{ 'scroll-visible': scrollVisible }"
         @scroll="onHScroll"
       />
+      <DialogDetail ref="detail" :visible="detailVisible" :data="detailData" />
     </div>
   </div>
 </template>
@@ -65,6 +67,7 @@ import { extList, getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint } fro
 import HScrollBar from './HScrollBar.vue'
 import VScrollBar from './VScrollBar.vue'
 import SvgIcon from './Svg.vue'
+import DialogDetail from './DialogDetail.vue'
 
 const [MSG_REQ, MSG_RES, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT, MSG_PORT] = [1, 2, 3, 4, 5, 6, 7, 8]
 const [STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT] = [1, 2]
@@ -89,7 +92,8 @@ export default {
   components: {
     HScrollBar,
     VScrollBar,
-    SvgIcon
+    SvgIcon,
+    DialogDetail
   },
   data() {
     return {
@@ -158,7 +162,9 @@ export default {
       scrollVisible: false,
       startLine: 1,
       maxLines: 10000000,
-      processing: false
+      processing: false,
+      detailData: {},
+      detailVisible: false
     }
   },
   computed: {
@@ -232,6 +238,11 @@ export default {
       this.eventBus.$on('clear-table', () => {
         this.clearTable()
       })
+      this.eventBus.$on('close-detail', () => {
+        this.detailData.cert = null
+        this.detailData = {}
+        this.detailVisible = false
+      })
     },
     initResizeEvent() {
       this.resizeObserver = new ResizeObserver(entries => {
@@ -250,6 +261,9 @@ export default {
       this.resizeObserver.observe(this.$refs.wrap)
     },
     initSocket() {
+      if (this.processing) {
+        return
+      }
       clearTimeout(this.initSocketTimer)
       clearTimeout(this.pingTimer)
       this.socket = new WebSocket('ws://localhost:8000')
@@ -305,17 +319,30 @@ export default {
     },
     getDataObj(u8Array) {
       let dataObj = {}
-      let msgType = u8Array[0]
+      let index = 0
+      let msgType = u8Array[index++]
 
       if (msgType > MSG_PORT) {
         return
       }
-
       dataObj.u8Array = u8Array
-      dataObj.id = u8To64Uint(u8Array.slice(1)) + ''
-      dataObj.sockId = u8To64Uint(u8Array.slice(9)) + ''
 
-      let index = 17
+      let idSize = u8Array[index++]
+      if (idSize === 8) {
+        dataObj.id = u8To64Uint(u8Array, index) + ''
+      } else {
+        dataObj.id = u8To32Uint(u8Array, index) + ''
+      }
+      index += idSize
+
+      let sockIdSize = u8Array[index++]
+      if (sockIdSize === 8) {
+        dataObj.sockId = u8To64Uint(u8Array.slice(1)) + ''
+      } else {
+        dataObj.sockId = u8To32Uint(u8Array.slice(1)) + ''
+      }
+      index += sockIdSize
+
       if (msgType == MSG_REQ) {
         switch (u8Array[index++]) {
           case 1:
@@ -331,11 +358,13 @@ export default {
             dataObj.protocol = 'wss:'
             break
         }
-        dataObj.pid = u8To32Uint(u8Array.slice(index, index + 4)) // 代理服务器进程号
-        index += 4
-        dataObj.port = u8To16Uint(u8Array.slice(index, index + 2)) // 客户端端口号
-        index += 2
-        this.getClientPath(dataObj)
+        let ptSize = u8Array[index]
+        this.getPortDataObj(dataObj, u8Array.slice(index, index + ptSize + 1))
+        index += ptSize + 1
+
+        let ipSize = u8Array[index++]
+        dataObj.clntIp = getStringFromU8Array(u8Array.slice(index, index + ipSize))
+        index += ipSize
       }
       u8Array = u8Array.slice(index)
 
@@ -389,6 +418,10 @@ export default {
         return null
       }
 
+      if (dataObj.id === this.detailData.id) {
+        this.onClickRow(dataObj)
+      }
+
       return dataObj
     },
     getReqDataObj(dataObj, u8Array) {
@@ -422,6 +455,12 @@ export default {
       dataObj.status = 'Pending'
 
       if (dataObj.reqHeader.Host) {
+        let port = dataObj.reqHeader.Host.indexOf(':')
+        if (port > -1) {
+          dataObj.port = dataObj.reqHeader.Host.slice(port + 1)
+        } else {
+          dataObj.port = ['wss:', 'https:'].includes(dataObj.protocol) ? 443 : 80
+        }
         dataObj.url = dataObj.protocol + '//' + dataObj.reqHeader.Host + dataObj.path
       }
     },
@@ -461,7 +500,7 @@ export default {
     },
     getTimeDataObj(dataObj, u8Array) {
       let timeType = u8Array[0]
-      let time = u8To64Uint(u8Array.slice(1))
+      let time = u8To64Uint(u8Array.slice(1)) + ''
       dataObj.times = dataObj.times || {}
       dataObj.times[timeType] = time
       // console.log(dataObj.id + ':', timeType, time, u8Array.slice(1).toString())
@@ -494,22 +533,17 @@ export default {
       }
     },
     getCertDataObj(dataObj, u8Array) {
-      if (window.require) {
-        // const { X509Certificate } = window.require('node:crypto')
-        // const pem = getStringFromU8Array(u8Array)
-        // try {
-        //   const x509 = new X509Certificate(pem)
-        //   console.log(x509)
-        // } catch (e) {
-        //   console.err(e)
-        // }
-      }
       if (this.nedb) {
-        this.nedb.update({ id: dataObj.id }, { $set: { cert: Array.from(u8Array) } }, {})
+        this.nedb.update({ id: dataObj.id }, { $set: { pem: getStringFromU8Array(u8Array) } }, {})
       }
     },
     getPortDataObj(dataObj, u8Array) {
-      dataObj.port = u8To16Uint(u8Array) // 客户端端口号
+      let size = u8Array[0]
+      if (size === 4) {
+        dataObj.clntPort = u8To32Uint(u8Array, 1) // 客户端端口号
+      } else {
+        dataObj.clntPort = u8To16Uint(u8Array, 1) // 客户端端口号
+      }
       this.getClientPath(dataObj)
     },
     getTImeDisplay(duration) {
@@ -571,8 +605,8 @@ export default {
       if (window.require) {
         const findProcess = window.require('find-process')
         dataPortingMap[dataObj.sockId] = [dataObj]
-        // console.log('port:', dataObj.port)
-        findProcess(dataObj.pid ? 'pid' : 'port', dataObj.pid || dataObj.port).then(
+        // console.log('clntPort:', dataObj.clntPort)
+        findProcess(dataObj.pid ? 'pid' : 'port', dataObj.pid || dataObj.clntPort).then(
           function (list) {
             if (list.length) {
               dataPortingMap[dataObj.sockId].forEach(obj => {
@@ -586,11 +620,11 @@ export default {
                 delete dataPortMap[dataObj.sockId]
               }, 5000)
             } else {
-              // console.log('port-result:null:', dataObj.pid, dataObj.port)
+              // console.log('clntPort-result:null:', dataObj.pid, dataObj.clntPort)
             }
           },
           function (err) {
-            console.log('find-process-err:', err.stack || err, ':', dataObj.pid, dataObj.port)
+            console.log('find-process-err:', err.stack || err, ':', dataObj.pid, dataObj.clntPort)
           }
         )
       }
@@ -656,6 +690,31 @@ export default {
         }
         return type
       }
+    },
+    getCertInfo(dataObj) {
+      return new Promise((resolve, reject) => {
+        if (this.nedb) {
+          this.nedb.find({ id: dataObj.id }, (err, docs) => {
+            if (docs.length && docs[0].pem) {
+              dataObj.pem = docs[0].pem
+              try {
+                const { X509Certificate } = window.require('node:crypto')
+                const x509 = new X509Certificate(docs[0].pem)
+                this.$set(dataObj, 'cert', x509)
+                resolve()
+              } catch (e) {
+                resolve()
+                console.log(docs[0].pem)
+                console.error(e)
+              }
+            } else {
+              resolve()
+            }
+          });
+        } else {
+          resolve()
+        }
+      })
     },
     setContentHeight() {
       this.contentHeight = dataList.length * this.cellheight
@@ -746,7 +805,6 @@ export default {
       this.render()
     },
     startSocket(flag) {
-      this.processing = flag
       if (flag) {
         this.initSocket()
       } else if (this.socketState == 'open') {
@@ -754,6 +812,7 @@ export default {
         clearTimeout(this.pingTimer)
         this.socket.close()
       }
+      this.processing = flag
     },
     onVScroll(scrollTop) {
       this.scrollTop = scrollTop
@@ -787,7 +846,16 @@ export default {
       //     }
       //   })
       // }
-    }
+    },
+    async onClickRow(row) {
+      let dataObj = dataList.find(item => item.id === row.id)
+      this.detailData = dataObj
+      await this.getCertInfo(dataObj)
+      this.detailVisible = true
+      this.$nextTick(() => {
+        this.eventBus.$emit('init-overview-data')
+      })
+    },
   }
 }
 </script>

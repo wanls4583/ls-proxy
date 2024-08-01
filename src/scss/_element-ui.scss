@@ -2,3 +2,48 @@
     color: #333;
     border-style: none;
 }
+
+.el-popper {
+    min-width: 100px;
+}
+
+.dark {
+    background-color: #434343;
+    border-style: none;
+
+    &.el-popper[x-placement^=left] .popper__arrow {
+        border-left-color: #434343;
+
+        &::after {
+            border-left-color: #434343;
+        }
+    }
+
+    &.el-popper[x-placement^=right] .popper__arrow {
+        border-right-color: #434343;
+
+        &::after {
+            border-right-color: #434343;
+        }
+    }
+
+    &.el-popper[x-placement^=bottom] {
+        margin-top: 6px;
+
+        .popper__arrow {
+            border-bottom-color: #434343;
+
+            &::after {
+                border-bottom-color: #434343;
+            }
+        }
+    }
+
+    &.el-popper[x-placement^=top] .popper__arrow {
+        border-top-color: #434343;
+
+        &::after {
+            border-top-color: #434343;
+        }
+    }
+}
