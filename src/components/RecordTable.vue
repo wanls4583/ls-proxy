@@ -261,9 +261,6 @@ export default {
       this.resizeObserver.observe(this.$refs.wrap)
     },
     initSocket() {
-      if (this.processing) {
-        return
-      }
       clearTimeout(this.initSocketTimer)
       clearTimeout(this.pingTimer)
       this.socket = new WebSocket('ws://localhost:8000')
@@ -275,16 +272,17 @@ export default {
         this.socketState = 'close'
         clearTimeout(this.pingTimer)
         console.log('scoket close:', event)
-        if (this.processing) {
+        if (this.processing && (!event.wasClean || event.code === 1006)) {
           clearTimeout(this.initSocketTimer)
           this.initSocketTimer = setTimeout(() => {
             this.initSocket()
           }, 1000)
+        } else {
+          this.eventBus.$emit('socket-close')
         }
       })
       this.socket.addEventListener('error', event => {
         this.socketState = 'close'
-        this.startSocket(false)
         this.eventBus.$emit('socket-close')
         console.log('scoket err:', event)
       })
@@ -806,11 +804,15 @@ export default {
     },
     startSocket(flag) {
       if (flag) {
-        this.initSocket()
-      } else if (this.socketState == 'open') {
+        if (!this.processing) {
+          this.initSocket()
+        }
+      } else {
         clearTimeout(this.initSocketTimer)
         clearTimeout(this.pingTimer)
-        this.socket.close()
+        if (this.socketState == 'open') {
+          this.socket.close()
+        }
       }
       this.processing = flag
     },
