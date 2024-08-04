@@ -1,12 +1,5 @@
 <template>
-  <div
-    v-if="visible"
-    class="dialog-tetail-wrap"
-    @mouseenter.stop
-    @mouseleave.stop
-    @mousemove.stop
-    @wheel.stop
-  >
+  <div v-show="visible" class="dialog-tetail-wrap">
     <div class="req-detail-wrap">
       <el-tabs v-model="reqTab" @tab-click="onReqTabChagne" style="height:100%">
         <el-tab-pane label="总览" name="总览">
@@ -41,7 +34,9 @@
         <el-tab-pane label="响应头" name="响应头">
           <ObjectView title="响应头头列表" :data="data.resHeader" />
         </el-tab-pane>
-        <el-tab-pane label="响应体" name="响应体"></el-tab-pane>
+        <el-tab-pane label="响应体" name="响应体">
+          <HexView :data="resBody" ref="hex" />
+        </el-tab-pane>
       </el-tabs>
     </div>
   </div>
@@ -49,10 +44,12 @@
 <script>
 import OverView from './detail/OverView.vue'
 import ObjectView from './detail/ObjectView.vue'
+import HexView from './detail/HexView.vue'
 export default {
   components: {
     OverView,
     ObjectView,
+    HexView,
   },
   props: {
     visible: Boolean,
@@ -64,12 +61,29 @@ export default {
       resTab: '原始',
     }
   },
+  watch: {
+    visible() {
+      if (this.visible) {
+        this.onReqTabChagne()
+        this.onResTabChagne()
+      }
+    }
+  },
+  computed: {
+    resBody() {
+      return this.data.resBody || []
+    }
+  },
   methods: {
     onReqTabChagne() {
 
     },
     onResTabChagne() {
-
+      if (this.resTab == '响应体') {
+        this.$nextTick(() => {
+          this.$refs.hex.render()
+        })
+      }
     },
     onClose() {
       this.eventBus.$emit('close-detail')

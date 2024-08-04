@@ -13,18 +13,15 @@
         </div>
       </div>
     </div>
-    <div
-      class="table-content-wrap"
-      ref="wrap"
-      @mouseenter="showScrollBar"
-      @mouseleave="hideScrollBar"
-      @mousemove="showScrollBar"
-      @wheel.stop="onWheel"
-    >
+    <div class="table-content-wrap" ref="wrap">
       <div
         class="table-content"
         ref="content"
         :style="{ transform: 'translate3d(0,' + _top + ',0)' }"
+        @mouseenter="showScrollBar"
+        @mouseleave="hideScrollBar"
+        @mousemove="showScrollBar"
+        @wheel.stop="onWheel"
       >
         <div
           class="row"
@@ -427,7 +424,7 @@ export default {
       let index = u8Array.search([13, 10, 13, 10]) // \r\n\r\n
       let head, body, spaceIndex, lineIndex
 
-      head = u8Array.slice(0, index)
+      head = u8Array.slice(0, index + 4)
       body = u8Array.slice(index + 4)
       if (this.nedb) {
         this.nedb.insert({ id: dataObj.id, reqHead: Array.from(head), reqBody: Array.from(body) }, (err, doc) => {
@@ -467,7 +464,7 @@ export default {
       let index = u8Array.search([13, 10, 13, 10]) // \r\n\r\n
       let head, body, spaceIndex, lineIndex
 
-      head = u8Array.slice(0, index)
+      head = u8Array.slice(0, index + 4)
       body = u8Array.slice(index + 4)
       if (this.nedb) {
         this.nedb.update({ id: dataObj.id }, { $set: { resHead: Array.from(head), resBody: Array.from(body) } }, {}, (err, doc) => {
@@ -582,10 +579,12 @@ export default {
           break
         }
         line = head.slice(0, lineIndex)
-        colonIndex = line.search([58, 32]) //': '
-        prop = getStringFromU8Array(line.slice(0, colonIndex))
-        value = getStringFromU8Array(line.slice(colonIndex + 2))
-        reqHeader[prop] = value
+        if (line.length) {
+          colonIndex = line.search([58, 32]) //': '
+          prop = getStringFromU8Array(line.slice(0, colonIndex))
+          value = getStringFromU8Array(line.slice(colonIndex + 2))
+          reqHeader[prop] = value
+        }
         head = head.slice(lineIndex + 2)
       }
     },
@@ -690,12 +689,16 @@ export default {
         return type
       }
     },
-    getCertInfo(dataObj) {
+    getDataInfo(dataObj) {
       return new Promise((resolve, reject) => {
         if (this.nedb) {
           this.nedb.find({ id: dataObj.id }, (err, docs) => {
             if (docs.length && docs[0].pem) {
               dataObj.pem = docs[0].pem
+              dataObj.reqHead = docs[0].reqHead || []
+              dataObj.reqBody = docs[0].reqBody || []
+              dataObj.resHead = docs[0].resHead || []
+              dataObj.resBody = docs[0].resBody || []
               try {
                 const { X509Certificate } = window.require('node:crypto')
                 const x509 = new X509Certificate(docs[0].pem)
@@ -853,7 +856,7 @@ export default {
     async onClickRow(row) {
       let dataObj = dataList.find(item => item.id === row.id)
       this.detailData = dataObj
-      await this.getCertInfo(dataObj)
+      await this.getDataInfo(dataObj)
       this.detailVisible = true
       this.$nextTick(() => {
         this.eventBus.$emit('refresh-detail-data')

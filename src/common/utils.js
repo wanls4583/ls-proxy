@@ -1,3 +1,5 @@
+import $ from 'jquery'
+
 // 拥有图标的文件扩展名
 export const extList = [
   '3g2', '3gp', '7z',
@@ -135,5 +137,52 @@ export function formatTime(date, joinSymbol = "-", isUsec) {
     minute,
     second,
     msecond,
+  };
+}
+
+export function getUUID(len) {
+  len = len || 16;
+  var str = '';
+  for (var i = 0; i < len; i++) {
+    str += ((Math.random() * 16) | 0).toString(16);
+  }
+  return str;
+}
+
+//获取字符宽度
+export function getCharWidth(wrap, template) {
+  let str1 = '';
+  let str2 = '';
+  for (let i = 0; i < 100; i++) {
+    str1 += '1';
+    str2 += '啊';
+  }
+  template = template && template.indexOf('[dom]') > -1 ? template : '<div style="white-space:nowrap">[dom]</div>'
+  let fontSize = 0;
+  let id1 = 'char-width-' + getUUID();
+  let id2 = 'char-width-' + getUUID();
+  let $tempDom1 = $(template.replace('[dom]', `<span id="${id1}">${str1}</span>`));
+  let $tempDom2 = $(template.replace('[dom]', `<span id="${id2}">${str2}</span>`));
+  $(wrap).append($tempDom1).append($tempDom2);
+  id1 = $('#' + id1);
+  id2 = $('#' + id2);
+  if (window.getComputedStyle) {
+    fontSize = parseFloat(window.getComputedStyle(id1[0], null).fontSize);
+  } else {
+    fontSize = parseFloat(id1[0].currentStyle.fontSize);
+  }
+  let rect = id1[0].getBoundingClientRect()
+  let charWidth = rect.width / str1.length;
+  let charHight = rect.height;
+  let fullCharWidth = id2[0].getBoundingClientRect().width / str2.length;
+  $tempDom1.remove();
+  $tempDom2.remove();
+  return {
+    charWidth: charWidth,
+    charScale: charWidth / fontSize,
+    fullCharWidth: fullCharWidth,
+    fullCharScale: fullCharWidth / fontSize,
+    charHight: charHight,
+    fontSize: fontSize
   };
 }
