@@ -13,7 +13,12 @@
           <OverView :data="data" />
         </el-tab-pane>
         <el-tab-pane label="原始" name="原始"></el-tab-pane>
-        <el-tab-pane label="请求头" name="请求头"></el-tab-pane>
+        <el-tab-pane label="参数" name="参数">
+          <ObjectView title="参数头列表" :data="data.params" />
+        </el-tab-pane>
+        <el-tab-pane label="请求头" name="请求头">
+          <ObjectView title="请求头列表" :data="data.reqHeader" />
+        </el-tab-pane>
         <el-tab-pane label="请求体" name="请求体"></el-tab-pane>
       </el-tabs>
       <div class="op-wrap">
@@ -33,7 +38,9 @@
     <div class="res-detail-wrap">
       <el-tabs v-model="resTab" @tab-click="onResTabChagne">
         <el-tab-pane label="原始" name="原始"></el-tab-pane>
-        <el-tab-pane label="响应头" name="响应头"></el-tab-pane>
+        <el-tab-pane label="响应头" name="响应头">
+          <ObjectView title="响应头头列表" :data="data.resHeader" />
+        </el-tab-pane>
         <el-tab-pane label="响应体" name="响应体"></el-tab-pane>
       </el-tabs>
     </div>
@@ -41,9 +48,11 @@
 </template>
 <script>
 import OverView from './detail/OverView.vue'
+import ObjectView from './detail/ObjectView.vue'
 export default {
   components: {
-    OverView
+    OverView,
+    ObjectView,
   },
   props: {
     visible: Boolean,

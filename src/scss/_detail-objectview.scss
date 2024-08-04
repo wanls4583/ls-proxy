@@ -1,0 +1,60 @@
+.detail-object-view {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 0 10px 10px 10px;
+  overflow: hidden;
+
+  .title-wrap {
+    flex-shrink: 0;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    color: #999;
+
+    .icon {
+      cursor: pointer;
+      -webkit-app-region: no-drag;
+
+      &:hover {
+        color: #dfdfdf;
+      }
+
+      &:active {
+        color: #999;
+      }
+    }
+  }
+
+  .detail-object-table {
+    width: 100%;
+    flex-grow: 1;
+    border-top: 1px solid #464646;
+    border-bottom: 1px solid #464646;
+    overflow: auto;
+
+    &-row {
+      width: 100%;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      border-bottom: 1px solid #464646;
+    }
+
+    &-cell {
+      width: 50%;
+      height: 100%;
+      line-height: 30px;
+      padding: 0 10px;
+      border-right: 1px solid #464646;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+
+      &:first-child {
+        border-left: 1px solid #464646;
+      }
+    }
+  }
+}

@@ -237,6 +237,7 @@ export default {
       })
       this.eventBus.$on('clear-table', () => {
         this.clearTable()
+        this.eventBus.$emit('close-detail')
       })
       this.eventBus.$on('close-detail', () => {
         this.detailData.cert = null
@@ -855,7 +856,7 @@ export default {
       await this.getCertInfo(dataObj)
       this.detailVisible = true
       this.$nextTick(() => {
-        this.eventBus.$emit('init-overview-data')
+        this.eventBus.$emit('refresh-detail-data')
       })
     },
   }

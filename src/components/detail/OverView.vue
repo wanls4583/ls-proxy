@@ -36,7 +36,10 @@ const [
 ] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
 export default {
   props: {
-    data: Object
+    data: {
+      type: Object,
+      default: () => { return {} }
+    }
   },
   data() {
     return {
@@ -44,12 +47,12 @@ export default {
     }
   },
   created() {
-    this.eventBus.$on('init-overview-data', () => {
+    this.eventBus.$on('refresh-detail-data', () => {
       this.init()
     })
   },
   beforeDestroy() {
-    this.eventBus.$off('init-overview-data')
+    this.eventBus.$off('refresh-detail-data')
   },
   methods: {
     init() {
