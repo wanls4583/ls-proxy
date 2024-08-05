@@ -24,7 +24,7 @@ export default {
   },
   data() {
     return {
-
+      hexWidth: 8
     }
   },
   created() {
@@ -56,8 +56,8 @@ export default {
           "editor.lineHighlightBackground": "#00000000",
           "editorLineNumber.foreground": "#DFDFDF",
           "editorLineNumber.activeForeground": "#DFDFDF",
-          "editor.selectionBackground": "#EFAE22BB",
-          "editor.inactiveSelectionBackground": "#EFAE2299BB",
+          "editor.selectionBackground": "#EFAE2200",
+          "editor.inactiveSelectionBackground": "#EFAE2200",
           "scrollbarSlider.background": "#606060",
           "scrollbarSlider.hoverBackground": "#AEAEAE",
           "scrollbarSlider.activeBackground": "#C3C3C3",
@@ -84,11 +84,111 @@ export default {
         },
         scrollBeyondLastColumn: 0,
         scrollBeyondLastLine: false,
+        // selectionHighlight: false, // 无效
         contextmenu: false,
         matchBrackets: 'never',
         useShadowDOM: false,
         language: 'text/plain',
       });
+
+      let decOption = { isWholeLine: false, className: "detail-hex-selection" }
+      this.decorations = null
+      editor.onDidChangeCursorPosition(e => {
+        this.decorations && this.decorations.clear()
+      })
+      editor.onDidChangeCursorSelection(e => {
+        const width = this.hexWidth
+        const leftEndColumn = width * 3
+        const rightStartColumn = leftEndColumn + 4
+        const rightEndColumn = rightStartColumn + width
+        const { selection } = e;
+        let { startColumn, endColumn, startLineNumber, endLineNumber } = selection
+
+        if (startLineNumber === endLineNumber && startColumn === endColumn) {
+          if (startColumn >= leftEndColumn) {
+            if (startColumn < rightStartColumn) {
+              endColumn = leftEndColumn
+              startColumn = endColumn - 2
+            } else if (startColumn >= rightEndColumn) {
+              endColumn = leftEndColumn
+              startColumn = endColumn - 2
+            } else {
+              startColumn = (startColumn - rightStartColumn) * 3 + 1
+              endColumn = startColumn + 2
+            }
+          } else {
+            if ((startColumn - 2) % 3 === 0) {
+              startColumn -= 1
+            } else if ((startColumn - 3) % 3 === 0) {
+              startColumn -= 2
+            }
+            endColumn = startColumn + 2
+          }
+        } else {
+          if (startColumn >= leftEndColumn) {
+            if (startColumn <= rightStartColumn) {
+              startColumn = 1
+            } else {
+              startColumn = (startColumn - rightStartColumn) * 3 + 1
+            }
+          }
+          if (endColumn >= leftEndColumn) {
+            if (endColumn <= rightStartColumn) {
+              endColumn = leftEndColumn
+            } else {
+              endColumn = (endColumn - rightStartColumn) * 3
+            }
+          }
+          startColumn = Math.floor(startColumn / 3) * 3 + 1
+          endColumn = Math.ceil((endColumn - 1) / 3) * 3
+        }
+
+        if (startLineNumber === endLineNumber && startColumn >= endColumn) { // 选中了空格
+          startColumn = endColumn - 2
+        }
+
+        if (selection.selectionStartLineNumber === selection.startLineNumber && selection.selectionStartColumn === selection.startColumn) {
+          editor.setSelections([{
+            positionColumn: endColumn,
+            positionLineNumber: endLineNumber,
+            selectionStartColumn: startColumn,
+            selectionStartLineNumber: startLineNumber,
+          }])
+        } else {
+          editor.setSelections([{
+            positionColumn: startColumn,
+            positionLineNumber: startLineNumber,
+            selectionStartColumn: endColumn,
+            selectionStartLineNumber: endLineNumber,
+          }])
+        }
+
+        let ranges = []
+        this.decorations && this.decorations.clear()
+
+        if (startLineNumber === endLineNumber) {
+          let startColumn2 = startColumn / 3 + rightStartColumn
+          let endColumn2 = startColumn2 + (endColumn + 1 - startColumn) / 3
+          ranges.push(new monaco.Range(startLineNumber, startColumn, endLineNumber, endColumn))
+          ranges.push(new monaco.Range(startLineNumber, startColumn2, endLineNumber, endColumn2))
+        } else {
+          ranges.push(new monaco.Range(startLineNumber, startColumn, startLineNumber, leftEndColumn))
+          ranges.push(new monaco.Range(startLineNumber, startColumn / 3 + rightStartColumn, startLineNumber, rightEndColumn))
+          for (let line = startLineNumber + 1; line < endLineNumber; line++) {
+            ranges.push(new monaco.Range(line, 1, line, leftEndColumn))
+            ranges.push(new monaco.Range(line, rightStartColumn, line, rightEndColumn))
+          }
+          ranges.push(new monaco.Range(endLineNumber, 1, endLineNumber, endColumn))
+          ranges.push(new monaco.Range(endLineNumber, rightStartColumn, endLineNumber, endColumn / 3 + rightStartColumn))
+        }
+
+        this.decorations = editor.createDecorationsCollection(ranges.map(range => {
+          return {
+            range: range,
+            options: decOption,
+          }
+        }));
+      })
 
       return editor
     },
@@ -99,10 +199,13 @@ export default {
         if (this.charObj.charWidth) {
           let wrapWidth = document.querySelector('.monaco-scrollable-element').clientWidth
           let width = Math.floor((wrapWidth - 3 * this.charObj.charWidth - 10) / (4 * this.charObj.charWidth))
-          width = width < 1 ? 1 : width 
+          this.hexWidth = width < 1 ? 1 : width
 
-          let value = hexy.hexy(this.data, { littleEndian: true, numbering: 'none', format: 'twos', radix: 16, width: width })
+          let value = hexy.hexy(this.data, { littleEndian: true, numbering: 'none', format: 'twos', radix: 16, width: this.hexWidth })
+          value = value[value.length - 1] == '\n' ? value.slice(0, -1) : value
           this.editor.setValue(value)
+          this.decorations && this.decorations.clear()
+          document.activeElement?.blur()
         }
       }
     }

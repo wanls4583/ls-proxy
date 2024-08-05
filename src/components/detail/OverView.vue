@@ -115,7 +115,8 @@ export default {
         value: '',
         children: children
       })
-      if (this.data.cert) {
+
+      if (['https:', 'wss:'].includes(this.data.protocol)) {
         children = []
         children.push({
           label: '版本',
@@ -144,7 +145,9 @@ export default {
           value: '',
           children: children
         })
+      }
 
+      if (this.data.cert) {
         children = []
 
         let subjectChilren = []

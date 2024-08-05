@@ -49,6 +49,15 @@
         .overflowingContentWidgets {
           display: none;
         }
+
+        .selectionHighlight,
+        .wordHighlightText {
+          background-color: transparent;
+        }
+
+        .detail-hex-selection {
+          background-color: #EFAE22BB;
+        }
       }
     }
   }

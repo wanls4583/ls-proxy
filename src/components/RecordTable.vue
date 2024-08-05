@@ -28,7 +28,7 @@
           v-for="row in renderList"
           :key="row.lineId"
           :style="{ top: row.top }"
-          :class="{ even: row.line % 2 === 0 }"
+          :class="{ even: row.line % 2 === 0 , active: activeId === row.id}"
           @click="onClickRow(row)"
         >
           <div
@@ -161,6 +161,7 @@ export default {
       maxLines: 10000000,
       processing: false,
       detailData: {},
+      activeId: '',
       detailVisible: false
     }
   },
@@ -800,6 +801,7 @@ export default {
     clearTable() {
       dataList = []
       dataIdMap = {}
+      this.activeId = ''
       this.renderList = []
       this.nedb && this.nedb.remove({}, { multi: true })
       this.setContentHeight()
@@ -855,6 +857,7 @@ export default {
     },
     async onClickRow(row) {
       let dataObj = dataList.find(item => item.id === row.id)
+      this.activeId = row.id
       this.detailData = dataObj
       await this.getDataInfo(dataObj)
       this.detailVisible = true
