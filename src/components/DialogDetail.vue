@@ -5,14 +5,18 @@
         <el-tab-pane label="总览" name="总览">
           <OverView :data="data" />
         </el-tab-pane>
-        <el-tab-pane label="原始" name="原始"></el-tab-pane>
+        <el-tab-pane label="原始" name="原始">
+          <SourceView :data="reqData" ref="reqData" id="reqData" />
+        </el-tab-pane>
         <el-tab-pane label="参数" name="参数">
           <ObjectView title="参数头列表" :data="data.params" />
         </el-tab-pane>
         <el-tab-pane label="请求头" name="请求头">
           <ObjectView title="请求头列表" :data="data.reqHeader" />
         </el-tab-pane>
-        <el-tab-pane label="请求体" name="请求体"></el-tab-pane>
+        <el-tab-pane label="请求体" name="请求体">
+          <HexView :data="reqBody" ref="reqBody" id="reqBody" />
+        </el-tab-pane>
       </el-tabs>
       <div class="op-wrap">
         <el-popover
@@ -30,12 +34,14 @@
     </div>
     <div class="res-detail-wrap">
       <el-tabs v-model="resTab" @tab-click="onResTabChagne">
-        <el-tab-pane label="原始" name="原始"></el-tab-pane>
+        <el-tab-pane label="原始" name="原始">
+          <SourceView :data="resData" ref="resData" id="resData" />
+        </el-tab-pane>
         <el-tab-pane label="响应头" name="响应头">
           <ObjectView title="响应头头列表" :data="data.resHeader" />
         </el-tab-pane>
         <el-tab-pane label="响应体" name="响应体">
-          <HexView :data="resBody" ref="hex" />
+          <HexView :data="resBody" ref="resBody" id="resBody" />
         </el-tab-pane>
       </el-tabs>
     </div>
@@ -45,11 +51,13 @@
 import OverView from './detail/OverView.vue'
 import ObjectView from './detail/ObjectView.vue'
 import HexView from './detail/HexView.vue'
+import SourceView from './detail/SourceView.vue'
 export default {
   components: {
     OverView,
     ObjectView,
     HexView,
+    SourceView,
   },
   props: {
     visible: Boolean,
@@ -59,6 +67,10 @@ export default {
     return {
       reqTab: '总览',
       resTab: '原始',
+      reqBody: [],
+      reqData: [],
+      resBody: [],
+      resData: [],
     }
   },
   watch: {
@@ -67,21 +79,40 @@ export default {
         this.onReqTabChagne()
         this.onResTabChagne()
       }
+    },
+    data() {
+      this.initData()
     }
   },
-  computed: {
-    resBody() {
-      return this.data.resBody || []
-    }
+  created() {
+    this.initData()
   },
   methods: {
+    initData() {
+      this.reqBody = this.data.reqBody || []
+      this.reqData = (this.data.reqHead || []).concat(this.data.reqBody || [])
+      this.resBody = this.data.resBody || []
+      this.resData = (this.data.resHead || []).concat(this.data.resBody || [])
+    },
     onReqTabChagne() {
-
+      if (this.reqTab == '请求体') {
+        this.$nextTick(() => {
+          this.$refs.reqBody.render()
+        })
+      } else if (this.reqTab == '原始') {
+        this.$nextTick(() => {
+          this.$refs.reqData.render()
+        })
+      }
     },
     onResTabChagne() {
       if (this.resTab == '响应体') {
         this.$nextTick(() => {
-          this.$refs.hex.render()
+          this.$refs.resBody.render()
+        })
+      } else if (this.resTab == '原始') {
+        this.$nextTick(() => {
+          this.$refs.resData.render()
         })
       }
     },
