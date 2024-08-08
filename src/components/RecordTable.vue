@@ -694,22 +694,23 @@ export default {
       return new Promise((resolve, reject) => {
         if (this.nedb) {
           this.nedb.find({ id: dataObj.id }, (err, docs) => {
-            if (docs.length && docs[0].pem) {
+            if (docs.length) {
               dataObj.pem = docs[0].pem
               dataObj.reqHead = docs[0].reqHead || []
               dataObj.reqBody = docs[0].reqBody || []
               dataObj.resHead = docs[0].resHead || []
               dataObj.resBody = docs[0].resBody || []
-              try {
-                const { X509Certificate } = window.require('node:crypto')
-                const x509 = new X509Certificate(docs[0].pem)
-                this.$set(dataObj, 'cert', x509)
-                resolve()
-              } catch (e) {
-                resolve()
-                console.log(docs[0].pem)
-                console.error(e)
+              if (dataObj.pem) {
+                try {
+                  const { X509Certificate } = window.require('node:crypto')
+                  const x509 = new X509Certificate(dataObj.pem)
+                  this.$set(dataObj, 'cert', x509)
+                } catch (e) {
+                  console.log(docs[0].pem)
+                  console.error(e)
+                }
               }
+              resolve()
             } else {
               resolve()
             }
@@ -858,8 +859,8 @@ export default {
     async onClickRow(row) {
       let dataObj = dataList.find(item => item.id === row.id)
       this.activeId = row.id
-      this.detailData = dataObj
       await this.getDataInfo(dataObj)
+      this.detailData = dataObj
       this.detailVisible = true
       this.$nextTick(() => {
         this.eventBus.$emit('refresh-detail-data')

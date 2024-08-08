@@ -1,5 +1,5 @@
 <template>
-  <div class="detail-hex-view">
+  <div class="detail-hex-view" ref="detail">
     <div class="title-wrap">
       <span class="title">Hex</span>
       <span class="op-wrap">
@@ -20,7 +20,11 @@ export default {
     data: {
       type: Array,
       default: () => { return {} }
-    }
+    },
+    id: {
+      type: String,
+      default: ''
+    },
   },
   data() {
     return {
@@ -44,27 +48,6 @@ export default {
       })
     },
     initEditor() {
-      monaco.editor.defineTheme("myTheme", {
-        base: "vs",
-        inherit: true,
-        rules: [],
-        colors: {
-          "editor.foreground": "#DFDFDF",
-          "editor.background": "#2B2B2B",
-          "editorCursor.foreground": "#EFAE22",
-          "editor.lineHighlightBorder": "#00000000",
-          "editor.lineHighlightBackground": "#00000000",
-          "editorLineNumber.foreground": "#DFDFDF",
-          "editorLineNumber.activeForeground": "#DFDFDF",
-          "editor.selectionBackground": "#EFAE2200",
-          "editor.inactiveSelectionBackground": "#EFAE2200",
-          "scrollbarSlider.background": "#606060",
-          "scrollbarSlider.hoverBackground": "#AEAEAE",
-          "scrollbarSlider.activeBackground": "#C3C3C3",
-        },
-      });
-      monaco.editor.setTheme("myTheme");
-
       let el = this.$refs.editor;
       let editor = monaco.editor.create(el, {
         readOnly: true,
@@ -84,7 +67,6 @@ export default {
         },
         scrollBeyondLastColumn: 0,
         scrollBeyondLastLine: false,
-        // selectionHighlight: false, // 无效
         contextmenu: false,
         matchBrackets: 'never',
         useShadowDOM: false,
@@ -195,18 +177,20 @@ export default {
     render() {
       if (this.editor) {
         this.editor.layout()
-        this.charObj = getCharWidth(document.querySelector('.view-lines'), '<div class="view-line">[dom]</div>')
-        if (this.charObj.charWidth) {
-          let wrapWidth = document.querySelector('.monaco-scrollable-element').clientWidth
-          let width = Math.floor((wrapWidth - 3 * this.charObj.charWidth - 10) / (4 * this.charObj.charWidth))
-          this.hexWidth = width < 1 ? 1 : width
+        requestAnimationFrame(() => {
+          this.charObj = getCharWidth(this.$refs.detail.querySelector('.view-lines'), '<div class="view-line">[dom]</div>')
+          if (this.charObj.charWidth) {
+            let wrapWidth = this.$refs.detail.querySelector('.monaco-scrollable-element').clientWidth
+            let width = Math.floor((wrapWidth - 3 * this.charObj.charWidth - 10) / (4 * this.charObj.charWidth))
+            this.hexWidth = width < 1 ? 1 : width
 
-          let value = hexy.hexy(this.data, { littleEndian: true, numbering: 'none', format: 'twos', radix: 16, width: this.hexWidth })
-          value = value[value.length - 1] == '\n' ? value.slice(0, -1) : value
-          this.editor.setValue(value)
-          this.decorations && this.decorations.clear()
-          document.activeElement?.blur()
-        }
+            let value = hexy.hexy(this.data, { littleEndian: true, numbering: 'none', format: 'twos', radix: 16, width: this.hexWidth })
+            value = value[value.length - 1] == '\n' ? value.slice(0, -1) : value
+            this.editor.setValue(value)
+            this.decorations && this.decorations.clear()
+            document.activeElement?.blur()
+          }
+        })
       }
     }
   }

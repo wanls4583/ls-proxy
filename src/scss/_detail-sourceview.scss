@@ -1,4 +1,4 @@
-.detail-hex-view {
+.detail-source-view {
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -50,20 +50,16 @@
           display: none;
         }
 
-        .selectionHighlight,
-        .wordHighlightText {
+        .wordHighlightText,
+        .selectionHighlight {
           background-color: transparent;
         }
 
         .selected-text {
-          background-color: transparent;
+          background-color: #EFAE22BB;
         }
 
         .focused .selected-text {
-          background-color: transparent;
-        }
-
-        .detail-hex-selection {
           background-color: #EFAE22BB;
         }
       }
