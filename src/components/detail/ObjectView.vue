@@ -43,6 +43,8 @@ export default {
     init() {
       let keyList = Object.keys(this.data)
       this.keyList = keyList.sort((a, b) => {
+        a = a.toLowerCase()
+        b = b.toLowerCase()
         if (a > b) {
           return 1
         }

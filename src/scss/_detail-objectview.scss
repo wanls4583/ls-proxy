@@ -30,8 +30,7 @@
   .detail-object-table {
     width: 100%;
     flex-grow: 1;
-    border-top: 1px solid #464646;
-    border-bottom: 1px solid #464646;
+    border: 1px solid #464646;
     overflow: auto;
 
     &-row {
@@ -52,8 +51,8 @@
       white-space: nowrap;
       text-overflow: ellipsis;
 
-      &:first-child {
-        border-left: 1px solid #464646;
+      &:last-child {
+        border-right: 1px solid #464646;
       }
     }
   }

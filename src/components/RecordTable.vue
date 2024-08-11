@@ -450,6 +450,7 @@ export default {
       this.getHttpHeader(dataObj.reqHeader, head)
 
       dataObj.status = 'Pending'
+      dataObj.params = {}
 
       if (dataObj.reqHeader.Host) {
         let port = dataObj.reqHeader.Host.indexOf(':')
@@ -459,6 +460,7 @@ export default {
           dataObj.port = ['wss:', 'https:'].includes(dataObj.protocol) ? 443 : 80
         }
         dataObj.url = dataObj.protocol + '//' + dataObj.reqHeader.Host + dataObj.path
+        this.getHttpParams(dataObj.params, dataObj.url)
       }
     },
     getResDataObj(dataObj, u8Array) {
@@ -588,6 +590,14 @@ export default {
         }
         head = head.slice(lineIndex + 2)
       }
+    },
+    getHttpParams(params, url) {
+      try {
+        url = new URL(url)
+        for (const [key, value] of url.searchParams) {
+          params[key] = value
+        }
+      } catch (e) { }
     },
     getClientPath(dataObj) {
       // 获取客户端程路径
