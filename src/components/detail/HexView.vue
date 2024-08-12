@@ -33,20 +33,18 @@ export default {
   },
   created() {
     this.eventBus.$on('refresh-detail-data', () => {
-      this.init()
+      this.needRender = true
+      this.render()
     })
+  },
+  mounted() {
+    this.editor = this.initEditor()
   },
   beforeDestroy() {
     this.editor?.dispose()
     this.eventBus.$off('refresh-detail-data')
   },
   methods: {
-    init() {
-      this.$nextTick(() => {
-        this.editor = this.editor || this.initEditor()
-        this.render()
-      })
-    },
     initEditor() {
       let el = this.$refs.editor;
       let editor = monaco.editor.create(el, {
@@ -175,23 +173,26 @@ export default {
       return editor
     },
     render() {
-      if (this.editor) {
-        this.editor.layout()
-        requestAnimationFrame(() => {
-          this.charObj = getCharWidth(this.$refs.detail.querySelector('.view-lines'), '<div class="view-line">[dom]</div>')
-          if (this.charObj.charWidth) {
-            let wrapWidth = this.$refs.detail.querySelector('.monaco-scrollable-element').clientWidth
-            let width = Math.floor((wrapWidth - 3 * this.charObj.charWidth - 10) / (4 * this.charObj.charWidth))
-            this.hexWidth = width < 1 ? 1 : width
-
-            let value = hexy.hexy(this.data, { littleEndian: true, numbering: 'none', format: 'twos', radix: 16, width: this.hexWidth })
-            value = value[value.length - 1] == '\n' ? value.slice(0, -1) : value
-            this.editor.setValue(value)
-            this.decorations && this.decorations.clear()
-            document.activeElement?.blur()
-          }
-        })
+      if (!this.needRender) {
+        return
       }
+      this.editor.layout()
+      requestAnimationFrame(() => {
+        this.charObj = getCharWidth(this.$refs.detail.querySelector('.view-lines'), '<div class="view-line">[dom]</div>')
+        if (this.charObj.charWidth) {
+          let value = ''
+          let wrapWidth = this.$refs.detail.querySelector('.monaco-scrollable-element').clientWidth
+          let width = Math.floor((wrapWidth - 3 * this.charObj.charWidth - 10) / (4 * this.charObj.charWidth))
+          this.hexWidth = width < 1 ? 1 : width
+
+          value = hexy.hexy(this.data, { littleEndian: true, numbering: 'none', format: 'twos', radix: 16, width: this.hexWidth })
+          value = value[value.length - 1] == '\n' ? value.slice(0, -1) : value
+          this.editor.setValue(value)
+          this.decorations && this.decorations.clear()
+          document.activeElement?.blur()
+          this.needRender = false
+        }
+      })
     }
   }
 }

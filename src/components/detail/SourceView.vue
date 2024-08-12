@@ -14,6 +14,7 @@
 <script>
 import * as monaco from 'monaco-editor';
 import { getStringFromU8Array } from '@/common/utils'
+import { getCharWidth } from '@/common/utils'
 export default {
   props: {
     data: {
@@ -32,20 +33,18 @@ export default {
   },
   created() {
     this.eventBus.$on('refresh-detail-data', () => {
-      this.init()
+      this.needRender = true
+      this.render()
     })
+  },
+  mounted() {
+    this.editor = this.initEditor()
   },
   beforeDestroy() {
     this.editor?.dispose()
     this.eventBus.$off('refresh-detail-data')
   },
   methods: {
-    init() {
-      this.$nextTick(() => {
-        this.editor = this.editor || this.initEditor()
-        this.render()
-      })
-    },
     initEditor() {
       let languageId = 'sourceLanguage'
       if (!window.hasRegisterLanguage) {
@@ -53,7 +52,7 @@ export default {
         monaco.languages.setMonarchTokensProvider(languageId, {
           tokenizer: {
             root: [
-              [/^(GET|POST|OPTION|CONNECT|PUT|PUSH|DELETE)\s/, "method-token"],
+              [/^(GET|POST|OPTIONS|CONNECT|PUT|PUSH|DELETE)\s/, "method-token"],
               [/HTTP\/[\d\.]+/, "protocol-token"],
               [/\s\d+(\s|$)/, "num-token"],
               [/^[\w\-]+(?=\:)/, "header-token"],
@@ -86,19 +85,26 @@ export default {
         matchBrackets: 'never',
         useShadowDOM: false,
         wordWrap: "on",
+        wrappingStrategy: 'advanced',
+        wrappingIndent: "none",
         language: languageId,
       });
 
       return editor
     },
     render() {
-      if (this.editor) {
-        this.editor.layout()
-        requestAnimationFrame(() => {
+      if (!this.needRender) {
+        return
+      }
+      this.editor.layout()
+      requestAnimationFrame(() => {
+        this.charObj = getCharWidth(this.$refs.detail.querySelector('.view-lines'), '<div class="view-line">[dom]</div>')
+        if (this.charObj.charWidth) {
           this.editor.setValue(getStringFromU8Array(new Uint8Array(this.data)))
           document.activeElement?.blur()
-        })
-      }
+          this.needRender = false
+        }
+      })
     }
   }
 }

@@ -54,7 +54,7 @@
         :class="{ 'scroll-visible': scrollVisible }"
         @scroll="onHScroll"
       />
-      <DialogDetail ref="detail" :visible="detailVisible" :data="detailData" />
+      <DialogDetail ref="detail" v-if="detailVisible" :visible="detailVisible" :data="detailData" />
     </div>
   </div>
 </template>

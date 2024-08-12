@@ -75,12 +75,6 @@ export default {
     }
   },
   watch: {
-    visible() {
-      if (this.visible) {
-        this.onReqTabChagne()
-        this.onResTabChagne()
-      }
-    },
     data() {
       this.initData()
     }
@@ -88,6 +82,8 @@ export default {
   created() {
     this.initData()
     this.initMonacoTheme()
+    this.onReqTabChagne()
+    this.onResTabChagne()
   },
   methods: {
     initData() {
