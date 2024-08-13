@@ -63,6 +63,16 @@ export default {
           horizontalSliderSize: 10,
           horizontal: 'hidden'
         },
+        stickyScroll: {
+          enabled: false
+        },
+        guides: {
+          bracketPairs: false,
+          bracketPairsHorizontal: false,
+          highlightActiveBracketPair: false,
+          highlightActiveIndentation: false,
+          indentation: false
+        },
         scrollBeyondLastColumn: 0,
         scrollBeyondLastLine: false,
         contextmenu: false,

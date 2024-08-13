@@ -872,9 +872,6 @@ export default {
       await this.getDataInfo(dataObj)
       this.detailData = dataObj
       this.detailVisible = true
-      this.$nextTick(() => {
-        this.eventBus.$emit('refresh-detail-data')
-      })
     },
   }
 }

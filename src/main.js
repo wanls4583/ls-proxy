@@ -15,6 +15,7 @@ Vue.prototype.eventBus = eventBus
 
 String.prototype.search = kmpSearch
 Uint8Array.prototype.search = kmpSearch
+Array.prototype.search = kmpSearch
 
 window.globalData = {
 	scheduler: new Scheduler()
