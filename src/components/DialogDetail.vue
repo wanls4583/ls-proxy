@@ -88,7 +88,7 @@ export default {
     },
     async initReqData(rawData) {
       let reqData = rawData.reqHead || []
-      let reqBody = await this.getDecoededBody(rawData.reqHeader, rawData.reqBody || [])
+      let reqBody = await this.getDecoededBody(this.data?.reqHeader, rawData.reqBody || [])
       if (rawData.reqBody?.length) {
         if (['gzip', 'br', 'deflate'].includes(this.data?.reqHeader?.['Content-Encoding'])) {
           reqData = reqData.concat(Array.from(new TextEncoder().encode(`<${this.data.reqHeader['Content-Encoding']} binary body>`)))
@@ -103,7 +103,7 @@ export default {
     },
     async initResData(rawData) {
       let resData = rawData.resHead || []
-      let resBody = await this.getDecoededBody(rawData.resHeader, rawData.resBody || [])
+      let resBody = await this.getDecoededBody(this.data?.resHeader, rawData.resBody || [])
       if (rawData.resBody?.length) {
         if (['gzip', 'br', 'deflate'].includes(this.data?.resHeader?.['Content-Encoding'])) {
           resData = resData.concat(Array.from(new TextEncoder().encode(`<${this.data.resHeader['Content-Encoding']} binary body>`)))
