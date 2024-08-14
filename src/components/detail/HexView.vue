@@ -85,6 +85,14 @@ export default {
           highlightActiveIndentation: false,
           indentation: false
         },
+        unicodeHighlight: {
+          ambiguousCharacters: false,
+          invisibleCharacters: false,
+          includeStrings: false,
+          includeComments: false,
+          nonBasicASCII: false
+        },
+        renderControlCharacters: false,
         scrollBeyondLastColumn: 0,
         scrollBeyondLastLine: false,
         contextmenu: false,
@@ -149,20 +157,22 @@ export default {
           startColumn = endColumn - 2
         }
 
-        if (selection.selectionStartLineNumber === selection.startLineNumber && selection.selectionStartColumn === selection.startColumn) {
-          editor.setSelections([{
-            positionColumn: endColumn,
-            positionLineNumber: endLineNumber,
-            selectionStartColumn: startColumn,
-            selectionStartLineNumber: startLineNumber,
-          }])
-        } else {
-          editor.setSelections([{
-            positionColumn: startColumn,
-            positionLineNumber: startLineNumber,
-            selectionStartColumn: endColumn,
-            selectionStartLineNumber: endLineNumber,
-          }])
+        if (selection.positionColumn < rightStartColumn || selection.positionColumn > rightEndColumn) {
+          if (selection.selectionStartLineNumber === selection.endLineNumber && selection.selectionStartColumn === selection.endColumn) {
+            editor.setSelections([{
+              positionColumn: startColumn,
+              positionLineNumber: startLineNumber,
+              selectionStartColumn: endColumn,
+              selectionStartLineNumber: endLineNumber,
+            }])
+          } else {
+            editor.setSelections([{
+              positionColumn: endColumn,
+              positionLineNumber: endLineNumber,
+              selectionStartColumn: startColumn,
+              selectionStartLineNumber: startLineNumber,
+            }])
+          }
         }
 
         let ranges = []
