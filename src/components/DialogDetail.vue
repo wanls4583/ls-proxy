@@ -6,7 +6,7 @@
           <OverView :data="data" />
         </el-tab-pane>
         <el-tab-pane label="原始" name="原始">
-          <SourceView :data="reqData" ref="reqData" id="reqData" />
+          <SourceView ref="reqData" />
         </el-tab-pane>
         <el-tab-pane label="参数" name="参数">
           <ObjectView title="参数头列表" :data="data.params" />
@@ -15,7 +15,7 @@
           <ObjectView title="请求头列表" :data="data.reqHeader" />
         </el-tab-pane>
         <el-tab-pane label="请求体" name="请求体">
-          <HexView :data="reqBody" ref="reqBody" id="reqBody" />
+          <HexView ref="reqBody" />
         </el-tab-pane>
       </el-tabs>
       <div class="op-wrap">
@@ -35,13 +35,13 @@
     <div class="res-detail-wrap">
       <el-tabs v-model="resTab" @tab-click="onResTabChagne">
         <el-tab-pane label="原始" name="原始">
-          <SourceView :data="resData" ref="resData" id="resData" />
+          <SourceView ref="resData" />
         </el-tab-pane>
         <el-tab-pane label="响应头" name="响应头">
           <ObjectView title="响应头头列表" :data="data.resHeader" />
         </el-tab-pane>
         <el-tab-pane label="响应体" name="响应体">
-          <HexView :data="resBody" ref="resBody" id="resBody" />
+          <HexView ref="resBody" />
         </el-tab-pane>
       </el-tabs>
     </div>
@@ -54,6 +54,8 @@ import HexView from './detail/HexView.vue'
 import SourceView from './detail/SourceView.vue'
 import * as monaco from 'monaco-editor';
 import { getStringFromU8Array } from '../common/utils'
+
+let oldRawData = {}
 export default {
   components: {
     OverView,
@@ -69,51 +71,50 @@ export default {
     return {
       reqTab: '总览',
       resTab: '原始',
-      reqBody: [],
-      reqData: [],
-      resBody: [],
-      resData: [],
-    }
-  },
-  watch: {
-    data() {
-      this.initData()
     }
   },
   async created() {
     this.initMonacoTheme()
-    await this.initData()
   },
   methods: {
-    async initData() {
-      this.reqBody = await this.getDecoededBody(this.data.reqHeader, this.data.reqBody || [])
-      this.resBody = await this.getDecoededBody(this.data.resHeader, this.data.resBody || [])
-
-      this.reqData = (this.data.reqHead || []).slice()
-      if (this.data.reqBody?.length) {
+    initData(rawData) {
+      if (rawData.reqHead !== oldRawData.reqHead || rawData.reqBody !== oldRawData.reqBody) {
+        this.initReqData(rawData)
+      }
+      if (rawData.resHead !== oldRawData.resHead || rawData.resBody !== oldRawData.resBody) {
+        this.initResData(rawData)
+      }
+      oldRawData = rawData
+    },
+    async initReqData(rawData) {
+      let reqData = rawData.reqHead || []
+      let reqBody = await this.getDecoededBody(rawData.reqHeader, rawData.reqBody || [])
+      if (rawData.reqBody?.length) {
         if (['gzip', 'br', 'deflate'].includes(this.data?.reqHeader?.['Content-Encoding'])) {
-          this.reqData = this.reqData.concat(Array.from(new TextEncoder().encode(`<${this.data.reqHeader['Content-Encoding']} binary body>`)))
+          reqData = reqData.concat(Array.from(new TextEncoder().encode(`<${this.data.reqHeader['Content-Encoding']} binary body>`)))
         } else if (!this.getIfText(this.data.reqHeader)) {
-          this.reqData = this.reqData.concat(Array.from(new TextEncoder().encode(`<binary body>`)))
+          reqData = reqData.concat(Array.from(new TextEncoder().encode(`<binary body>`)))
         } else {
-          this.reqData = this.reqData.concat(this.reqBody)
+          reqData = reqData.concat(reqBody)
         }
       }
-
-      this.resData = (this.data.resHead || []).slice()
-      if (this.data.resBody?.length) {
+      this.$refs.reqData.render(reqData)
+      this.$refs.reqBody.render(reqBody)
+    },
+    async initResData(rawData) {
+      let resData = rawData.resHead || []
+      let resBody = await this.getDecoededBody(rawData.resHeader, rawData.resBody || [])
+      if (rawData.resBody?.length) {
         if (['gzip', 'br', 'deflate'].includes(this.data?.resHeader?.['Content-Encoding'])) {
-          this.resData = this.resData.concat(Array.from(new TextEncoder().encode(`<${this.data.resHeader['Content-Encoding']} binary body>`)))
+          resData = resData.concat(Array.from(new TextEncoder().encode(`<${this.data.resHeader['Content-Encoding']} binary body>`)))
         } else if (!this.getIfText(this.data.resHeader)) {
-          this.resData = this.resData.concat(Array.from(new TextEncoder().encode(`<binary body>`)))
+          resData = resData.concat(Array.from(new TextEncoder().encode(`<binary body>`)))
         } else {
-          this.resData = this.resData.concat(this.data.resBody)
+          resData = resData.concat(resBody)
         }
       }
-
-      this.$nextTick(() => {
-        this.eventBus.$emit('refresh-detail-data')
-      })
+      this.$refs.resData.render(resData)
+      this.$refs.resBody.render(resBody)
     },
     initMonacoTheme() {
       let themId = 'myTheme'
@@ -206,26 +207,8 @@ export default {
       }
     },
     onReqTabChagne() {
-      if (this.reqTab == '请求体') {
-        this.$nextTick(() => {
-          this.$refs.reqBody.render()
-        })
-      } else if (this.reqTab == '原始') {
-        this.$nextTick(() => {
-          this.$refs.reqData.render()
-        })
-      }
     },
     onResTabChagne() {
-      if (this.resTab == '响应体') {
-        this.$nextTick(() => {
-          this.$refs.resBody.render()
-        })
-      } else if (this.resTab == '原始') {
-        this.$nextTick(() => {
-          this.$refs.resData.render()
-        })
-      }
     },
     onClose() {
       this.eventBus.$emit('close-detail')

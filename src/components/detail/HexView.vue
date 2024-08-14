@@ -15,36 +15,48 @@
 import hexy from 'hexy'
 import * as monaco from 'monaco-editor';
 import { getCharWidth } from '@/common/utils'
+
 export default {
-  props: {
-    data: {
-      type: Array,
-      default: () => { return {} }
-    },
-    id: {
-      type: String,
-      default: ''
-    },
-  },
   data() {
     return {
-      hexWidth: 8
+      hexWidth: 8,
+      clientWidth: 0,
+      clientHeight: 0,
     }
   },
   created() {
-    this.eventBus.$on('refresh-detail-data', () => {
-      this.needRender = true
-      this.render()
-    })
   },
   mounted() {
     this.editor = this.initEditor()
+    this.initResizeEvent()
   },
   beforeDestroy() {
     this.editor?.dispose()
-    this.eventBus.$off('refresh-detail-data')
+    this.resizeObserver?.unobserve(this.$refs.detail)
+    this.needRenderData = null
+    this.renderedData = null
   },
   methods: {
+    initResizeEvent() {
+      this.resizeObserver = new ResizeObserver(entries => {
+        if (this.resizeTimer) {
+          return
+        }
+        this.resizeTimer = setTimeout(() => {
+          if (this.$refs.detail) {
+            let clientWidth = this.$refs.detail?.clientWidth
+            let clientHeight = this.$refs.detail?.clientHeight
+            if (clientHeight && (this.clientWidth !== clientWidth || this.clientHeight !== clientHeight || this.needRenderData)) {
+              this.render(this.needRenderData || this.renderedData)
+              this.clientWidth = clientWidth
+              this.clientHeight = clientHeight
+            }
+          }
+          this.resizeTimer = null
+        }, 50)
+      })
+      this.resizeObserver.observe(this.$refs.detail)
+    },
     initEditor() {
       let el = this.$refs.editor;
       let editor = monaco.editor.create(el, {
@@ -182,8 +194,10 @@ export default {
 
       return editor
     },
-    render() {
-      if (!this.needRender) {
+    render(data) {
+      data = data || this.needRenderData
+      this.needRenderData = data
+      if (!data || !this.$refs.detail.clientHeight) {
         return
       }
       this.editor.layout()
@@ -195,12 +209,13 @@ export default {
           let width = Math.floor((wrapWidth - 3 * this.charObj.charWidth - 10) / (4 * this.charObj.charWidth))
           this.hexWidth = width < 1 ? 1 : width
 
-          value = hexy.hexy(this.data, { littleEndian: true, numbering: 'none', format: 'twos', radix: 16, width: this.hexWidth })
+          value = hexy.hexy(data, { littleEndian: true, numbering: 'none', format: 'twos', radix: 16, width: this.hexWidth })
           value = value[value.length - 1] == '\n' ? value.slice(0, -1) : value
           this.editor.setValue(value)
           this.decorations && this.decorations.clear()
           document.activeElement?.blur()
-          this.needRender = false
+          this.needRenderData = null
+          this.renderedData = data
         }
       })
     }

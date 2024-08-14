@@ -85,6 +85,7 @@ let dataList = []
 let dataIdMap = {}
 let dataPortMap = {}
 let dataPortingMap = {}
+let rawData = {}
 export default {
   components: {
     HScrollBar,
@@ -415,7 +416,7 @@ export default {
         return null
       }
 
-      if (dataObj.id === this.detailData.id) {
+      if (this.detailVisible && dataObj.id === this.detailData.id) {
         this.onClickRow(dataObj)
       }
 
@@ -705,28 +706,30 @@ export default {
         if (this.nedb) {
           this.nedb.find({ id: dataObj.id }, (err, docs) => {
             if (docs.length) {
+              rawData.reqHead = rawData.reqHead || docs[0].reqHead
+              rawData.reqBody = rawData.reqBody || docs[0].reqBody
+              rawData.resHead = rawData.resHead || docs[0].resHead
+              rawData.resBody = rawData.resBody || docs[0].resBody
+              rawData = Object.assign({}, rawData)
+              Object.freeze(rawData)
               dataObj.pem = docs[0].pem
-              dataObj.reqHead = docs[0].reqHead || []
-              dataObj.reqBody = docs[0].reqBody || []
-              dataObj.resHead = docs[0].resHead || []
-              dataObj.resBody = docs[0].resBody || []
-              if (dataObj.pem) {
+              if (!dataObj.cert && dataObj.pem) {
                 try {
                   const { X509Certificate } = window.require('node:crypto')
                   const x509 = new X509Certificate(dataObj.pem)
-                  this.$set(dataObj, 'cert', x509)
+                  dataObj.cert = x509
                 } catch (e) {
                   console.log(docs[0].pem)
                   console.error(e)
                 }
               }
-              resolve()
+              resolve(rawData)
             } else {
-              resolve()
+              resolve(rawData)
             }
           });
         } else {
-          resolve()
+          resolve(rawData)
         }
       })
     },
@@ -866,12 +869,26 @@ export default {
       //   })
       // }
     },
-    async onClickRow(row) {
+    async onClickRow(row, refresh) {
+      if (this.detailVisible && this.activeId === row.id && !refresh) {
+        return
+      }
       let dataObj = dataList.find(item => item.id === row.id)
+      if (!refresh) {
+        rawData = { id: row.id }
+      }
+      rawData = await this.getDataInfo(dataObj)
       this.activeId = row.id
-      await this.getDataInfo(dataObj)
+      if (this.detailData) { // 清除之前数据
+        delete this.detailData.pem
+        delete this.detailData.cert
+      }
       this.detailData = dataObj
       this.detailVisible = true
+      this.$nextTick(() => {
+        this.eventBus.$emit('refresh-detail-data')
+        this.$refs.detail.initData(rawData)
+      })
     },
   }
 }
