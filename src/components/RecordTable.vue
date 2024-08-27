@@ -66,7 +66,7 @@ import VScrollBar from './VScrollBar.vue'
 import SvgIcon from './Svg.vue'
 import DialogDetail from './DialogDetail.vue'
 
-const [MSG_REQ, MSG_RES, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT, MSG_PORT] = [1, 2, 3, 4, 5, 6, 7, 8]
+const [MSG_REQ_HEAD, MSG_REQ_BODY, MSG_REQ_BODY_END, MSG_RES_HEAD, MSG_RES_BODY, MSG_RES_BODY_END, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT, MSG_PORT] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
 const [STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT] = [1, 2]
 const [
   TIME_DNS_START,
@@ -341,7 +341,7 @@ export default {
       }
       index += sockIdSize
 
-      if (msgType == MSG_REQ) {
+      if (msgType == MSG_REQ_HEAD) {
         switch (u8Array[index++]) {
           case 1:
             dataObj.protocol = 'http:'
@@ -366,16 +366,30 @@ export default {
       }
       u8Array = u8Array.slice(index)
 
-      if (msgType == MSG_REQ) {
+      if (msgType == MSG_REQ_HEAD) {
         // req
         this.getReqDataObj(dataObj, u8Array)
-      } else if (msgType == MSG_RES) {
+      } else if (msgType == MSG_REQ_BODY) {
+        // req-body
+        if (!dataIdMap[dataObj.id]) {
+          return null
+        }
+        dataObj = dataIdMap[dataObj.id]
+        this.getReqBodyDataObj(dataObj, u8Array)
+      } else if (msgType == MSG_RES_HEAD) {
         // res
         if (!dataIdMap[dataObj.id]) {
           return null
         }
         dataObj = dataIdMap[dataObj.id]
         this.getResDataObj(dataObj, u8Array)
+      } else if (msgType == MSG_RES_BODY) {
+        // res-body
+        if (!dataIdMap[dataObj.id]) {
+          return null
+        }
+        dataObj = dataIdMap[dataObj.id]
+        this.getResBodyDataObj(dataObj, u8Array)
       } else if (msgType == MSG_DNS) {
         // ip
         if (!dataIdMap[dataObj.id]) {
@@ -413,6 +427,8 @@ export default {
         this.getCertDataObj(dataObj, u8Array)
       } else if (msgType == MSG_PORT) {
         this.getPortDataObj(dataObj, u8Array)
+        return null
+      } else {
         return null
       }
 
@@ -464,6 +480,13 @@ export default {
         this.getHttpParams(dataObj.params, dataObj.url)
       }
     },
+    getReqBodyDataObj(dataObj, u8Array) {
+      if (this.nedb) {
+        this.nedb.update({ id: dataObj.id }, { $push: { reqBody: { $each: Array.from(u8Array) } } }, {}, (err, doc) => {
+          // console.log(err, doc)
+        })
+      }
+    },
     getResDataObj(dataObj, u8Array) {
       let index = u8Array.search([13, 10, 13, 10]) // \r\n\r\n
       let head, body, spaceIndex, lineIndex
@@ -489,6 +512,13 @@ export default {
       this.getHttpHeader(dataObj.resHeader, head)
 
       dataObj.type = this.getFileType(dataObj).toUpperCase() || '?'
+    },
+    getResBodyDataObj(dataObj, u8Array) {
+      if (this.nedb) {
+        this.nedb.update({ id: dataObj.id }, { $push: { resBody: { $each: Array.from(u8Array) } } }, {}, (err, doc) => {
+          // console.log(err, doc)
+        })
+      }
     },
     getIpDataObj(dataObj, u8Array) {
       dataObj.ip = getStringFromU8Array(u8Array)
