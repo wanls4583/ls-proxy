@@ -736,11 +736,11 @@ export default {
         if (this.nedb) {
           this.nedb.find({ id: dataObj.id }, (err, docs) => {
             if (docs.length) {
+              rawData = {}
               rawData.reqHead = rawData.reqHead || docs[0].reqHead
               rawData.reqBody = rawData.reqBody || docs[0].reqBody
               rawData.resHead = rawData.resHead || docs[0].resHead
               rawData.resBody = rawData.resBody || docs[0].resBody
-              rawData = Object.assign({}, rawData)
               Object.freeze(rawData)
               dataObj.pem = docs[0].pem
               if (!dataObj.cert && dataObj.pem) {
