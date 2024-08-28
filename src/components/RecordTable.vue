@@ -160,6 +160,8 @@ export default {
       scrollVisible: false,
       startLine: 1,
       maxLines: 10000000,
+      dbChunkSize: 200000,
+      maxBodySize: 200000 * 5,
       processing: false,
       detailData: {},
       activeId: '',
@@ -377,6 +379,13 @@ export default {
         }
         dataObj = dataIdMap[dataObj.id]
         this.getReqBodyDataObj(dataObj, u8Array)
+      } else if (msgType == MSG_REQ_BODY_END) {
+        // req-body-end
+        if (!dataIdMap[dataObj.id]) {
+          return null
+        }
+        dataObj = dataIdMap[dataObj.id]
+        this.getReqBodyEndDataObj(dataObj, u8Array)
       } else if (msgType == MSG_RES_HEAD) {
         // res
         if (!dataIdMap[dataObj.id]) {
@@ -391,6 +400,13 @@ export default {
         }
         dataObj = dataIdMap[dataObj.id]
         this.getResBodyDataObj(dataObj, u8Array)
+      } else if (msgType == MSG_RES_BODY_END) {
+        // res-body-end
+        if (!dataIdMap[dataObj.id]) {
+          return null
+        }
+        dataObj = dataIdMap[dataObj.id]
+        this.getResBodyEndDataObj(dataObj, u8Array)
       } else if (msgType == MSG_DNS) {
         // ip
         if (!dataIdMap[dataObj.id]) {
@@ -478,8 +494,22 @@ export default {
       }
     },
     getReqBodyDataObj(dataObj, u8Array) {
-      this.db && this.db.put(`reqBody-${dataObj.id}-${dataObj.reqBodyIndex}`, JSON.stringify(Array.from(u8Array)))
-      dataObj.reqBodyIndex++;
+      if (this.db) {
+        dataObj.reqBody = dataObj.reqBody || []
+        dataObj.reqBody = dataObj.reqBody.concat(Array.from(u8Array))
+        if (dataObj.reqBody.length >= this.dbChunkSize) {
+          this.db.put(`reqBody-${dataObj.id}-${dataObj.reqBodyIndex}`, JSON.stringify(dataObj.reqBody))
+          dataObj.reqBody = []
+          dataObj.reqBodyIndex++
+        }
+      }
+    },
+    getReqBodyEndDataObj(dataObj) {
+      if (this.db && dataObj.reqBody.length) {
+        this.db.put(`reqBody-${dataObj.id}-${dataObj.reqBodyIndex}`, JSON.stringify(Array.from(dataObj.reqBody)))
+        dataObj.reqBody = []
+        dataObj.reqBodyIndex++
+      }
     },
     getResDataObj(dataObj, u8Array) {
       let index = u8Array.search([13, 10, 13, 10]) // \r\n\r\n
@@ -487,7 +517,7 @@ export default {
 
       head = u8Array.slice(0, index + 4)
       this.db && this.db.put(`resHead-${dataObj.id}`, JSON.stringify(Array.from(head)))
-      dataObj.size = this.getSize(u8Array.length)
+      dataObj.dataSize = u8Array.length
       dataObj.resBodyIndex = 0
 
       spaceIndex = u8Array.search(32)
@@ -504,8 +534,24 @@ export default {
       dataObj.type = this.getFileType(dataObj).toUpperCase() || '?'
     },
     getResBodyDataObj(dataObj, u8Array) {
-      this.db && this.db.put(`resBody-${dataObj.id}-${dataObj.resBodyIndex}`, JSON.stringify(Array.from(u8Array)))
-      dataObj.resBodyIndex++;
+      dataObj.dataSize += u8Array.length
+      dataObj.size = this.getSize(dataObj.dataSize)
+      if (this.db) {
+        dataObj.resBody = dataObj.resBody || []
+        dataObj.resBody = dataObj.resBody.concat(Array.from(u8Array))
+        if (dataObj.resBody.length >= this.dbChunkSize) {
+          this.db.put(`resBody-${dataObj.id}-${dataObj.resBodyIndex}`, JSON.stringify(dataObj.resBody))
+          dataObj.resBody = []
+          dataObj.resBodyIndex++
+        }
+      }
+    },
+    getResBodyEndDataObj(dataObj) {
+      if (this.db && dataObj.resBody.length) {
+        this.db.put(`resBody-${dataObj.id}-${dataObj.resBodyIndex}`, JSON.stringify(Array.from(dataObj.resBody)))
+        dataObj.resBody = []
+        dataObj.resBodyIndex++
+      }
     },
     getIpDataObj(dataObj, u8Array) {
       dataObj.ip = getStringFromU8Array(u8Array)
@@ -718,27 +764,41 @@ export default {
     },
     async getReqHeadFromDb(dataObj) {
       let arr = await this.db.get(`reqHead-${dataObj.id}`, { asBuffer: false }).catch(() => '[]')
-      rawData.reqHead = JSON.parse(arr)
+      if (dataObj.id === this.activeId) {
+        rawData.reqHead = JSON.parse(arr)
+      }
     },
     async getReqBodyFromDb(dataObj) {
       let body = []
       for (let i = 0; i < dataObj.reqBodyIndex; i++) {
         let arr = await this.db.get(`reqBody-${dataObj.id}-${i}`, { asBuffer: false }).catch(() => '[]')
         body = body.concat(JSON.parse(arr))
+        if (body.length >= this.maxBodySize || dataObj.id !== this.activeId) {
+          break
+        }
       }
-      rawData.reqBody = body
+      if (dataObj.id === this.activeId) {
+        rawData.reqBody = body
+      }
     },
     async getResHeadFromDb(dataObj) {
       let arr = await this.db.get(`resHead-${dataObj.id}`, { asBuffer: false }).catch(() => '[]')
-      rawData.resHead = JSON.parse(arr)
+      if (dataObj.id === this.activeId) {
+        rawData.resHead = JSON.parse(arr)
+      }
     },
     async getResBodyFromDb(dataObj) {
       let body = []
       for (let i = 0; i < dataObj.resBodyIndex; i++) {
         let arr = await this.db.get(`resBody-${dataObj.id}-${i}`, { asBuffer: false }).catch(() => '[]')
         body = body.concat(JSON.parse(arr))
+        if (body.length >= this.maxBodySize || dataObj.id !== this.activeId) {
+          break
+        }
       }
-      rawData.resBody = body
+      if (dataObj.id === this.activeId) {
+        rawData.resBody = body
+      }
     },
     async getCertFromDb(dataObj) {
       if (dataObj.cert) {
@@ -838,7 +898,10 @@ export default {
       }
 
       function _getRowObj(item, line) {
-        let obj = Object.assign({}, item)
+        let obj = {}
+        this.columns.forEach(propObj => {
+          obj[propObj.prop] = item[propObj.prop]
+        })
         obj.top = (line - this.startLine) * this.cellheight + 'px'
         obj.line = line
         return obj
@@ -910,8 +973,11 @@ export default {
       if (!refresh) {
         rawData = { id: row.id }
       }
-      rawData = await this.getDataInfo(dataObj)
       this.activeId = row.id
+      rawData = await this.getDataInfo(dataObj)
+      if (this.activeId !== row.id) {
+        return
+      }
       if (this.detailData) { // 清除之前数据
         delete this.detailData.pem
         delete this.detailData.cert
