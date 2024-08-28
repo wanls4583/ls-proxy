@@ -244,6 +244,7 @@ export default {
       this.eventBus.$on('close-detail', () => {
         this.detailData.cert = null
         this.detailData = {}
+        this.activeId = ''
         this.detailVisible = false
       })
     },
@@ -505,7 +506,7 @@ export default {
       }
     },
     getReqBodyEndDataObj(dataObj) {
-      if (this.db && dataObj.reqBody.length) {
+      if (this.db && dataObj.reqBody?.length) {
         this.db.put(`reqBody-${dataObj.id}-${dataObj.reqBodyIndex}`, JSON.stringify(Array.from(dataObj.reqBody)))
         dataObj.reqBody = []
         dataObj.reqBodyIndex++
@@ -547,7 +548,7 @@ export default {
       }
     },
     getResBodyEndDataObj(dataObj) {
-      if (this.db && dataObj.resBody.length) {
+      if (this.db && dataObj.resBody?.length) {
         this.db.put(`resBody-${dataObj.id}-${dataObj.resBodyIndex}`, JSON.stringify(Array.from(dataObj.resBody)))
         dataObj.resBody = []
         dataObj.resBodyIndex++
