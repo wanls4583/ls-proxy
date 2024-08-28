@@ -216,18 +216,19 @@ export default {
   },
   methods: {
     init() {
-      this.initDB()
       this.initEvent()
       this.clearTable()
     },
     initDB() {
       if (window.require) {
-        const Nedb = window.require('nedb')
+        const rimraf = window.require('rimraf')
+        const levelup = window.require('levelup')
+        const leveldown = window.require('leveldown')
         const path = window.require('path')
         const { app } = window.require('@electron/remote')
-        const filename = path.join(app.getAppPath(), 'electron/nedb.db')
-        this.nedb = new Nedb({ filename: filename })
-        this.nedb.loadDatabase()
+        const filename = path.join(app.getAppPath(), 'electron/level.db')
+        rimraf.sync(filename)
+        this.db = levelup(leveldown(filename))
       }
     },
     initEvent() {
@@ -440,16 +441,12 @@ export default {
     },
     getReqDataObj(dataObj, u8Array) {
       let index = u8Array.search([13, 10, 13, 10]) // \r\n\r\n
-      let head, body, spaceIndex, lineIndex
+      let head, spaceIndex, lineIndex
 
       head = u8Array.slice(0, index + 4)
-      body = u8Array.slice(index + 4)
-      if (this.nedb) {
-        this.nedb.insert({ id: dataObj.id, reqHead: Array.from(head), reqBody: Array.from(body) }, (err, doc) => {
-          // console.log(err, doc)
-        })
-      }
+      this.db && this.db.put(`reqHead-${dataObj.id}`, JSON.stringify(Array.from(head)))
       dataObj.size = '0 B'
+      dataObj.reqBodyIndex = 0
 
       spaceIndex = u8Array.search(32)
       dataObj.method = getStringFromU8Array(head.slice(0, spaceIndex))
@@ -481,24 +478,17 @@ export default {
       }
     },
     getReqBodyDataObj(dataObj, u8Array) {
-      if (this.nedb) {
-        this.nedb.update({ id: dataObj.id }, { $push: { reqBody: { $each: Array.from(u8Array) } } }, {}, (err, doc) => {
-          // console.log(err, doc)
-        })
-      }
+      this.db && this.db.put(`reqBody-${dataObj.id}-${dataObj.reqBodyIndex}`, JSON.stringify(Array.from(u8Array)))
+      dataObj.reqBodyIndex++;
     },
     getResDataObj(dataObj, u8Array) {
       let index = u8Array.search([13, 10, 13, 10]) // \r\n\r\n
-      let head, body, spaceIndex, lineIndex
+      let head, spaceIndex, lineIndex
 
       head = u8Array.slice(0, index + 4)
-      body = u8Array.slice(index + 4)
-      if (this.nedb) {
-        this.nedb.update({ id: dataObj.id }, { $set: { resHead: Array.from(head), resBody: Array.from(body) } }, {}, (err, doc) => {
-          // console.log(err, doc)
-        })
-      }
+      this.db && this.db.put(`resHead-${dataObj.id}`, JSON.stringify(Array.from(head)))
       dataObj.size = this.getSize(u8Array.length)
+      dataObj.resBodyIndex = 0
 
       spaceIndex = u8Array.search(32)
       head = head.slice(spaceIndex + 1)
@@ -514,11 +504,8 @@ export default {
       dataObj.type = this.getFileType(dataObj).toUpperCase() || '?'
     },
     getResBodyDataObj(dataObj, u8Array) {
-      if (this.nedb) {
-        this.nedb.update({ id: dataObj.id }, { $push: { resBody: { $each: Array.from(u8Array) } } }, {}, (err, doc) => {
-          // console.log(err, doc)
-        })
-      }
+      this.db && this.db.put(`resBody-${dataObj.id}-${dataObj.resBodyIndex}`, JSON.stringify(Array.from(u8Array)))
+      dataObj.resBodyIndex++;
     },
     getIpDataObj(dataObj, u8Array) {
       dataObj.ip = getStringFromU8Array(u8Array)
@@ -563,9 +550,7 @@ export default {
       }
     },
     getCertDataObj(dataObj, u8Array) {
-      if (this.nedb) {
-        this.nedb.update({ id: dataObj.id }, { $set: { pem: getStringFromU8Array(u8Array) } }, {})
-      }
+      this.db && this.db.put(`pem-${dataObj.id}`, getStringFromU8Array(u8Array))
     },
     getPortDataObj(dataObj, u8Array) {
       let size = u8Array[0]
@@ -731,37 +716,54 @@ export default {
         return type
       }
     },
-    getDataInfo(dataObj) {
-      return new Promise((resolve, reject) => {
-        if (this.nedb) {
-          this.nedb.find({ id: dataObj.id }, (err, docs) => {
-            if (docs.length) {
-              rawData = {}
-              rawData.reqHead = rawData.reqHead || docs[0].reqHead
-              rawData.reqBody = rawData.reqBody || docs[0].reqBody
-              rawData.resHead = rawData.resHead || docs[0].resHead
-              rawData.resBody = rawData.resBody || docs[0].resBody
-              Object.freeze(rawData)
-              dataObj.pem = docs[0].pem
-              if (!dataObj.cert && dataObj.pem) {
-                try {
-                  const { X509Certificate } = window.require('node:crypto')
-                  const x509 = new X509Certificate(dataObj.pem)
-                  dataObj.cert = x509
-                } catch (e) {
-                  console.log(docs[0].pem)
-                  console.error(e)
-                }
-              }
-              resolve(rawData)
-            } else {
-              resolve(rawData)
-            }
-          });
-        } else {
-          resolve(rawData)
-        }
-      })
+    async getReqHeadFromDb(dataObj) {
+      let arr = await this.db.get(`reqHead-${dataObj.id}`, { asBuffer: false }).catch(() => '[]')
+      rawData.reqHead = JSON.parse(arr)
+    },
+    async getReqBodyFromDb(dataObj) {
+      let body = []
+      for (let i = 0; i < dataObj.reqBodyIndex; i++) {
+        let arr = await this.db.get(`reqBody-${dataObj.id}-${i}`, { asBuffer: false }).catch(() => '[]')
+        body = body.concat(JSON.parse(arr))
+      }
+      rawData.reqBody = body
+    },
+    async getResHeadFromDb(dataObj) {
+      let arr = await this.db.get(`resHead-${dataObj.id}`, { asBuffer: false }).catch(() => '[]')
+      rawData.resHead = JSON.parse(arr)
+    },
+    async getResBodyFromDb(dataObj) {
+      let body = []
+      for (let i = 0; i < dataObj.resBodyIndex; i++) {
+        let arr = await this.db.get(`resBody-${dataObj.id}-${i}`, { asBuffer: false }).catch(() => '[]')
+        body = body.concat(JSON.parse(arr))
+      }
+      rawData.resBody = body
+    },
+    async getCertFromDb(dataObj) {
+      if (dataObj.cert) {
+        return
+      }
+      dataObj.pem = await this.db.get(`pem-${dataObj.id}`, { asBuffer: false }).catch(() => '')
+      if (dataObj.pem) {
+        const { X509Certificate } = window.require('node:crypto')
+        const x509 = new X509Certificate(dataObj.pem)
+        dataObj.cert = x509
+      }
+    },
+    async getDataInfo(dataObj) {
+      rawData = { id: dataObj.id }
+      if (this.db) {
+        await Promise.all([
+          this.getReqHeadFromDb(dataObj),
+          this.getReqBodyFromDb(dataObj),
+          this.getResHeadFromDb(dataObj),
+          this.getResBodyFromDb(dataObj),
+          this.getCertFromDb(dataObj)
+        ])
+      }
+      Object.freeze(rawData)
+      return rawData
     },
     setContentHeight() {
       this.contentHeight = dataList.length * this.cellheight
@@ -847,10 +849,11 @@ export default {
       dataIdMap = {}
       this.activeId = ''
       this.renderList = []
-      this.nedb && this.nedb.remove({}, { multi: true })
       this.setContentHeight()
       this.setStartLine(0)
       this.render()
+      this.db && this.db.close((err) => { console.log('db-close:', err) })
+      this.initDB()
     },
     startSocket(flag) {
       if (flag) {
