@@ -1,6 +1,7 @@
+import { bigintToUint8Array } from './utils'
 import { RULE_TYPE, RULE_WAY } from './utils'
 import { MSG_REQ_HEAD, MSG_REQ_BODY, MSG_RES_HEAD, MSG_RES_BODY, MSG_RULE } from './utils'
-import { getDataInfo, getReqDataObj, getResDataObj } from '../common/data-utils'
+import { getDataInfo, getReqDataObj, getResDataObj } from './data-utils'
 import Socket from './socket'
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
@@ -13,6 +14,15 @@ export default class {
     this.initEvent()
     this.initStore()
     this.restoreRule()
+    this.addRule({
+      id: 1,
+      url: 'https://www.baidu*',
+      type: RULE_TYPE.REQ,
+      way: RULE_WAY.MODIFY_REQ_HEADER_ADD,
+      option: {
+        testAdd: 'abc',
+      }
+    })
   }
   initEvent() {
     window.eventBus.$on('start-listen', (val) => {
@@ -35,20 +45,20 @@ export default class {
   initSocket() {
     this.socket = new Socket({
       url: 'ws://localhost:8000/rule',
-      closeCb: (event) => {
+      openCb: () => {
+        this.sendRule()
+      },
+      closeCb: () => {
         window.eventBus.$emit('socket-close')
       },
       messageCb: (event) => {
         const data = event.data
         if (data instanceof Blob) {
-          data.arrayBuffer().then(buffer => {
+          data.arrayBuffer().then(async buffer => {
             let dataObj = this.getDataObj(new Uint8Array(buffer))
-            if (!dataObj) {
-              return
-            }
             if ([MSG_REQ_HEAD, MSG_REQ_BODY, MSG_RES_HEAD, MSG_RES_BODY].includes(dataObj.msgType)) {
-              let arr = this.checkRule(dataObj)
-              this.socket.send(new Uint8Array(arr))
+              let arr = await this.checkRule(dataObj)
+              this.socket.socket.send(new Uint8Array(arr))
             }
           })
         }
@@ -80,10 +90,10 @@ export default class {
       option: option
     }
     if (!this.regMag[url]) {
-      url = url.replace(/([^0-9a-zA-Z])/g, '\\$1')
-      url = url.replace(/\\?/g, '.')
-      url = url.replace(/\\*/g, '.?')
-      this.regMag[url] = new RegExp(url)
+      let reg = url.replace(/([^0-9a-zA-Z])/g, '\\$1')
+      reg = reg.replace(/\\\?/g, '.')
+      reg = reg.replace(/\\\*/g, '.?')
+      this.regMag[url] = new RegExp(reg)
     }
     this.storeRule()
   }
@@ -138,18 +148,18 @@ export default class {
   }
   sendRule() {
     if (this.socket.socketState === 'open') {
-      this.socket.send(this.createRuleMsg())
-      setTimeout(() => {
-        if (this.reciveId !== this.sendId) {
-          this.sendRule()
-        }
-      }, 2000)
+      this.socket.socket.send(this.createRuleMsg())
+      // setTimeout(() => {
+      //   if (this.reciveId !== this.sendId) {
+      //     this.sendRule()
+      //   }
+      // }, 2000)
     }
   }
   createRuleMsg() {
     const msg = []
     this.sendId = (++this.sendId) % 256
-    msg.push(Array.from(encoder.encode('rule:')))
+    msg.push(...Array.from(encoder.encode('rule:')))
     msg.push(this.sendId)
     for (let url in this.store) {
       let urlObj = this.store[url]
@@ -164,11 +174,11 @@ export default class {
       } else {
         msg.push(0)
       }
-      msg.push(url.length / 256);
+      msg.push(Math.floor(url.length / 256));
       msg.push(url.length % 256);
       msg.push(...url);
     }
-    return msg
+    return new Uint8Array(msg)
 
     function _findBodyRule(typeObj) {
       for (let way in typeObj) {
@@ -182,6 +192,9 @@ export default class {
   async checkRule(dataObj) {
     let msgType = dataObj.msgType
     let result = Array.from(encoder.encode('data:'));
+    result.push(msgType)
+    result.push(8)
+    result.push(...Array.from(bigintToUint8Array(dataObj.id, 8)))
     for (let url in this.store) {
       if (this.regMag[url].exec(dataObj.url)) {
         let typeObj = null
@@ -200,27 +213,27 @@ export default class {
           let wayObj = typeObj[way]
           let { option } = wayObj
           if (way === RULE_WAY.MODIFY_REQ_PARAM_ADD) {
-            option.forEach(param => {
+            Object.keys(option).forEach(param => {
               head = this.addParam({ param, val: option[param], u8Array: head })
             })
           } else if (way === RULE_WAY.MODIFY_REQ_PARAM_MOD) {
-            option.forEach(param => {
+            Object.keys(option).forEach(param => {
               head = this.modParam({ param, val: option[param], u8Array: head })
             })
           } else if (way === RULE_WAY.MODIFY_REQ_PARAM_DEL) {
-            option.forEach(param => {
+            Object.keys(option).forEach(param => {
               head = this.delParam({ param, u8Array: head })
             })
           } else if ([RULE_WAY.MODIFY_REQ_HEADER_ADD, RULE_WAY.MODIFY_RES_HEADER_ADD].includes(way)) {
-            option.forEach(prop => {
+            Object.keys(option).forEach(prop => {
               head = this.addHeader({ prop, val: option[prop], u8Array: head })
             })
           } else if ([RULE_WAY.MODIFY_REQ_HEADER_MOD, RULE_WAY.MODIFY_RES_HEADER_MOD].includes(way)) {
-            option.forEach(prop => {
+            Object.keys(option).forEach(prop => {
               head = this.modHeader({ prop, val: option[prop], u8Array: head })
             })
           } else if ([RULE_WAY.MODIFY_REQ_HEADER_DEL, RULE_WAY.MODIFY_RES_HEADER_DEL].includes(way)) {
-            option.forEach(prop => {
+            Object.keys(option).forEach(prop => {
               head = this.delHeader({ prop, u8Array: head })
             })
           } else if ([RULE_WAY.MODIFY_REQ_BODY, RULE_WAY.MODIFY_RES_BODY].includes(way)) {
@@ -247,7 +260,7 @@ export default class {
   }
   addHeader({ prop, val, u8Array }) {
     let txt = decoder.decode(u8Array)
-    let index = txt.find('\n')
+    let index = txt.indexOf('\n')
     txt = txt.slice(0, index + 1) + `${prop}: ${val}\r\n` + txt.slice(index + 1)
     return encoder.encode(txt)
   }

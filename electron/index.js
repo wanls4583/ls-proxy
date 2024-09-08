@@ -67,7 +67,7 @@ function createWindow(name, url, type, parent) {
     win.webContents.send('leave-full-screen')
   })
 
-  // win.webContents.openDevTools();
+  win.webContents.openDevTools();
 
   return win;
 }

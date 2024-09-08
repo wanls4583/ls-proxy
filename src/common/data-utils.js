@@ -1,5 +1,5 @@
 import { getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint, extList } from '../common/utils'
-import { MSG_REQ_HEAD, MSG_PORT } from '../common/utils'
+import { MSG_REQ_HEAD, MSG_RULE } from '../common/utils'
 
 export function getDecoededBody(header, body) {
   let arr = []
@@ -59,8 +59,8 @@ export function getDataInfo(dataObj, u8Array) {
   let index = 0
   let msgType = u8Array[index++]
 
-  if (msgType > MSG_PORT) {
-    return
+  if (msgType > MSG_RULE) {
+    return {}
   }
 
   let idSize = u8Array[index++]
@@ -211,7 +211,7 @@ export function getHttpParams(params, url) {
 }
 
 export function getFileType(dataObj) {
-  let path = dataObj.path
+  let path = dataObj.path || ''
   let ext = path.lastIndexOf('/')
   path = path.slice(ext + 1)
   ext = /^[\w\.\-\@]+\.([a-zA-Z0-9\_\-]+)/.exec(path)

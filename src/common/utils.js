@@ -1,23 +1,23 @@
 import $ from 'jquery'
 
 export const RULE_TYPE = {
-  REQ: 1,
-  RES: 2
+  REQ: '1',
+  RES: '2'
 }
 
 export const RULE_WAY = {
-  MODIFY_REQ_URL: 1,
-  MODIFY_REQ_PARAM_ADD: 1,
-  MODIFY_REQ_PARAM_MOD: 2,
-  MODIFY_REQ_PARAM_DEL: 3,
-  MODIFY_REQ_HEADER_ADD: 4,
-  MODIFY_REQ_HEADER_MOD: 5,
-  MODIFY_REQ_HEADER_DEL: 6,
-  MODIFY_REQ_BODY: 7,
-  MODIFY_RES_HEADER_ADD: 8,
-  MODIFY_RES_HEADER_MOD: 9,
-  MODIFY_RES_HEADER_DEL: 10,
-  MODIFY_RES_BODY: 11,
+  MODIFY_REQ_URL: '1',
+  MODIFY_REQ_PARAM_ADD: '1',
+  MODIFY_REQ_PARAM_MOD: '2',
+  MODIFY_REQ_PARAM_DEL: '3',
+  MODIFY_REQ_HEADER_ADD: '4',
+  MODIFY_REQ_HEADER_MOD: '5',
+  MODIFY_REQ_HEADER_DEL: '6',
+  MODIFY_REQ_BODY: '7',
+  MODIFY_RES_HEADER_ADD: '8',
+  MODIFY_RES_HEADER_MOD: '9',
+  MODIFY_RES_HEADER_DEL: '10',
+  MODIFY_RES_BODY: '11',
 }
 export const [
   TIME_DNS_START,
@@ -134,6 +134,16 @@ export const u8To32Uint = function (uint8array, offset = 0) {
 
 export const u8To64Uint = function (uint8array, offset = 0) {
   return new DataView(uint8array.buffer).getBigUint64(offset)
+}
+
+export const bigintToUint8Array = function (value, len) {
+  let hex = BigInt(value).toString(16)
+  let u8 = new Uint8Array(len)
+  for (let i = 0; i < len; i++) {
+    u8[len - i - 1] = parseInt(hex.slice(-2), 16);
+    hex = hex.slice(0, -2)
+  }
+  return u8
 }
 
 const formatNumber = (n) => {

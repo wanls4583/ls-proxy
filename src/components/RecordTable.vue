@@ -526,11 +526,11 @@ export default {
                 delete dataPortMap[dataObj.sockId]
               }, 5000)
             } else {
-              console.log('clntPort-result:null:', dataObj.sockId, dataObj.id, dataObj.clntPort)
+              // console.log('clntPort-result:null:', dataObj.sockId, dataObj.id, dataObj.clntPort)
             }
           },
           (err) => {
-            console.log('find-process-err:', err.stack || err, ':', dataObj.sockId, dataObj.id, dataObj.clntPort)
+            // console.log('find-process-err:', err.stack || err, ':', dataObj.sockId, dataObj.id, dataObj.clntPort)
           }
         )
       }

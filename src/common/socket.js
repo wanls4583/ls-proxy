@@ -3,7 +3,7 @@ const emptyCb = () => { }
 export default class {
   constructor({ url, openCb, closeCb, messageCb, errorCb }) {
     this.url = url
-    this.closeCb = openCb || emptyCb
+    this.openCb = openCb || emptyCb
     this.closeCb = closeCb || emptyCb
     this.messageCb = messageCb || emptyCb
     this.errorCb = errorCb || emptyCb
@@ -15,6 +15,7 @@ export default class {
     this.socket.addEventListener('open', event => {
       this.socketState = 'open'
       this.socket.send('start')
+      this.openCb()
     })
     this.socket.addEventListener('close', event => {
       this.socketState = 'close'
