@@ -12,6 +12,7 @@ import './assets/font/ext-icon'
 Vue.use(ElementUI);
 Vue.config.productionTip = false;
 Vue.prototype.eventBus = eventBus
+window.eventBus = eventBus
 
 String.prototype.search = kmpSearch
 Uint8Array.prototype.search = kmpSearch

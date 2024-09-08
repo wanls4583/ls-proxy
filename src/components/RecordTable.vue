@@ -60,26 +60,17 @@
 </template>
 
 <script>
-import { extList, getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint } from '../common/utils'
+import { getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint } from '../common/utils'
+import { getDataInfo, getReqDataObj, getResDataObj } from '../common/data-utils'
+import Socket from '../common/socket'
+import Rule from '../common/rule'
 import HScrollBar from './HScrollBar.vue'
 import VScrollBar from './VScrollBar.vue'
 import SvgIcon from './Svg.vue'
 import DialogDetail from './DialogDetail.vue'
-
-const [MSG_REQ_HEAD, MSG_REQ_BODY, MSG_REQ_BODY_END, MSG_RES_HEAD, MSG_RES_BODY, MSG_RES_BODY_END, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT, MSG_PORT] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-const [STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT] = [1, 2]
-const [
-  TIME_DNS_START,
-  TIME_DNS_END,
-  TIME_CONNECT_START,
-  TIME_CONNECT_END,
-  TIME_CONNECT_SSL_START,
-  TIME_CONNECT_SSL_END,
-  TIME_REQ_START,
-  TIME_REQ_END,
-  TIME_RES_START,
-  TIME_RES_END
-] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+import { STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT } from '../common/utils'
+import { TIME_DNS_START, TIME_CONNECT_START, TIME_REQ_START, TIME_RES_END } from '../common/utils'
+import { MSG_REQ_HEAD, MSG_REQ_BODY, MSG_REQ_BODY_END, MSG_RES_HEAD, MSG_RES_BODY, MSG_RES_BODY_END, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT, MSG_PORT } from '../common/utils'
 
 let dataList = []
 let dataIdMap = {}
@@ -162,7 +153,6 @@ export default {
       maxLines: 10000000,
       dbChunkSize: 200000,
       maxBodySize: 200000 * 5,
-      processing: false,
       detailData: {},
       activeId: '',
       detailVisible: false
@@ -214,12 +204,13 @@ export default {
   },
   beforeDestroy() {
     this.resizeObserver?.unobserve(this.$refs.wrap)
-    clearTimeout(this.initSocketTimer)
   },
   methods: {
     init() {
       this.initEvent()
+      this.initSocket()
       this.clearTable()
+      this.rule = new Rule()
     },
     initDB() {
       if (window.require) {
@@ -235,7 +226,7 @@ export default {
     },
     initEvent() {
       this.eventBus.$on('start-listen', (val) => {
-        this.startSocket(val)
+        this.socket.startSocket(val)
       })
       this.eventBus.$on('clear-table', () => {
         this.clearTable()
@@ -265,114 +256,42 @@ export default {
       this.resizeObserver.observe(this.$refs.wrap)
     },
     initSocket() {
-      clearTimeout(this.initSocketTimer)
-      clearTimeout(this.pingTimer)
-      this.socket = new WebSocket('ws://localhost:8000')
-      this.socket.addEventListener('open', event => {
-        this.socketState = 'open'
-        this.socket.send('start')
-      })
-      this.socket.addEventListener('close', event => {
-        this.socketState = 'close'
-        clearTimeout(this.pingTimer)
-        console.log('scoket close:', event)
-        if (this.processing && (!event.wasClean || event.code === 1006)) {
-          clearTimeout(this.initSocketTimer)
-          this.initSocketTimer = setTimeout(() => {
-            this.initSocket()
-          }, 1000)
-        } else {
+      this.socket = new Socket({
+        url: 'ws://localhost:8000/proxy',
+        closeCb: event => {
           this.eventBus.$emit('socket-close')
-        }
-      })
-      this.socket.addEventListener('error', event => {
-        this.socketState = 'close'
-        this.eventBus.$emit('socket-close')
-        console.log('scoket err:', event)
-      })
-      this.socket.addEventListener('message', event => {
-        const data = event.data
-        if (data instanceof Blob) {
-          data.arrayBuffer().then(buffer => {
-            let dataObj = this.getDataObj(new Uint8Array(buffer))
-            if (!dataObj) {
-              return
-            }
-            if (!dataObj.url) {
-              console.log('eror data:', dataObj)
-            }
-            if (!dataIdMap[dataObj.id]) {
-              dataIdMap[dataObj.id] = dataObj
-              dataObj.lineId = dataObj.id
-              dataList.push(dataObj)
-              this.setContentHeight()
-            }
-            this.render()
-          })
-        }
-
-        clearTimeout(this.pingTimer)
-        this.pingTimer = setTimeout(() => {
-          if (this.processing && this.socketState == 'open') {
-            this.socket.send('ping')
+        },
+        messageCb: (event) => {
+          const data = event.data
+          if (data instanceof Blob) {
+            data.arrayBuffer().then(buffer => {
+              let dataObj = this.getDataObj(new Uint8Array(buffer))
+              if (!dataObj) {
+                return
+              }
+              if (!dataObj.url) {
+                console.log('eror data:', dataObj)
+              }
+              if (!dataIdMap[dataObj.id]) {
+                dataIdMap[dataObj.id] = dataObj
+                dataObj.lineId = dataObj.id
+                dataList.push(dataObj)
+                this.setContentHeight()
+              }
+              this.render()
+            })
           }
-        }, 5000) // 5秒检测一次心跳
+        }
       })
     },
-    getDataObj(u8Array) {
+    getDataObj(data) {
       let dataObj = {}
-      let index = 0
-      let msgType = u8Array[index++]
-
-      if (msgType > MSG_PORT) {
-        return
-      }
-      dataObj.u8Array = u8Array
-
-      let idSize = u8Array[index++]
-      if (idSize === 8) {
-        dataObj.id = u8To64Uint(u8Array, index) + ''
-      } else {
-        dataObj.id = u8To32Uint(u8Array, index) + ''
-      }
-      index += idSize
-
-      let sockIdSize = u8Array[index++]
-      if (sockIdSize === 8) {
-        dataObj.sockId = u8To64Uint(u8Array.slice(1)) + ''
-      } else {
-        dataObj.sockId = u8To32Uint(u8Array.slice(1)) + ''
-      }
-      index += sockIdSize
-
-      if (msgType == MSG_REQ_HEAD) {
-        switch (u8Array[index++]) {
-          case 1:
-            dataObj.protocol = 'http:'
-            break
-          case 2:
-            dataObj.protocol = 'https:'
-            break
-          case 3:
-            dataObj.protocol = 'ws:'
-            break
-          case 4:
-            dataObj.protocol = 'wss:'
-            break
-        }
-        let ptSize = u8Array[index]
-        this.getPortDataObj(dataObj, u8Array.slice(index, index + ptSize + 1))
-        index += ptSize + 1
-
-        let ipSize = u8Array[index++]
-        dataObj.clntIp = getStringFromU8Array(u8Array.slice(index, index + ipSize))
-        index += ipSize
-      }
-      u8Array = u8Array.slice(index)
+      let { msgType, u8Array } = getDataInfo(dataObj, data)
 
       if (msgType == MSG_REQ_HEAD) {
         // req
-        this.getReqDataObj(dataObj, u8Array)
+        getReqDataObj({ dataObj, u8Array, db: this.db })
+        this.getClientPath(dataObj)
       } else if (msgType == MSG_REQ_BODY) {
         // req-body
         if (!dataIdMap[dataObj.id]) {
@@ -393,7 +312,7 @@ export default {
           return null
         }
         dataObj = dataIdMap[dataObj.id]
-        this.getResDataObj(dataObj, u8Array)
+        getResDataObj({ dataObj, u8Array, db: this.db })
       } else if (msgType == MSG_RES_BODY) {
         // res-body
         if (!dataIdMap[dataObj.id]) {
@@ -456,44 +375,6 @@ export default {
 
       return dataObj
     },
-    getReqDataObj(dataObj, u8Array) {
-      let index = u8Array.search([13, 10, 13, 10]) // \r\n\r\n
-      let head, spaceIndex, lineIndex
-
-      head = u8Array.slice(0, index + 4)
-      this.db && this.db.put(`reqHead-${dataObj.id}`, JSON.stringify(Array.from(head)))
-      dataObj.size = '0 B'
-      dataObj.reqBodyIndex = 0
-
-      spaceIndex = u8Array.search(32)
-      dataObj.method = getStringFromU8Array(head.slice(0, spaceIndex))
-
-      head = head.slice(spaceIndex + 1)
-      spaceIndex = head.search(32)
-      dataObj.path = getStringFromU8Array(head.slice(0, spaceIndex))
-
-      head = head.slice(spaceIndex + 1)
-      lineIndex = head.search([13, 10]) // \r\n
-      dataObj.version = getStringFromU8Array(head.slice(0, lineIndex))
-
-      head = head.slice(lineIndex + 2)
-      dataObj.reqHeader = {}
-      this.getHttpHeader(dataObj.reqHeader, head)
-
-      dataObj.status = 'Pending'
-      dataObj.params = {}
-
-      if (dataObj.reqHeader.Host) {
-        let port = dataObj.reqHeader.Host.indexOf(':')
-        if (port > -1) {
-          dataObj.port = dataObj.reqHeader.Host.slice(port + 1)
-        } else {
-          dataObj.port = ['wss:', 'https:'].includes(dataObj.protocol) ? 443 : 80
-        }
-        dataObj.url = dataObj.protocol + '//' + dataObj.reqHeader.Host + dataObj.path
-        this.getHttpParams(dataObj.params, dataObj.url)
-      }
-    },
     getReqBodyDataObj(dataObj, u8Array) {
       if (this.db) {
         dataObj.reqBody = dataObj.reqBody || []
@@ -511,28 +392,6 @@ export default {
         dataObj.reqBody = []
         dataObj.reqBodyIndex++
       }
-    },
-    getResDataObj(dataObj, u8Array) {
-      let index = u8Array.search([13, 10, 13, 10]) // \r\n\r\n
-      let head, spaceIndex, lineIndex
-
-      head = u8Array.slice(0, index + 4)
-      this.db && this.db.put(`resHead-${dataObj.id}`, JSON.stringify(Array.from(head)))
-      dataObj.dataSize = u8Array.length
-      dataObj.resBodyIndex = 0
-
-      spaceIndex = u8Array.search(32)
-      head = head.slice(spaceIndex + 1)
-      spaceIndex = head.search(32)
-      dataObj.status = getStringFromU8Array(head.slice(0, spaceIndex))
-
-      lineIndex = head.search([13, 10])
-      head = head.slice(lineIndex + 2)
-
-      dataObj.resHeader = {}
-      this.getHttpHeader(dataObj.resHeader, head)
-
-      dataObj.type = this.getFileType(dataObj).toUpperCase() || '?'
     },
     getResBodyDataObj(dataObj, u8Array) {
       dataObj.dataSize += u8Array.length
@@ -632,36 +491,6 @@ export default {
       result = result.replace(/\.00$/, '') + ' ' + unit
       return result
     },
-    getHttpHeader(reqHeader, head) {
-      let lineIndex = -1,
-        colonIndex = -1,
-        line,
-        prop,
-        value
-
-      while (head.length) {
-        lineIndex = head.search([13, 10])
-        if (lineIndex < 0) {
-          break
-        }
-        line = head.slice(0, lineIndex)
-        if (line.length) {
-          colonIndex = line.search([58, 32]) //': '
-          prop = getStringFromU8Array(line.slice(0, colonIndex))
-          value = getStringFromU8Array(line.slice(colonIndex + 2))
-          reqHeader[prop] = value
-        }
-        head = head.slice(lineIndex + 2)
-      }
-    },
-    getHttpParams(params, url) {
-      try {
-        url = new URL(url)
-        for (const [key, value] of url.searchParams) {
-          params[key] = value
-        }
-      } catch (e) { }
-    },
     getClientPath(dataObj) {
       // 获取客户端程路径
       let cacheObj = dataPortMap[dataObj.sockId]
@@ -679,12 +508,17 @@ export default {
         dataPortingMap[dataObj.sockId] = [dataObj]
         // console.log('clntPort:', dataObj.clntPort)
         findProcess(dataObj.pid ? 'pid' : 'port', dataObj.pid || dataObj.clntPort).then(
-          function (list) {
+          (list) => {
             if (list.length) {
+              let needRender = false
               dataPortingMap[dataObj.sockId].forEach(obj => {
                 obj.processName = list[0].name
                 obj.processPath = list[0].bin
+                needRender = needRender || this.renderList.find(item => item.sockId === dataObj.sockId)
               })
+              if (needRender) {
+                this.render()
+              }
               delete dataPortingMap[dataObj.sockId]
 
               dataPortMap[dataObj.sockId] = { processName: dataObj.processName, processPath: dataObj.processPath }
@@ -692,11 +526,11 @@ export default {
                 delete dataPortMap[dataObj.sockId]
               }, 5000)
             } else {
-              // console.log('clntPort-result:null:', dataObj.pid, dataObj.clntPort)
+              console.log('clntPort-result:null:', dataObj.sockId, dataObj.id, dataObj.clntPort)
             }
           },
-          function (err) {
-            console.log('find-process-err:', err.stack || err, ':', dataObj.pid, dataObj.clntPort)
+          (err) => {
+            console.log('find-process-err:', err.stack || err, ':', dataObj.sockId, dataObj.id, dataObj.clntPort)
           }
         )
       }
@@ -727,41 +561,6 @@ export default {
       this.wrapHeight = this.$refs.wrap.clientHeight
       this.wrapWidth = this.$refs.wrap.clientWidth
       this.contentWidth = this.$refs.title.scrollWidth
-    },
-    getFileType(dataObj) {
-      let path = dataObj.path
-      let ext = path.lastIndexOf('/')
-      path = path.slice(ext + 1)
-      ext = /^[\w\.\-\@]+\.([a-zA-Z0-9\_\-]+)/.exec(path)
-      ext = ext && ext[1]
-      if (ext && extList.includes(ext)) {
-        return ext
-      } else {
-        let contentType = dataObj.resHeader['Content-Type'] || ''
-        let type = null
-        if (!type) {
-          if (contentType.startsWith('application/json')) {
-            type = 'json'
-          } else if (contentType.startsWith('text/')) {
-            if (contentType.indexOf('html')) {
-              type = 'html'
-            } else if (contentType.indexOf('xml')) {
-              type = 'xml'
-            } else {
-              type = 'txt'
-            }
-          } else if (contentType.startsWith('image/')) {
-            type = 'image'
-          } else if (contentType.startsWith('audio/')) {
-            type = 'audio'
-          } else if (contentType.startsWith('video/')) {
-            type = 'video'
-          } else {
-            type = ''
-          }
-        }
-        return type
-      }
     },
     async getReqHeadFromDb(dataObj) {
       let arr = await this.db.get(`reqHead-${dataObj.id}`, { asBuffer: false }).catch(() => '[]')
@@ -903,6 +702,7 @@ export default {
         this.columns.forEach(propObj => {
           obj[propObj.prop] = item[propObj.prop]
         })
+        obj.sockId = item.sockId
         obj.top = (line - this.startLine) * this.cellheight + 'px'
         obj.line = line
         return obj
@@ -918,20 +718,6 @@ export default {
       this.render()
       this.db && this.db.close((err) => { console.log('db-close:', err) })
       this.initDB()
-    },
-    startSocket(flag) {
-      if (flag) {
-        if (!this.processing) {
-          this.initSocket()
-        }
-      } else {
-        clearTimeout(this.initSocketTimer)
-        clearTimeout(this.pingTimer)
-        if (this.socketState == 'open') {
-          this.socket.close()
-        }
-      }
-      this.processing = flag
     },
     onVScroll(scrollTop) {
       this.scrollTop = scrollTop

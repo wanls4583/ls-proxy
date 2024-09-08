@@ -53,7 +53,7 @@ import ObjectView from './detail/ObjectView.vue'
 import HexView from './detail/HexView.vue'
 import SourceView from './detail/SourceView.vue'
 import * as monaco from 'monaco-editor';
-import { getStringFromU8Array } from '../common/utils'
+import { getDecoededBody } from '../common/data-utils'
 
 let oldRawData = {}
 export default {
@@ -88,7 +88,7 @@ export default {
     },
     async initReqData(rawData) {
       let reqData = rawData.reqHead || []
-      let reqBody = await this.getDecoededBody(this.data?.reqHeader, rawData.reqBody || [])
+      let reqBody = await getDecoededBody(this.data?.reqHeader, rawData.reqBody || [])
       if (rawData.reqBody?.length) {
         if (['gzip', 'br', 'deflate'].includes(this.data?.reqHeader?.['Content-Encoding'])) {
           reqData = reqData.concat(Array.from(new TextEncoder().encode(`<${this.data.reqHeader['Content-Encoding']} binary body>`)))
@@ -103,7 +103,7 @@ export default {
     },
     async initResData(rawData) {
       let resData = rawData.resHead || []
-      let resBody = await this.getDecoededBody(this.data?.resHeader, rawData.resBody || [])
+      let resBody = await getDecoededBody(this.data?.resHeader, rawData.resBody || [])
       if (rawData.resBody?.length) {
         if (['gzip', 'br', 'deflate'].includes(this.data?.resHeader?.['Content-Encoding'])) {
           resData = resData.concat(Array.from(new TextEncoder().encode(`<${this.data.resHeader['Content-Encoding']} binary body>`)))
@@ -143,59 +143,6 @@ export default {
         }
       })
       monaco.editor.setTheme(themId)
-    },
-    getDecoededBody(header, body) {
-      let arr = []
-      header = header || {}
-      if (header['Transfer-Encoding'] === 'chunked') {
-        let index = -1
-        while ((index = body.search([13, 10])) > -1) {
-          let num = getStringFromU8Array(new Uint8Array(body.slice(0, index)))
-          num = parseInt(num, 16)
-          if (!num) {
-            break
-          }
-          arr = arr.concat(Array.from(body.slice(index + 2, index + 2 + num)))
-          body = body.slice(index + 2 + num + 2)
-        }
-      } else if (header['Content-Type']?.indexOf('boundary=') > -1) {
-        let index = header['Content-Type'].indexOf('boundary=')
-        let boundary = header['Content-Type'].slice(index + 'boundary='.length)
-        body = body.slice(boundary.length + 2)
-        while ((index = body.search(boundary)) > -1) {
-          if (getStringFromU8Array(new Uint8Array(body.slice(index + boundary.length, index + boundary.length + 4))) === '--\r\n') {
-            break
-          }
-          arr.push(body.slice(0, index))
-          body = body.slice(index + boundary.length + 2)
-        }
-      } else {
-        arr = Array.from(body)
-      }
-      let encoding = header['Content-Encoding']
-      if (window.require && arr.length && ['gzip', 'br', 'deflate'].includes(encoding)) {
-        const zlib = window.require('node:zlib')
-        return new Promise((resolve) => {
-          let decodeFun = null
-          arr = new Uint8Array(arr).buffer
-          if (encoding === 'gzip') {
-            decodeFun = zlib.gunzip
-          }
-          if (encoding === 'br') {
-            decodeFun = zlib.brotliDecompress
-          }
-          if (encoding === 'deflate') {
-            decodeFun = zlib.inflate
-          }
-          decodeFun(arr, (err, buf) => {
-            if (err) {
-              return resolve([])
-            }
-            resolve(Array.from(buf))
-          })
-        })
-      }
-      return arr
     },
     getIfText(header) {
       let contentType = header?.['Content-Type'] || ''

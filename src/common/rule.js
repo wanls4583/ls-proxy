@@ -1,0 +1,309 @@
+import { RULE_TYPE, RULE_WAY } from './utils'
+import { MSG_REQ_HEAD, MSG_REQ_BODY, MSG_RES_HEAD, MSG_RES_BODY } from './utils'
+import { getDataInfo, getReqDataObj, getResDataObj } from '../common/data-utils'
+import Socket from './socket'
+const encoder = new TextEncoder()
+const decoder = new TextDecoder()
+export default class {
+  constructor() {
+    this.store = {}
+    this.regMag = {}
+    this.initSocket()
+    this.initEvent()
+    this.initStore()
+    this.restoreRule()
+  }
+  initEvent() {
+    window.eventBus.$on('start-listen', (val) => {
+      this.socket.startSocket(val)
+    })
+    window.eventBus.$on('start-listen', (val) => {
+      this.socket.startSocket(val)
+    })
+  }
+  initStore() {
+    if (window.require) {
+      const levelup = window.require('levelup')
+      const leveldown = window.require('leveldown')
+      const path = window.require('path')
+      const { app } = window.require('@electron/remote')
+      const filename = path.join(app.getAppPath(), 'electron/level-rule.db')
+      this.db = levelup(leveldown(filename))
+    }
+  }
+  initSocket() {
+    this.socket = new Socket({
+      url: 'ws://localhost:8000/rule',
+      closeCb: (event) => {
+        window.eventBus.$emit('socket-close')
+      },
+      messageCb: (event) => {
+        const data = event.data
+        if (data instanceof Blob) {
+          data.arrayBuffer().then(buffer => {
+            let dataObj = this.getDataObj(new Uint8Array(buffer))
+            if (!dataObj) {
+              return
+            }
+            let u8Array = this.checkRule(dataObj)
+            this.socket.send(u8Array)
+          })
+        }
+      }
+    })
+  }
+  getDataObj(data) {
+    let dataObj = {}
+    let { msgType, u8Array } = getDataInfo(dataObj, data)
+
+    dataObj.msgType = msgType
+
+    if (msgType == MSG_REQ_HEAD || msgType == MSG_REQ_BODY) {
+      getReqDataObj({ dataObj, u8Array, hasBobdy: true })
+    } else if (msgType == MSG_RES_HEAD || msgType === MSG_RES_BODY) {
+      getResDataObj({ dataObj, u8Array, hasBobdy: true })
+    }
+
+    return dataObj
+  }
+  addRule({ id, url, type, way, option }) {
+    this.delRule(id, false)
+    this.store[url] = this.store[url] || {}
+    this.store[url][type] = this.store[url][type] || {}
+    this.store[url][type][way] = {
+      id: id,
+      option: option
+    }
+    if (!this.regMag[url]) {
+      url = url.replace(/([^0-9a-zA-Z])/g, '\\$1')
+      url = url.replace(/\\?/g, '.')
+      url = url.replace(/\\*/g, '.?')
+      this.regMag[url] = new RegExp(url)
+    }
+    this.storeRule()
+  }
+  delRule(id, store = true) {
+    for (let url in this.store) {
+      let urlObj = this.store[url]
+      for (let type in urlObj) {
+        let typeObj = urlObj[type]
+        for (let way in typeObj) {
+          let wayObj = typeObj[way]
+          if (wayObj.id === id) {
+            delete typeObj[way]
+            if (Object.keys(typeObj)) {
+              delete urlObj[type]
+            }
+            if (Object.keys(urlObj)) {
+              delete this.store[url]
+              delete this.regMag[url]
+            }
+            store && this.storeRule()
+            return true
+          }
+        }
+      }
+    }
+    return false
+  }
+  clearRule() {
+    this.store = {}
+    this.regMag = {}
+  }
+  storeRule() {
+    if (this.db) {
+      this.db.del('rule-stroe', (err) => {
+        if (!err) {
+          this.db.put('rule-stroe', JSON.stringify(this.store))
+        }
+      })
+    }
+  }
+  restoreRule() {
+    if (this.db) {
+      this.db.get('rule-stroe', { asBuffer: false }, (err, value) => {
+        if (!err) {
+          this.store = JSON.parse(value)
+        }
+      })
+    }
+  }
+  createRuleMsg() {
+    const msg = []
+    for (let url in this.store) {
+      let urlObj = this.store[url]
+      url = Array.from(encoder.encode(url))
+      if (urlObj[RULE_TYPE.REQ]) {
+        msg.push(_findBodyRule(urlObj[RULE_TYPE.REQ]) ? 2 : 1)
+      } else {
+        msg.push(0)
+      }
+      if (urlObj[RULE_TYPE.RES]) {
+        msg.push(_findBodyRule(urlObj[RULE_TYPE.RES]) ? 2 : 1)
+      } else {
+        msg.push(0)
+      }
+      msg.push(url.length / 256);
+      msg.push(url.length % 256);
+      msg.push(...url);
+    }
+    return msg
+
+    function _findBodyRule(typeObj) {
+      for (let way in typeObj) {
+        if (way === RULE_WAY.MSG_REQ_BODY || way === RULE_WAY.MSG_RES_BODY) {
+          return true
+        }
+      }
+      return false
+    }
+  }
+  checkRule(dataObj) {
+    let msgType = dataObj.msgType
+    for (let url in this.store) {
+      if (this.regMag[url].exec(dataObj.url)) {
+        let typeObj = null
+        if ([MSG_REQ_HEAD, MSG_REQ_BODY].includes(msgType)) {
+          typeObj = this.store[url][RULE_TYPE.REQ]
+        } else if ([MSG_RES_HEAD, MSG_RES_BODY].includes(msgType)) {
+          typeObj = this.store[url][RULE_TYPE.REQ]
+        }
+        if (!typeObj) {
+          break
+        }
+        let ways = Object.keys(typeObj).sort((a, b) => typeObj[a] - typeObj[b])
+        let { head, body } = dataObj
+        ways.forEach(way => {
+          let wayObj = typeObj[way]
+          let { option } = wayObj
+          if (way === RULE_WAY.MODIFY_REQ_PARAM_ADD) {
+            option.forEach(param => {
+              head = this.addParam({ param, val: option[param], u8Array: head })
+            })
+          } else if (way === RULE_WAY.MODIFY_REQ_PARAM_MOD) {
+            option.forEach(param => {
+              head = this.modParam({ param, val: option[param], u8Array: head })
+            })
+          } else if (way === RULE_WAY.MODIFY_REQ_PARAM_DEL) {
+            option.forEach(param => {
+              head = this.delParam({ param, u8Array: head })
+            })
+          } else if ([RULE_WAY.MODIFY_REQ_HEADER_ADD, RULE_WAY.MODIFY_RES_HEADER_ADD].includes(way)) {
+            option.forEach(prop => {
+              head = this.addHeader({ prop, val: option[prop], u8Array: head })
+            })
+          } else if ([RULE_WAY.MODIFY_REQ_HEADER_MOD, RULE_WAY.MODIFY_RES_HEADER_MOD].includes(way)) {
+            option.forEach(prop => {
+              head = this.modHeader({ prop, val: option[prop], u8Array: head })
+            })
+          } else if ([RULE_WAY.MODIFY_REQ_HEADER_DEL, RULE_WAY.MODIFY_RES_HEADER_DEL].includes(way)) {
+            option.forEach(prop => {
+              head = this.delHeader({ prop, u8Array: head })
+            })
+          } else if ([RULE_WAY.MODIFY_REQ_BODY, RULE_WAY.MODIFY_RES_BODY].includes(way)) {
+            body = this.modBody({ body: option.body })
+          }
+        })
+        head = Array.from(head)
+        body = Array.from(body)
+        return new Uint8Array(head.concat(body))
+      }
+    }
+    return new Uint8Array([])
+  }
+  modHeader({ prop, val, u8Array }) {
+    let txt = decoder.decode(u8Array)
+    let reg = prop.replace(/([^0-9a-zA-Z])/g, '\\$1')
+    txt = txt.replace(new RegExp(`(${reg}\:)[^\r\n]*`, 'img'), `$1 ${val}`)
+    return encoder.encode(txt)
+  }
+  addHeader({ prop, val, u8Array }) {
+    let txt = decoder.decode(u8Array)
+    let index = txt.find('\n')
+    txt = txt.slice(0, index + 1) + `${prop}: ${val}\r\n` + txt.slice(index + 1)
+    return encoder.encode(txt)
+  }
+  delHeader({ prop, u8Array }) {
+    let txt = decoder.decode(u8Array)
+    let reg = prop.replace(/([^0-9a-zA-Z])/g, '\\$1')
+    txt = txt.replace(new RegExp(`(${reg}\:)[^\r\n]*\r?\n`, 'img'), '')
+    return encoder.encode(txt)
+  }
+  addParam({ param, val, u8Array }) {
+    let txt = decoder.decode(u8Array)
+    let index = txt.indexOf('\n')
+    let headLine = txt.slice(0, index)
+    headLine = headLine[headLine.length - 1] === '\r' ? headLine.slice(0, -1) : headLine
+
+    let quesIndex = headLine.indexOf('?')
+    if (quesIndex < 0) {
+      return u8Array
+    }
+
+    let url = headLine.slice(0, quesIndex)
+    let search = headLine.slice(quesIndex + 1)
+    let arr = search.split('&')
+
+    arr.push(`${param}=${encodeURIComponent(val)}`)
+    txt = url + '?' + arr.join('&') + '\r\n' + txt.slice(index + 1)
+
+    return encoder.encode(txt)
+  }
+  modParam({ param, val, u8Array }) {
+    let txt = decoder.decode(u8Array)
+    let index = txt.indexOf('\n')
+    let headLine = txt.slice(0, index)
+    headLine = headLine[headLine.length - 1] === '\r' ? headLine.slice(0, -1) : headLine
+
+    let quesIndex = headLine.indexOf('?')
+    if (quesIndex < 0) {
+      return u8Array
+    }
+
+    let url = headLine.slice(0, quesIndex)
+    let search = headLine.slice(quesIndex + 1)
+    let arr = search.split('&')
+
+    arr.forEach((item, index) => {
+      let [key] = item.split('=')
+      if (key.toLowerCase() === param.toLowerCase()) {
+        arr[index] = `${param}=${encodeURIComponent(val)}`
+      }
+    })
+
+    txt = url + '?' + arr.join('&') + '\r\n' + txt.slice(index + 1)
+
+    return encoder.encode(txt)
+  }
+  delParam({ param, u8Array }) {
+    let txt = decoder.decode(u8Array)
+    let index = txt.indexOf('\n')
+    let headLine = txt.slice(0, index)
+    headLine = headLine[headLine.length - 1] === '\r' ? headLine.slice(0, -1) : headLine
+
+    let quesIndex = headLine.indexOf('?')
+    if (quesIndex < 0) {
+      return u8Array
+    }
+
+    let url = headLine.slice(0, quesIndex)
+    let search = headLine.slice(quesIndex + 1)
+    let arr = search.split('&').filter(item => {
+      let [key] = item.split('=')
+      if (key.toLowerCase() === param.toLowerCase()) {
+        return false
+      }
+      return true
+    })
+
+    txt = url + '?' + arr.join('&') + '\r\n' + txt.slice(index + 1)
+
+    return encoder.encode(txt)
+  }
+  modBody({ body }) {
+    if (typeof body === 'string') {
+      return encoder.encode(body)
+    }
+    return new Uint8Array(body)
+  }
+}
