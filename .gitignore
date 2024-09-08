@@ -92,5 +92,4 @@ typings/
 # Electron-Forge
 out/
 # nedb
-electron/nedb.db
-electron/level.db
+electron/*.db
