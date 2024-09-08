@@ -44,8 +44,9 @@ export const [
   MSG_TIME,
   MSG_CIPHER,
   MSG_CERT,
-  MSG_PORT
-] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
+  MSG_PORT,
+  MSG_RULE
+] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
 
 export const [STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT] = [1, 2]
 

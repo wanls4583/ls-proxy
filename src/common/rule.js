@@ -1,5 +1,5 @@
 import { RULE_TYPE, RULE_WAY } from './utils'
-import { MSG_REQ_HEAD, MSG_REQ_BODY, MSG_RES_HEAD, MSG_RES_BODY } from './utils'
+import { MSG_REQ_HEAD, MSG_REQ_BODY, MSG_RES_HEAD, MSG_RES_BODY, MSG_RULE } from './utils'
 import { getDataInfo, getReqDataObj, getResDataObj } from '../common/data-utils'
 import Socket from './socket'
 const encoder = new TextEncoder()
@@ -8,6 +8,7 @@ export default class {
   constructor() {
     this.store = {}
     this.regMag = {}
+    this.sendId = 0
     this.initSocket()
     this.initEvent()
     this.initStore()
@@ -45,8 +46,10 @@ export default class {
             if (!dataObj) {
               return
             }
-            let u8Array = this.checkRule(dataObj)
-            this.socket.send(u8Array)
+            if ([MSG_REQ_HEAD, MSG_REQ_BODY, MSG_RES_HEAD, MSG_RES_BODY].includes(dataObj.msgType)) {
+              let arr = this.checkRule(dataObj)
+              this.socket.send(new Uint8Array(arr))
+            }
           })
         }
       }
@@ -62,6 +65,8 @@ export default class {
       getReqDataObj({ dataObj, u8Array, hasBobdy: true })
     } else if (msgType == MSG_RES_HEAD || msgType === MSG_RES_BODY) {
       getResDataObj({ dataObj, u8Array, hasBobdy: true })
+    } else if (msgType === MSG_RULE) {
+      this.reciveId == u8Array[0]
     }
 
     return dataObj
@@ -109,6 +114,7 @@ export default class {
   clearRule() {
     this.store = {}
     this.regMag = {}
+    this.storeRule()
   }
   storeRule() {
     if (this.db) {
@@ -118,6 +124,7 @@ export default class {
         }
       })
     }
+    this.sendRule()
   }
   restoreRule() {
     if (this.db) {
@@ -127,9 +134,23 @@ export default class {
         }
       })
     }
+    this.sendRule()
+  }
+  sendRule() {
+    if (this.socket.socketState === 'open') {
+      this.socket.send(this.createRuleMsg())
+      setTimeout(() => {
+        if (this.reciveId !== this.sendId) {
+          this.sendRule()
+        }
+      }, 2000)
+    }
   }
   createRuleMsg() {
     const msg = []
+    this.sendId = (++this.sendId) % 256
+    msg.push(Array.from(encoder.encode('rule:')))
+    msg.push(this.sendId)
     for (let url in this.store) {
       let urlObj = this.store[url]
       url = Array.from(encoder.encode(url))
@@ -158,8 +179,9 @@ export default class {
       return false
     }
   }
-  checkRule(dataObj) {
+  async checkRule(dataObj) {
     let msgType = dataObj.msgType
+    let result = Array.from(encoder.encode('data:'));
     for (let url in this.store) {
       if (this.regMag[url].exec(dataObj.url)) {
         let typeObj = null
@@ -172,8 +194,9 @@ export default class {
           break
         }
         let ways = Object.keys(typeObj).sort((a, b) => typeObj[a] - typeObj[b])
-        let { head, body } = dataObj
-        ways.forEach(way => {
+        let { head, body, reqHeader, resHeader } = dataObj
+        for (let i = 0; i < ways.length; i++) {
+          let way = ways[i]
           let wayObj = typeObj[way]
           let { option } = wayObj
           if (way === RULE_WAY.MODIFY_REQ_PARAM_ADD) {
@@ -201,15 +224,20 @@ export default class {
               head = this.delHeader({ prop, u8Array: head })
             })
           } else if ([RULE_WAY.MODIFY_REQ_BODY, RULE_WAY.MODIFY_RES_BODY].includes(way)) {
+            body = await getDecoededBody(MODIFY_REQ_BODY === way ? reqHeader : resHeader, body)
             body = this.modBody({ body: option.body })
+            head = this.delHeader({ prop: 'transfer-encoding', u8Array: head })
+            head = this.delHeader({ prop: 'content-encoding', u8Array: head })
+            head = this.delHeader({ prop: 'content-length', u8Array: head })
+            head = this.addHeader({ prop: 'content-length', val: body.length, u8Array: head })
           }
-        })
+        }
         head = Array.from(head)
         body = Array.from(body)
-        return new Uint8Array(head.concat(body))
+        result = result.concat(head).concat(body)
       }
     }
-    return new Uint8Array([])
+    return result
   }
   modHeader({ prop, val, u8Array }) {
     let txt = decoder.decode(u8Array)

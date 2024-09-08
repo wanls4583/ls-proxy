@@ -117,6 +117,7 @@ export function getReqDataObj({ dataObj, u8Array, db, hasBobdy }) {
   let head, spaceIndex, lineIndex
 
   head = u8Array.slice(0, index + 4)
+  hasBobdy && (dataObj.head = head)
   hasBobdy && (dataObj.body = u8Array.slice(index + 4))
   db && db.put(`reqHead-${dataObj.id}`, JSON.stringify(Array.from(head)))
   dataObj.size = '0 B'
@@ -157,6 +158,7 @@ export function getResDataObj({ dataObj, u8Array, db, hasBobdy }) {
   let head, spaceIndex, lineIndex
 
   head = u8Array.slice(0, index + 4)
+  hasBobdy && (dataObj.head = head)
   hasBobdy && (dataObj.body = u8Array.slice(index + 4))
   db && db.put(`resHead-${dataObj.id}`, JSON.stringify(Array.from(head)))
   dataObj.dataSize = u8Array.length
