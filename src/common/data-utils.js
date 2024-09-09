@@ -154,6 +154,19 @@ export function getReqDataObj({ dataObj, u8Array, db, hasBobdy }) {
 }
 
 export function getResDataObj({ dataObj, u8Array, db, hasBobdy }) {
+  let urlLenSize = u8Array[0]
+  let urlLenU8Array = u8Array.slice(1, urlLenSize + 1)
+  let urlLen = 0
+  if (urlLenSize === 4) {
+    urlLen = u8To32Uint(urlLenU8Array)
+  } else {
+    urlLen = u8To16Uint(urlLenU8Array)
+  }
+  if (urlLen) {
+    dataObj.url = dataObj.url || getStringFromU8Array(u8Array.slice(urlLenSize + 1, urlLenSize + 1 + urlLen))
+  }
+  u8Array = u8Array.slice(urlLenSize + 1 + urlLen)
+
   let index = u8Array.search([13, 10, 13, 10]) // \r\n\r\n
   let head, spaceIndex, lineIndex
 
