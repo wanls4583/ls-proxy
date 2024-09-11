@@ -1,7 +1,7 @@
 import { bigintToUint8Array } from './utils'
 import { RULE_TYPE, RULE_WAY } from './utils'
 import { MSG_REQ_HEAD, MSG_RES_HEAD, MSG_RULE } from './utils'
-import { getDataInfo, getReqDataObj, getResDataObj } from './data-utils'
+import { getDataInfo, getReqDataObj, getResDataObj, getDecoededBody } from './data-utils'
 import Socket from './socket'
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
@@ -66,6 +66,24 @@ export default class {
       way: RULE_WAY.MODIFY_REQ_HEADER_DEL,
       option: {
         vary: true,
+      }
+    })
+    this.addRule({
+      id: 7,
+      url: 'https://www.baidu*',
+      type: RULE_TYPE.REQ,
+      way: RULE_WAY.MODIFY_RES_BODY,
+      option: {
+        body: '测试替换响应体',
+      }
+    })
+    this.addRule({
+      id: 8,
+      url: 'https://www.baidu*',
+      type: RULE_TYPE.RES,
+      way: RULE_WAY.MODIFY_RES_BODY,
+      option: {
+        body: '测试替换响应体',
       }
     })
   }
@@ -300,12 +318,13 @@ export default class {
                 head = this.delHeader({ prop, u8Array: head })
               })
             } else if ([RULE_WAY.MODIFY_REQ_BODY, RULE_WAY.MODIFY_RES_BODY].includes(way)) {
-              body = await getDecoededBody(MODIFY_REQ_BODY === way ? reqHeader : resHeader, body)
+              body = await getDecoededBody(RULE_WAY.MODIFY_REQ_BODY === way ? reqHeader : resHeader, body)
               body = this.modBody({ body: option.body })
               head = this.delHeader({ prop: 'transfer-encoding', u8Array: head })
               head = this.delHeader({ prop: 'content-encoding', u8Array: head })
               head = this.delHeader({ prop: 'content-length', u8Array: head })
               head = this.addHeader({ prop: 'content-length', val: body.length, u8Array: head })
+              head = this.modHeader({ prop: 'content-type', val: '${val};charset=utf-8', u8Array: head })
             }
           }
         }
@@ -320,7 +339,8 @@ export default class {
   modHeader({ prop, val, u8Array }) {
     let txt = decoder.decode(u8Array)
     let reg = prop.replace(/([^0-9a-zA-Z])/g, '\\$1')
-    txt = txt.replace(new RegExp(`^(${reg}\:)[^\r\n]*`, 'img'), `$1 ${val}`)
+    val = val.replaceAll('${val}', '$2')
+    txt = txt.replace(new RegExp(`^(${reg}\:)\\s*([^\\r\\n]*)`, 'img'), `$1 ${val}`)
     return encoder.encode(txt)
   }
   addHeader({ prop, val, u8Array }) {
@@ -410,6 +430,9 @@ export default class {
     if (typeof body === 'string') {
       return encoder.encode(body)
     }
-    return new Uint8Array(body)
+    if (body instanceof Array) {
+      return new Uint8Array(body)
+    }
+    return new Uint8Array([])
   }
 }
