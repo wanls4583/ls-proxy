@@ -1,4 +1,38 @@
-.scroll-mini {
+.scroll-overlay,
+.scroll-auto {
+    overflow: overlay !important;
+
+    &::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+        background-color: transparent;
+    }
+    
+    &::-webkit-scrollbar-thumb {
+        border-radius: 10px;
+        background-color: transparent;
+    }
+
+    &::-webkit-scrollbar-corner {
+        background-color: transparent;
+    }
+
+    &:hover {
+        &::-webkit-scrollbar-thumb {
+            background-color: #606060;
+
+            &:hover {
+                background-color: #aeaeae;
+            }
+
+            &:active {
+                background-color: #c3c3c3;
+            }
+        }
+    }
+}
+
+.scroll-small {
     &.scroll-bar-v {
         width: 6px;
     }
@@ -13,19 +47,8 @@
     }
 }
 
-.scroll-small {
-    &.scroll-bar-v {
-        width: 10px;
-    }
-
-    &.scroll-bar-h {
-        height: 10px;
-    }
-
-    &::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
-    }
+.scroll-auto {
+    overflow: auto !important;
 }
 
 .scroll-bar-v,

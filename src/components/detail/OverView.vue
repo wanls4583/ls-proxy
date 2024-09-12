@@ -4,7 +4,7 @@
       <div class="label">名称</div>
       <div class="value">值</div>
     </div>
-    <div class="overview-tree">
+    <div class="overview-tree scroll-overlay">
       <el-tree
         :data="treeData"
         node-key="label"

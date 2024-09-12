@@ -6,7 +6,7 @@
         <i class="icon icon-copy"></i>
       </span>
     </div>
-    <div class="detail-object-table">
+    <div class="detail-object-table scroll-overlay">
       <div class="detail-object-table-row" v-for="item in keyList" :key="item">
         <div class="detail-object-table-cell">{{item}}</div>
         <div class="detail-object-table-cell">{{data[item]}}</div>
