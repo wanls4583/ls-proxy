@@ -14,19 +14,6 @@
         border-radius: 4px;
         background-color: #363636;
 
-        .icon {
-            cursor: pointer;
-            -webkit-app-region: no-drag;
-
-            &:hover {
-                color: #999;
-            }
-
-            &:active {
-                color: #dfdfdf;
-            }
-        }
-
         .hostname {
             -webkit-app-region: no-drag;
         }
@@ -37,7 +24,6 @@
             align-items: center;
 
             .icon {
-                margin-left: 8px;
                 font-size: 12px;
             }
 

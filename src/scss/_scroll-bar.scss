@@ -1,113 +1,88 @@
 .scroll-overlay,
 .scroll-auto {
-    overflow: overlay !important;
-
-    &::-webkit-scrollbar {
-        width: 10px;
-        height: 10px;
-        background-color: transparent;
-    }
-    
-    &::-webkit-scrollbar-thumb {
-        border-radius: 10px;
-        background-color: transparent;
-    }
-
-    &::-webkit-scrollbar-corner {
-        background-color: transparent;
-    }
-
-    &:hover {
-        &::-webkit-scrollbar-thumb {
-            background-color: #606060;
-
-            &:hover {
-                background-color: #aeaeae;
-            }
-
-            &:active {
-                background-color: #c3c3c3;
-            }
-        }
-    }
+  overflow: overlay !important;
 }
 
 .scroll-small {
+
+  &,
+  & div {
     &.scroll-bar-v {
-        width: 6px;
+      width: 6px;
     }
 
     &.scroll-bar-h {
-        height: 6px;
+      height: 6px;
     }
 
     &::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
+      width: 6px;
+      height: 6px;
     }
+  }
 }
 
 .scroll-auto {
-    overflow: auto !important;
+  overflow: auto !important;
 }
 
 .scroll-bar-v,
 .scroll-bar-h {
-    position: absolute;
-    overflow: hidden;
-    opacity: 0;
-    transition: opacity 0.8s;
+  position: absolute;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.8s;
 
-    &:hover,
-    &.scroll-visible,
-    &.scroll-clicked {
-        opacity: 1;
+  &:hover,
+  &.scroll-visible,
+  &.scroll-clicked {
+    opacity: 1;
+  }
+
+  &.hide {
+    background-color: transparent;
+    pointer-events: none;
+
+    .scroll-slider {
+      background-color: transparent;
+      pointer-events: none;
     }
-
-    &.hide {
-        background-color: transparent;
-        pointer-events: none;
-
-        .scroll-slider {
-            background-color: transparent;
-            pointer-events: none;
-        }
-    }
+  }
 }
 
 .scroll-bar-v {
-    top: 0;
-    bottom: 0;
-    right: 0;
-    width: 10px;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 10px;
 
-    .scroll-slider {
-        width: 100%;
-    }
+  .scroll-slider {
+    width: 100%;
+  }
 }
 
 .scroll-bar-h {
-    left: 0;
-    right: 0;
-    bottom: 0;
-    height: 10px;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 10px;
 
-    .scroll-slider {
-        height: 100%;
-    }
+  .scroll-slider {
+    height: 100%;
+  }
 }
 
 .scroll-slider {
-    position: absolute;
-    background-color: #606060;
-    border-radius: 10px;
+  position: absolute;
+  background-color: #606060;
+  border-radius: 10px;
 
-    &:hover {
-        background-color: #aeaeae;
-    }
+  &:hover {
+    background-color: #aeaeae;
+  }
 
-    &:active,
-    &.active {
-        background-color: #c3c3c3;
-    }
+  &:active,
+  &.active {
+    background-color: #c3c3c3;
+  }
 }

@@ -19,12 +19,7 @@
         </el-tab-pane>
       </el-tabs>
       <div class="op-wrap">
-        <el-popover
-          width="100"
-          trigger="hover"
-          popper-class="detail-op-popover dark"
-          :visible-arrow="true"
-        >
+        <el-popover width="100" trigger="hover" popper-class="op-list dark" :visible-arrow="true">
           <div class="op-btn-list">
             <div class="op-btn-item" @click="onClose">关闭</div>
           </div>

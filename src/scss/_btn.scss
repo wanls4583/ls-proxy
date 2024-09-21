@@ -1,64 +1,74 @@
 .btn-group {
-    display: flex;
-    align-items: center;
+  display: flex;
+  align-items: center;
 
-    .btn {
-        border-radius: 0;
-        border-left-style: none;
+  .btn {
+    border-radius: 0;
+    border-left-style: none;
 
-        &::before {
-            content: "";
-            position: absolute;
-            top: 6px;
-            height: 16px;
-            width: 1px;
-            background-color: #ececec;
-            left: 0;
-        }
-
-        &:first-child {
-            border-left-style: solid;
-            border-radius: 4px 0 0 4px;
-
-            &::before {
-                display: none;
-            }
-        }
-
-        &:last-child {
-            border-radius: 0 4px 4px 0;
-        }
+    &::before {
+      content: "";
+      position: absolute;
+      top: 6px;
+      height: 16px;
+      width: 1px;
+      background-color: #ececec;
+      left: 0;
     }
+
+    &:first-child {
+      border-left-style: solid;
+      border-radius: 4px 0 0 4px;
+
+      &::before {
+        display: none;
+      }
+    }
+
+    &:last-child {
+      border-radius: 0 4px 4px 0;
+    }
+  }
 }
 
 .btn {
-    position: relative;
-    border-radius: 6px;
-    display: inline-block;
-    height: 30px;
-    line-height: 28px;
-    text-align: center;
-    padding: 0 8px;
-    border: 1px solid #464646;
-    white-space: nowrap;
-    cursor: pointer;
-    user-select: none;
+  position: relative;
+  border-radius: 6px;
+  display: inline-block;
+  height: 30px;
+  line-height: 28px;
+  text-align: center;
+  padding: 0 8px;
+  border: 1px solid #464646;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+
+  &:hover {
+    opacity: 0.95;
+  }
+
+  &:active {
+    opacity: 1;
+  }
+
+  &.btn-primary {
+    background-color: #efae22;
+    border-color: transparent;
+    color: #fff;
+  }
+
+  &.btn-text {
+    background-color: transparent;
+    color: #efae22;
+    border-color: transparent;
 
     &:hover {
-        background-color: #464646;
+      background-color: #efae2210;
     }
 
-    &.btn-primary {
-        background-color: #efae22;
-        border-color: transparent;
-        color: #fff;
-
-        &:hover {
-            background-color: #f5b834;
-        }
-
-        &:active {
-            background-color: #efae22;
-        }
+    &:active {
+      background-color: #efae2220;
     }
+  }
 }

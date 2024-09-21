@@ -211,6 +211,7 @@ export default {
       this.initSocket()
       this.clearTable()
       this.rule = new Rule()
+      window.ruleStore = this.rule
     },
     initDB() {
       if (window.require) {

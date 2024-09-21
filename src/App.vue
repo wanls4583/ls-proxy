@@ -4,6 +4,7 @@
       <ls-header />
       <type-filter />
       <record-table />
+      <DialogRuleList :visible.sync="ruleListVisible" v-if="ruleListVisible" />
     </div>
   </div>
 </template>
@@ -12,14 +13,29 @@
 import Header from './components/Header.vue'
 import TypeFilter from './components/TypeFilter.vue'
 import RecordTable from './components/RecordTable.vue'
+import DialogRuleList from './components/DialogRuleList.vue'
 export default {
   name: 'App',
   components: {
     LsHeader: Header,
     TypeFilter,
     RecordTable,
+    DialogRuleList,
+  },
+  data() {
+    return {
+      ruleListVisible: false,
+    }
+  },
+  created() {
+    this.initEvent()
   },
   methods: {
+    initEvent() {
+      this.eventBus.$on('show-rule', () => {
+        this.ruleListVisible = true
+      })
+    },
   }
 }
 </script>

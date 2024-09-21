@@ -14,78 +14,78 @@ export default class {
     this.initEvent()
     this.initStore()
     // this.restoreRule()
-    this.addRule({
-      id: 1,
-      url: 'https://www.baidu*',
-      type: RULE_TYPE.REQ,
-      way: RULE_WAY.MODIFY_REQ_HEADER_ADD,
-      option: {
-        testAdd: 'abc',
-      }
-    })
-    this.addRule({
-      id: 2,
-      url: 'https://www.baidu*',
-      type: RULE_TYPE.REQ,
-      way: RULE_WAY.MODIFY_REQ_HEADER_MOD,
-      option: {
-        'User-Agent': 'abc',
-      }
-    })
-    this.addRule({
-      id: 3,
-      url: 'https://www.baidu*',
-      type: RULE_TYPE.REQ,
-      way: RULE_WAY.MODIFY_REQ_HEADER_DEL,
-      option: {
-        'Accept-Encoding': true,
-      }
-    })
-    this.addRule({
-      id: 4,
-      url: 'https://www.baidu*',
-      type: RULE_TYPE.RES,
-      way: RULE_WAY.MODIFY_REQ_HEADER_ADD,
-      option: {
-        testAdd: 'abc',
-      }
-    })
-    this.addRule({
-      id: 5,
-      url: 'https://www.baidu*',
-      type: RULE_TYPE.RES,
-      way: RULE_WAY.MODIFY_REQ_HEADER_MOD,
-      option: {
-        traceid: 'abc',
-      }
-    })
-    this.addRule({
-      id: 6,
-      url: 'https://www.baidu*',
-      type: RULE_TYPE.RES,
-      way: RULE_WAY.MODIFY_REQ_HEADER_DEL,
-      option: {
-        vary: true,
-      }
-    })
-    this.addRule({
-      id: 7,
-      url: 'https://www.baidu*',
-      type: RULE_TYPE.REQ,
-      way: RULE_WAY.MODIFY_RES_BODY,
-      option: {
-        body: '测试替换响应体',
-      }
-    })
-    this.addRule({
-      id: 8,
-      url: 'https://www.baidu*',
-      type: RULE_TYPE.RES,
-      way: RULE_WAY.MODIFY_RES_BODY,
-      option: {
-        body: '测试替换响应体',
-      }
-    })
+    // this.addRule({
+    //   id: '1',
+    //   url: 'https://www.baidu*',
+    //   type: RULE_TYPE.REQ,
+    //   way: RULE_WAY.MODIFY_REQ_HEADER_ADD,
+    //   option: {
+    //     testAdd: 'abc',
+    //   }
+    // })
+    // this.addRule({
+    //   id: '2',
+    //   url: 'https://www.baidu*',
+    //   type: RULE_TYPE.REQ,
+    //   way: RULE_WAY.MODIFY_REQ_HEADER_MOD,
+    //   option: {
+    //     'User-Agent': 'abc',
+    //   }
+    // })
+    // this.addRule({
+    //   id: '3',
+    //   url: 'https://www.baidu*',
+    //   type: RULE_TYPE.REQ,
+    //   way: RULE_WAY.MODIFY_REQ_HEADER_DEL,
+    //   option: {
+    //     'Accept-Encoding': true,
+    //   }
+    // })
+    // this.addRule({
+    //   id: '4',
+    //   url: 'https://www.baidu*',
+    //   type: RULE_TYPE.RES,
+    //   way: RULE_WAY.MODIFY_RES_HEADER_ADD,
+    //   option: {
+    //     testAdd: 'abc',
+    //   }
+    // })
+    // this.addRule({
+    //   id: '5',
+    //   url: 'https://www.baidu*',
+    //   type: RULE_TYPE.RES,
+    //   way: RULE_WAY.MODIFY_RES_HEADER_MOD,
+    //   option: {
+    //     traceid: 'abc',
+    //   }
+    // })
+    // this.addRule({
+    //   id: '6',
+    //   url: 'https://www.baidu*',
+    //   type: RULE_TYPE.RES,
+    //   way: RULE_WAY.MODIFY_RES_HEADER_DEL,
+    //   option: {
+    //     vary: true,
+    //   }
+    // })
+    // this.addRule({
+    //   id: '7',
+    //   url: 'https://www.baidu*',
+    //   type: RULE_TYPE.REQ,
+    //   way: RULE_WAY.MODIFY_REQ_BODY_REP,
+    //   option: {
+    //     body: '测试替换响应体',
+    //   }
+    // })
+    // this.addRule({
+    //   id: '8',
+    //   url: 'https://www.baidu*',
+    //   type: RULE_TYPE.RES,
+    //   way: RULE_WAY.MODIFY_RES_BODY_REP,
+    //   option: {
+    //     body: '测试替换响应体',
+    //   }
+    // })
   }
   initEvent() {
     window.eventBus.$on('start-listen', (val) => {
@@ -144,14 +144,16 @@ export default class {
 
     return dataObj
   }
-  addRule({ id, url, type, way, option }) {
+  addRule({ id, url, type, way, name, option, enable = true }) {
     this.delRule(id, false)
     this.store[url] = this.store[url] || {}
     this.store[url][type] = this.store[url][type] || {}
     this.store[url][type][way] = this.store[url][type][way] || []
     this.store[url][type][way].push({
       id: id,
-      option: option
+      name: name,
+      option: option,
+      enable: enable,
     })
     if (!this.regMag[url]) {
       let reg = url.replace(/([^0-9a-zA-Z])/g, '\\$1')
@@ -201,6 +203,43 @@ export default class {
       }
     }
     return false
+  }
+  getRuleList() {
+    let list = []
+    for (let url in this.store) {
+      let urlObj = this.store[url]
+      for (let type in urlObj) {
+        let typeObj = urlObj[type]
+        for (let way in typeObj) {
+          let wayList = typeObj[way].map(ruleObj => {
+            return {
+              ...ruleObj,
+              ruleObj,
+              url,
+              type,
+              way
+            }
+          })
+          list = list.concat(wayList)
+        }
+      }
+    }
+    return list
+  }
+  getRuleById(id) {
+    for (let url in this.store) {
+      let urlObj = this.store[url]
+      for (let type in urlObj) {
+        let typeObj = urlObj[type]
+        for (let way in typeObj) {
+          let wayList = typeObj[way]
+          let ruleObj = wayList.find(item => item.id === id)
+          if (ruleObj) {
+            return { ...ruleObj, ruleObj, url, type, way }
+          }
+        }
+      }
+    }
   }
   clearRule() {
     this.store = {}
@@ -263,7 +302,7 @@ export default class {
 
     function _findBodyRule(typeObj) {
       for (let way in typeObj) {
-        if (way === RULE_WAY.MODIFY_REQ_BODY || way === RULE_WAY.MODIFY_RES_BODY) {
+        if (way === RULE_WAY.MODIFY_REQ_BODY_REP || way === RULE_WAY.MODIFY_RES_BODY_REP) {
           return true
         }
       }
@@ -317,8 +356,8 @@ export default class {
               Object.keys(option).forEach(prop => {
                 head = this.delHeader({ prop, u8Array: head })
               })
-            } else if ([RULE_WAY.MODIFY_REQ_BODY, RULE_WAY.MODIFY_RES_BODY].includes(way)) {
-              body = await getDecoededBody(RULE_WAY.MODIFY_REQ_BODY === way ? reqHeader : resHeader, body)
+            } else if ([RULE_WAY.MODIFY_REQ_BODY_REP, RULE_WAY.MODIFY_RES_BODY_REP].includes(way)) {
+              body = await getDecoededBody(RULE_WAY.MODIFY_REQ_BODY_REP === way ? reqHeader : resHeader, body)
               body = this.modBody({ body: option.body })
               head = this.delHeader({ prop: 'transfer-encoding', u8Array: head })
               head = this.delHeader({ prop: 'content-encoding', u8Array: head })

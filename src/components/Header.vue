@@ -5,19 +5,46 @@
         <div class="dot" :class="{ active: processing }"></div>
         <div class="hostname">Proxying at {{ hostname }}</div>
         <el-tooltip class="item" effect="light" content="复制代理地址" placement="bottom">
-          <i class="icon icon-copy"></i>
+          <i class="icon icon-copy hover-icon"></i>
         </el-tooltip>
         <el-tooltip class="item" effect="light" content="修改端口号" placement="bottom">
-          <i class="icon icon-pen-1"></i>
+          <i class="icon icon-pen-1 hover-icon"></i>
         </el-tooltip>
       </div>
       <div class="btn-wrap">
-        <i class="icon icon-gateway" :class="{ active: gatewayAactive }" @click="onClickGateWay"></i>
-        <i class="icon icon-mirror" :class="{ active: mirrorAactive }" @click="onClickMirror"></i>
-        <i class="icon icon-pen" :class="{ active: penAactive }" @click="onClickPen"></i>
-        <i class="icon icon-bug" :class="{ active: bugAactive }" @click="onClickBug"></i>
-        <i class="icon icon-network" :class="{ active: networkAactive }" @click="onClickNetwork"></i>
-        <i class="icon icon-ssl" :class="{ active: sslAactive }" @click="onClickSll"></i>
+        <i
+          class="icon icon-gateway hover-icon"
+          :class="{ active: gatewayAactive }"
+          @click="onClickGateWay"
+        ></i>
+        <i
+          class="icon icon-mirror hover-icon"
+          :class="{ active: mirrorAactive }"
+          @click="onClickMirror"
+        ></i>
+        <el-popover
+          width="150"
+          trigger="hover"
+          popper-class="op-list is-menu dark"
+          :visible-arrow="true"
+        >
+          <div class="op-btn-list">
+            <div class="op-group">
+              <div class="op-btn-item" @click="onClickPen">{{penAactive?'禁用':'启用'}}</div>
+            </div>
+            <div class="op-group">
+              <div class="op-btn-item" @click="onClickRule">管理规则</div>
+            </div>
+          </div>
+          <i slot="reference" class="icon icon-pen hover-icon" :class="{ active: penAactive }"></i>
+        </el-popover>
+        <i class="icon icon-bug hover-icon" :class="{ active: bugAactive }" @click="onClickBug"></i>
+        <i
+          class="icon icon-network hover-icon"
+          :class="{ active: networkAactive }"
+          @click="onClickNetwork"
+        ></i>
+        <i class="icon icon-ssl hover-icon" :class="{ active: sslAactive }" @click="onClickSll"></i>
       </div>
     </div>
     <div class="right-wrap">
@@ -90,6 +117,9 @@ export default {
     },
     onClickPen() {
       this.penAactive = !this.penAactive
+    },
+    onClickRule() {
+      this.eventBus.$emit('show-rule')
     },
     onClickBug() {
       this.bugAactive = !this.bugAactive

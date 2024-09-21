@@ -6,19 +6,89 @@ export const RULE_TYPE = {
 }
 
 export const RULE_WAY = {
-  MODIFY_REQ_URL: '1',
   MODIFY_REQ_PARAM_ADD: '1',
   MODIFY_REQ_PARAM_MOD: '2',
   MODIFY_REQ_PARAM_DEL: '3',
   MODIFY_REQ_HEADER_ADD: '4',
   MODIFY_REQ_HEADER_MOD: '5',
   MODIFY_REQ_HEADER_DEL: '6',
-  MODIFY_REQ_BODY: '7',
-  MODIFY_RES_HEADER_ADD: '8',
-  MODIFY_RES_HEADER_MOD: '9',
-  MODIFY_RES_HEADER_DEL: '10',
-  MODIFY_RES_BODY: '11',
+  MODIFY_REQ_BODY_REP: '7',
+  MODIFY_REQ_BODY_MOD: '8',
+  MODIFY_RES_HEADER_ADD: '9',
+  MODIFY_RES_HEADER_MOD: '10',
+  MODIFY_RES_HEADER_DEL: '11',
+  MODIFY_RES_BODY_REP: '12',
+  MODIFY_RES_BODY_MOD: '13',
 }
+
+export const ruleWayList = [
+  {
+    type: RULE_TYPE.REQ,
+    value: RULE_WAY.MODIFY_REQ_PARAM_ADD,
+    label: '新增参数'
+  },
+  {
+    type: RULE_TYPE.REQ,
+    value: RULE_WAY.MODIFY_REQ_PARAM_MOD,
+    label: '修改参数'
+  },
+  {
+    type: RULE_TYPE.REQ,
+    value: RULE_WAY.MODIFY_REQ_PARAM_DEL,
+    label: '删除参数'
+  },
+  {
+    type: RULE_TYPE.REQ,
+    value: RULE_WAY.MODIFY_REQ_HEADER_ADD,
+    label: '新增请求头'
+  },
+  {
+    type: RULE_TYPE.REQ,
+    value: RULE_WAY.MODIFY_REQ_HEADER_MOD,
+    label: '修改请求头'
+  },
+  {
+    type: RULE_TYPE.REQ,
+    value: RULE_WAY.MODIFY_REQ_HEADER_DEL,
+    label: '删除请求头'
+  },
+  {
+    type: RULE_TYPE.REQ,
+    value: RULE_WAY.MODIFY_REQ_BODY_REP,
+    label: '替换请求体'
+  },
+  {
+    type: RULE_TYPE.REQ,
+    value: RULE_WAY.MODIFY_REQ_BODY_MOD,
+    label: '修改请求体'
+  },
+  {
+    type: RULE_TYPE.RES,
+    value: RULE_WAY.MODIFY_RES_HEADER_ADD,
+    label: '新增响应头'
+  },
+  {
+    type: RULE_TYPE.RES,
+    value: RULE_WAY.MODIFY_RES_HEADER_MOD,
+    label: '修改响应头'
+  },
+  {
+    type: RULE_TYPE.RES,
+    value: RULE_WAY.MODIFY_RES_HEADER_DEL,
+    label: '删除响应头'
+  },
+  {
+    type: RULE_TYPE.RES,
+    value: RULE_WAY.MODIFY_RES_BODY_REP,
+    label: '替换响应体'
+  },
+  {
+    type: RULE_TYPE.RES,
+    value: RULE_WAY.MODIFY_RES_BODY_MOD,
+    label: '修改响应体'
+  }
+]
+
 export const [
   TIME_DNS_START,
   TIME_DNS_END,
