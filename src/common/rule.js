@@ -283,30 +283,36 @@ export default class {
     msg.push(this.sendId)
     for (let url in this.store) {
       let urlObj = this.store[url]
+      let reqFlag, resFlag
+
+      reqFlag = _findRuleFlag(urlObj[RULE_TYPE.REQ])
+      resFlag = _findRuleFlag(urlObj[RULE_TYPE.RES])
+      if (!reqFlag && !resFlag) {
+        continue
+      }
+
+      msg.push(reqFlag)
+      msg.push(resFlag)
+
       url = Array.from(encoder.encode(url))
-      if (urlObj[RULE_TYPE.REQ]) {
-        msg.push(_findBodyRule(urlObj[RULE_TYPE.REQ]) ? 2 : 1)
-      } else {
-        msg.push(0)
-      }
-      if (urlObj[RULE_TYPE.RES]) {
-        msg.push(_findBodyRule(urlObj[RULE_TYPE.RES]) ? 2 : 1)
-      } else {
-        msg.push(0)
-      }
       msg.push(Math.floor(url.length / 256));
       msg.push(url.length % 256);
       msg.push(...url);
     }
     return new Uint8Array(msg)
 
-    function _findBodyRule(typeObj) {
+    function _findRuleFlag(typeObj) { // 0:无规则，1:请求头/响应头，2:请求体/响应体
+      let flag = 0
       for (let way in typeObj) {
-        if (way === RULE_WAY.MODIFY_REQ_BODY_REP || way === RULE_WAY.MODIFY_RES_BODY_REP) {
-          return true
+        if (typeObj[way].find(item => item.enable)) {
+          flag = 1
+          if (way === RULE_WAY.MODIFY_REQ_BODY_REP || way === RULE_WAY.MODIFY_RES_BODY_REP) {
+            flag = 2
+            break
+          }
         }
       }
-      return false
+      return flag
     }
   }
   async checkRule(dataObj) {
