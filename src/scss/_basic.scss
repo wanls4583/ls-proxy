@@ -72,6 +72,8 @@ body {
 
 .hover-icon {
   position: relative;
+  display: flex;
+  align-items: center;
   font-size: 16px;
   margin-left: 10px;
   cursor: pointer;
@@ -119,8 +121,8 @@ body {
 
   .op-btn-list {
     .op-btn-item {
-      height: 30px;
-      line-height: 30px;
+      height: 25px;
+      line-height: 25px;
       padding: 0 10px;
       font-size: 14px;
       color: #dfdfdf;
@@ -141,8 +143,6 @@ body {
   &.is-menu {
     .op-btn-list {
       .op-btn-item {
-        height: 25px;
-        line-height: 25px;
         border-radius: 4px;
 
         &:hover {

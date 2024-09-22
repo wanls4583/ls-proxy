@@ -68,7 +68,7 @@ export default {
     var wayValidator = (rule, value, callback) => {
       if (value === '') {
         callback(new Error('类型不能为空'));
-      } else if (this.isConfirm && this.param?.type !== this.form.type) {
+      } else if (this.isConfirm && !this.ruleObj.way) {
         callback(new Error('请编辑规则'));
       } else {
         callback();
@@ -117,8 +117,8 @@ export default {
       }
       this.ruleObj.type = this.form.type
     },
-    handleAddRule(param) {
-      this.param = param
+    handleAddRule(ruleObj) {
+      this.ruleObj = ruleObj
       this.isConfirm = true
       this.$refs.form.validate(() => { })
       this.isConfirm = false
@@ -127,7 +127,7 @@ export default {
       this.isConfirm = true
       this.$refs.form.validate(valid => {
         if (valid) {
-          let param = Object.assign({}, this.param, this.form)
+          let param = Object.assign({}, this.ruleObj, this.form)
           param.enable = this.originRuleObj ? this.originRuleObj.enable : true
           window.ruleStore.addRule(param)
           this.$emit('confirm')

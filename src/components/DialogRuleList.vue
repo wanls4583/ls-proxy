@@ -90,7 +90,7 @@ export default {
       this.allEnable = this.list.length && this.list.filter(item => item.enable).length === this.list.length
     },
     handleCheckChange(row) {
-      row.ruleObj.enable = row.enable
+      window.ruleStore.setEnable(row.id, row.enable)
       this.setEnableAll()
     },
     handleAllCheckChange() {

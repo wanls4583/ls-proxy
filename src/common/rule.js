@@ -13,79 +13,7 @@ export default class {
     this.initSocket()
     this.initEvent()
     this.initStore()
-    // this.restoreRule()
-    // this.addRule({
-    //   id: '1',
-    //   url: 'https://www.baidu*',
-    //   type: RULE_TYPE.REQ,
-    //   way: RULE_WAY.MODIFY_REQ_HEADER_ADD,
-    //   option: {
-    //     testAdd: 'abc',
-    //   }
-    // })
-    // this.addRule({
-    //   id: '2',
-    //   url: 'https://www.baidu*',
-    //   type: RULE_TYPE.REQ,
-    //   way: RULE_WAY.MODIFY_REQ_HEADER_MOD,
-    //   option: {
-    //     'User-Agent': 'abc',
-    //   }
-    // })
-    // this.addRule({
-    //   id: '3',
-    //   url: 'https://www.baidu*',
-    //   type: RULE_TYPE.REQ,
-    //   way: RULE_WAY.MODIFY_REQ_HEADER_DEL,
-    //   option: {
-    //     'Accept-Encoding': true,
-    //   }
-    // })
-    // this.addRule({
-    //   id: '4',
-    //   url: 'https://www.baidu*',
-    //   type: RULE_TYPE.RES,
-    //   way: RULE_WAY.MODIFY_RES_HEADER_ADD,
-    //   option: {
-    //     testAdd: 'abc',
-    //   }
-    // })
-    // this.addRule({
-    //   id: '5',
-    //   url: 'https://www.baidu*',
-    //   type: RULE_TYPE.RES,
-    //   way: RULE_WAY.MODIFY_RES_HEADER_MOD,
-    //   option: {
-    //     traceid: 'abc',
-    //   }
-    // })
-    // this.addRule({
-    //   id: '6',
-    //   url: 'https://www.baidu*',
-    //   type: RULE_TYPE.RES,
-    //   way: RULE_WAY.MODIFY_RES_HEADER_DEL,
-    //   option: {
-    //     vary: true,
-    //   }
-    // })
-    // this.addRule({
-    //   id: '7',
-    //   url: 'https://www.baidu*',
-    //   type: RULE_TYPE.REQ,
-    //   way: RULE_WAY.MODIFY_REQ_BODY_REP,
-    //   option: {
-    //     body: '测试替换响应体',
-    //   }
-    // })
-    // this.addRule({
-    //   id: '8',
-    //   url: 'https://www.baidu*',
-    //   type: RULE_TYPE.RES,
-    //   way: RULE_WAY.MODIFY_RES_BODY_REP,
-    //   option: {
-    //     body: '测试替换响应体',
-    //   }
-    // })
+    this.restoreRule()
   }
   initEvent() {
     window.eventBus.$on('start-listen', (val) => {
@@ -144,6 +72,12 @@ export default class {
 
     return dataObj
   }
+  getUrlReg(url) {
+    let reg = url.replace(/([^0-9a-zA-Z])/g, '\\$1')
+    reg = reg.replace(/\\\?/g, '.')
+    reg = reg.replace(/\\\*/g, '.?')
+    return new RegExp(reg)
+  }
   addRule({ id, url, type, way, name, option, enable = true }) {
     this.delRule(id, false)
     this.store[url] = this.store[url] || {}
@@ -156,10 +90,7 @@ export default class {
       enable: enable,
     })
     if (!this.regMag[url]) {
-      let reg = url.replace(/([^0-9a-zA-Z])/g, '\\$1')
-      reg = reg.replace(/\\\?/g, '.')
-      reg = reg.replace(/\\\*/g, '.?')
-      this.regMag[url] = new RegExp(reg)
+      this.regMag[url] = this.getUrlReg(url)
     }
     this.storeRule()
   }
@@ -203,6 +134,11 @@ export default class {
       }
     }
     return false
+  }
+  setEnable(id, enable) {
+    let obj = this.getRuleById(id)
+    obj.ruleObj.enable = enable
+    this.storeRule()
   }
   getRuleList() {
     let list = []
@@ -261,6 +197,11 @@ export default class {
       this.db.get('rule-stroe', { asBuffer: false }, (err, value) => {
         if (!err) {
           this.store = JSON.parse(value)
+          for (let url in this.store) {
+            if (!this.regMag[url]) {
+              this.regMag[url] = this.getUrlReg(url)
+            }
+          }
         }
       })
     }
