@@ -331,7 +331,10 @@ export default class {
           let way = ways[i]
           let wayList = typeObj[way]
           for (let j = 0; j < wayList.length; j++) {
-            let { option } = wayList[j]
+            let { option, enable } = wayList[j]
+            if (!enable) {
+              continue
+            }
             if (way === RULE_WAY.MODIFY_REQ_PARAM_ADD) {
               Object.keys(option).forEach(param => {
                 head = this.addParam({ param, val: option[param], u8Array: head })
