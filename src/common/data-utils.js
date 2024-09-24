@@ -64,6 +64,7 @@ export function getDataInfo(dataObj, u8Array) {
   }
 
   let idSize = u8Array[index++]
+  dataObj.idSize = idSize
   if (idSize === 8) {
     dataObj.id = u8To64Uint(u8Array, index) + ''
   } else {
@@ -72,6 +73,7 @@ export function getDataInfo(dataObj, u8Array) {
   index += idSize
 
   let sockIdSize = u8Array[index++]
+  dataObj.sockIdSize = sockIdSize
   if (sockIdSize === 8) {
     dataObj.sockId = u8To64Uint(u8Array, index) + ''
   } else {

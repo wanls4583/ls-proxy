@@ -260,8 +260,8 @@ export default class {
     let { msgType, head, body, reqHeader, resHeader } = dataObj
     let result = Array.from(encoder.encode('data:'));
     result.push(msgType)
-    result.push(8)
-    result.push(...Array.from(bigintToUint8Array(dataObj.id, 8)))
+    result.push(dataObj.idSize)
+    result.push(...Array.from(bigintToUint8Array(dataObj.id, dataObj.idSize)))
     for (let url in this.store) {
       if (this.regMag[url].exec(dataObj.url)) {
         let typeObj = null
