@@ -65,6 +65,7 @@ export function getDataInfo(dataObj, u8Array) {
 
   let idSize = u8Array[index++]
   dataObj.idSize = idSize
+  window.u64Size = idSize
   if (idSize === 8) {
     dataObj.id = u8To64Uint(u8Array, index) + ''
   } else {
@@ -114,14 +115,13 @@ export function getDataInfo(dataObj, u8Array) {
   return { msgType, u8Array }
 }
 
-export function getReqDataObj({ dataObj, u8Array, db, hasBobdy }) {
+export function getReqDataObj({ dataObj, u8Array, hasBobdy }) {
   let index = u8Array.search([13, 10, 13, 10]) // \r\n\r\n
   let head, spaceIndex, lineIndex
 
   head = u8Array.slice(0, index + 4)
   hasBobdy && (dataObj.head = head)
   hasBobdy && (dataObj.body = u8Array.slice(index + 4))
-  db && db.put(`reqHead-${dataObj.id}`, JSON.stringify(Array.from(head)))
   dataObj.size = '0 B'
   dataObj.reqBodyIndex = 0
 
@@ -155,7 +155,7 @@ export function getReqDataObj({ dataObj, u8Array, db, hasBobdy }) {
   }
 }
 
-export function getResDataObj({ dataObj, u8Array, db, hasBobdy }) {
+export function getResDataObj({ dataObj, u8Array, hasBobdy }) {
   let urlLenSize = u8Array[0]
   let urlLenU8Array = u8Array.slice(1, urlLenSize + 1)
   let urlLen = 0
@@ -175,8 +175,7 @@ export function getResDataObj({ dataObj, u8Array, db, hasBobdy }) {
   head = u8Array.slice(0, index + 4)
   hasBobdy && (dataObj.head = head)
   hasBobdy && (dataObj.body = u8Array.slice(index + 4))
-  db && db.put(`resHead-${dataObj.id}`, JSON.stringify(Array.from(head)))
-  dataObj.dataSize = u8Array.length
+  dataObj.reqBodySize = u8Array.length
   dataObj.resBodyIndex = 0
 
   spaceIndex = u8Array.search(32)

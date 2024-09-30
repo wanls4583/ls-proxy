@@ -71,6 +71,7 @@ import DialogDetail from './DialogDetail.vue'
 import { STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT } from '../common/utils'
 import { TIME_DNS_START, TIME_CONNECT_START, TIME_REQ_START, TIME_RES_END } from '../common/utils'
 import { MSG_REQ_HEAD, MSG_REQ_BODY, MSG_REQ_BODY_END, MSG_RES_HEAD, MSG_RES_BODY, MSG_RES_BODY_END, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT, MSG_PORT } from '../common/utils'
+import { DATA_TYPE_REQ_HEAD, DATA_TYPE_RES_HEAD, DATA_TYPE_REQ_BODY, DATA_TYPE_RES_BODY, DATA_TYPE_CERT } from '../common/utils'
 
 let dataList = []
 let dataIdMap = {}
@@ -214,16 +215,6 @@ export default {
       window.ruleStore = this.rule
     },
     initDB() {
-      if (window.require) {
-        const rimraf = window.require('rimraf')
-        const levelup = window.require('levelup')
-        const leveldown = window.require('leveldown')
-        const path = window.require('path')
-        const { app } = window.require('@electron/remote')
-        const filename = path.join(app.getAppPath(), 'electron/level.db')
-        rimraf.sync(filename)
-        this.db = levelup(leveldown(filename))
-      }
     },
     initEvent() {
       this.eventBus.$on('start-listen', (val) => {
@@ -291,7 +282,7 @@ export default {
 
       if (msgType == MSG_REQ_HEAD) {
         // req
-        getReqDataObj({ dataObj, u8Array, db: this.db })
+        getReqDataObj({ dataObj, u8Array })
         this.getClientPath(dataObj)
       } else if (msgType == MSG_REQ_BODY) {
         // req-body
@@ -313,7 +304,7 @@ export default {
           return null
         }
         dataObj = dataIdMap[dataObj.id]
-        getResDataObj({ dataObj, u8Array, db: this.db })
+        getResDataObj({ dataObj, u8Array })
       } else if (msgType == MSG_RES_BODY) {
         // res-body
         if (!dataIdMap[dataObj.id]) {
@@ -377,42 +368,25 @@ export default {
       return dataObj
     },
     getReqBodyDataObj(dataObj, u8Array) {
-      if (this.db) {
-        dataObj.reqBody = dataObj.reqBody || []
-        dataObj.reqBody = dataObj.reqBody.concat(Array.from(u8Array))
-        if (dataObj.reqBody.length >= this.dbChunkSize) {
-          this.db.put(`reqBody-${dataObj.id}-${dataObj.reqBodyIndex}`, JSON.stringify(dataObj.reqBody))
-          dataObj.reqBody = []
-          dataObj.reqBodyIndex++
-        }
+      let sizeBytes = u8Array[0]
+      if (sizeBytes === 8) {
+        dataObj.reqBodySize = u8To64Uint(u8Array, 1) + ''
+      } else {
+        dataObj.reqBodySize = u8To32Uint(u8Array, 1) + ''
       }
     },
     getReqBodyEndDataObj(dataObj) {
-      if (this.db && dataObj.reqBody?.length) {
-        this.db.put(`reqBody-${dataObj.id}-${dataObj.reqBodyIndex}`, JSON.stringify(Array.from(dataObj.reqBody)))
-        dataObj.reqBody = []
-        dataObj.reqBodyIndex++
-      }
     },
     getResBodyDataObj(dataObj, u8Array) {
-      dataObj.dataSize += u8Array.length
-      dataObj.size = this.getSize(dataObj.dataSize)
-      if (this.db) {
-        dataObj.resBody = dataObj.resBody || []
-        dataObj.resBody = dataObj.resBody.concat(Array.from(u8Array))
-        if (dataObj.resBody.length >= this.dbChunkSize) {
-          this.db.put(`resBody-${dataObj.id}-${dataObj.resBodyIndex}`, JSON.stringify(dataObj.resBody))
-          dataObj.resBody = []
-          dataObj.resBodyIndex++
-        }
+      let sizeBytes = u8Array[0]
+      if (sizeBytes === 8) {
+        dataObj.reqBodySize = u8To64Uint(u8Array, 1) + ''
+      } else {
+        dataObj.reqBodySize = u8To32Uint(u8Array, 1) + ''
       }
+      dataObj.size = this.getSize(dataObj.reqBodySize)
     },
     getResBodyEndDataObj(dataObj) {
-      if (this.db && dataObj.resBody?.length) {
-        this.db.put(`resBody-${dataObj.id}-${dataObj.resBodyIndex}`, JSON.stringify(Array.from(dataObj.resBody)))
-        dataObj.resBody = []
-        dataObj.resBodyIndex++
-      }
     },
     getIpDataObj(dataObj, u8Array) {
       dataObj.ip = getStringFromU8Array(u8Array)
@@ -457,7 +431,6 @@ export default {
       }
     },
     getCertDataObj(dataObj, u8Array) {
-      this.db && this.db.put(`pem-${dataObj.id}`, getStringFromU8Array(u8Array))
     },
     getPortDataObj(dataObj, u8Array) {
       let size = u8Array[0]
@@ -564,65 +537,50 @@ export default {
       this.contentWidth = this.$refs.title.scrollWidth
     },
     async getReqHeadFromDb(dataObj) {
-      let arr = await this.db.get(`reqHead-${dataObj.id}`, { asBuffer: false }).catch(() => '[]')
+      let obj = await window.database.getData(DATA_TYPE_REQ_HEAD, dataObj.id)
       if (dataObj.id === this.activeId) {
-        rawData.reqHead = JSON.parse(arr)
+        rawData.reqHead = obj.reqHead
       }
     },
     async getReqBodyFromDb(dataObj) {
-      let body = []
-      for (let i = 0; i < dataObj.reqBodyIndex; i++) {
-        let arr = await this.db.get(`reqBody-${dataObj.id}-${i}`, { asBuffer: false }).catch(() => '[]')
-        body = body.concat(JSON.parse(arr))
-        if (body.length >= this.maxBodySize || dataObj.id !== this.activeId) {
-          break
-        }
-      }
+      let obj = await window.database.getData(DATA_TYPE_REQ_BODY, dataObj.id)
       if (dataObj.id === this.activeId) {
-        rawData.reqBody = body
+        rawData.reqBody = obj.reqBody
       }
     },
     async getResHeadFromDb(dataObj) {
-      let arr = await this.db.get(`resHead-${dataObj.id}`, { asBuffer: false }).catch(() => '[]')
+      let obj = await window.database.getData(DATA_TYPE_RES_HEAD, dataObj.id)
       if (dataObj.id === this.activeId) {
-        rawData.resHead = JSON.parse(arr)
+        rawData.resHead = obj.resHead
       }
     },
     async getResBodyFromDb(dataObj) {
-      let body = []
-      for (let i = 0; i < dataObj.resBodyIndex; i++) {
-        let arr = await this.db.get(`resBody-${dataObj.id}-${i}`, { asBuffer: false }).catch(() => '[]')
-        body = body.concat(JSON.parse(arr))
-        if (body.length >= this.maxBodySize || dataObj.id !== this.activeId) {
-          break
-        }
-      }
+      let obj = await window.database.getData(DATA_TYPE_RES_BODY, dataObj.id)
       if (dataObj.id === this.activeId) {
-        rawData.resBody = body
+        rawData.resBody = obj.resBody
       }
     },
     async getCertFromDb(dataObj) {
       if (dataObj.cert) {
         return
       }
-      dataObj.pem = await this.db.get(`pem-${dataObj.id}`, { asBuffer: false }).catch(() => '')
-      if (dataObj.pem) {
+      let obj = await window.database.getData(DATA_TYPE_CERT)
+      if (obj.pem && window.require) {
         const { X509Certificate } = window.require('node:crypto')
-        const x509 = new X509Certificate(dataObj.pem)
+        const x509 = new X509Certificate(obj.pem)
         dataObj.cert = x509
+        dataObj.pem = obj.pem
       }
     },
     async getDataInfo(dataObj) {
       rawData = { id: dataObj.id }
-      if (this.db) {
-        await Promise.all([
-          this.getReqHeadFromDb(dataObj),
-          this.getReqBodyFromDb(dataObj),
-          this.getResHeadFromDb(dataObj),
-          this.getResBodyFromDb(dataObj),
-          this.getCertFromDb(dataObj)
-        ])
-      }
+      await Promise.all([
+        this.getReqHeadFromDb(dataObj),
+        this.getReqBodyFromDb(dataObj),
+        this.getResHeadFromDb(dataObj),
+        this.getResBodyFromDb(dataObj),
+        this.getCertFromDb(dataObj)
+      ])
       Object.freeze(rawData)
       return rawData
     },

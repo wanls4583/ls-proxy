@@ -120,6 +120,8 @@ export const [
 
 export const [STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT] = [1, 2]
 
+export const [DATA_TYPE_REQ_HEAD, DATA_TYPE_RES_HEAD, DATA_TYPE_REQ_BODY, DATA_TYPE_RES_BODY, DATA_TYPE_CERT, DATA_TYPE_RULE] = [1, 2, 3, 4, 5, 6];
+
 // 拥有图标的文件扩展名
 export const extList = [
   '3g2', '3gp', '7z',

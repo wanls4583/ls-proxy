@@ -1,4 +1,5 @@
 import { bigintToUint8Array } from './utils'
+import { DATA_TYPE_RULE } from './utils'
 import { RULE_TYPE, RULE_WAY } from './utils'
 import { MSG_REQ_HEAD, MSG_RES_HEAD, MSG_RULE } from './utils'
 import { getDataInfo, getReqDataObj, getResDataObj, getDecoededBody } from './data-utils'
@@ -12,32 +13,18 @@ export default class {
     this.sendId = 0
     this.initSocket()
     this.initEvent()
-    this.initStore()
     this.restoreRule()
   }
   initEvent() {
     window.eventBus.$on('start-listen', (val) => {
       this.socket.startSocket(val)
     })
-    window.eventBus.$on('start-listen', (val) => {
-      this.socket.startSocket(val)
-    })
-  }
-  initStore() {
-    if (window.require) {
-      const levelup = window.require('levelup')
-      const leveldown = window.require('leveldown')
-      const path = window.require('path')
-      const { app } = window.require('@electron/remote')
-      const filename = path.join(app.getAppPath(), 'electron/level-rule.db')
-      this.db = levelup(leveldown(filename))
-    }
   }
   initSocket() {
     this.socket = new Socket({
       url: 'ws://localhost:8000/rule',
       openCb: () => {
-        this.sendRule()
+        this.sendRuleParseMsg()
       },
       closeCb: () => {
         window.eventBus.$emit('socket-close')
@@ -49,7 +36,7 @@ export default class {
             let dataObj = this.getDataObj(new Uint8Array(buffer))
             if ([MSG_REQ_HEAD, MSG_RES_HEAD].includes(dataObj.msgType)) {
               let arr = await this.checkRule(dataObj)
-              this.socket.socket.send(new Uint8Array(arr))
+              this.socket.send(new Uint8Array(arr))
             }
           })
         }
@@ -183,64 +170,52 @@ export default class {
     this.storeRule()
   }
   storeRule() {
-    if (this.db) {
-      this.db.del('rule-stroe', (err) => {
-        if (!err) {
-          this.db.put('rule-stroe', JSON.stringify(this.store))
-        }
-      })
-    }
-    this.sendRule()
+    window.database.saveData(DATA_TYPE_RULE, encoder.encode(JSON.stringify(this.store)))
+    this.sendRuleParseMsg()
   }
-  restoreRule() {
-    if (this.db) {
-      this.db.get('rule-stroe', { asBuffer: false }, (err, value) => {
-        if (!err) {
-          this.store = JSON.parse(value)
-          for (let url in this.store) {
-            if (!this.regMag[url]) {
-              this.regMag[url] = this.getUrlReg(url)
-            }
-          }
-        }
-      })
-    }
-    this.sendRule()
-  }
-  sendRule() {
-    if (this.socket.socketState === 'open') {
-      this.socket.socket.send(this.createRuleMsg())
-      // setTimeout(() => {
-      //   if (this.reciveId !== this.sendId) {
-      //     this.sendRule()
-      //   }
-      // }, 2000)
-    }
-  }
-  createRuleMsg() {
-    const msg = []
-    this.sendId = (++this.sendId) % 256
-    msg.push(...Array.from(encoder.encode('rule:')))
-    msg.push(this.sendId)
+  async restoreRule() {
+    let dataObj = await window.database.getData(DATA_TYPE_RULE)
+    this.store = dataObj.ruleStore
     for (let url in this.store) {
-      let urlObj = this.store[url]
-      let reqFlag, resFlag
-
-      reqFlag = _findRuleFlag(urlObj[RULE_TYPE.REQ])
-      resFlag = _findRuleFlag(urlObj[RULE_TYPE.RES])
-      if (!reqFlag && !resFlag) {
-        continue
+      if (!this.regMag[url]) {
+        this.regMag[url] = this.getUrlReg(url)
       }
-
-      msg.push(reqFlag)
-      msg.push(resFlag)
-
-      url = Array.from(encoder.encode(url))
-      msg.push(Math.floor(url.length / 256));
-      msg.push(url.length % 256);
-      msg.push(...url);
     }
-    return new Uint8Array(msg)
+    this.sendRuleParseMsg()
+  }
+  sendRuleParseMsg() {
+    if (this.socket?.state() !== 'open') {
+      return
+    }
+
+    let that = this
+    this.socket.send(_createRuleParseMsg())
+
+    function _createRuleParseMsg() {
+      const msg = []
+      that.sendId = (++that.sendId) % 256
+      msg.push(...Array.from(encoder.encode('rule-parse:')))
+      msg.push(that.sendId)
+      for (let url in that.store) {
+        let urlObj = that.store[url]
+        let reqFlag, resFlag
+
+        reqFlag = _findRuleFlag(urlObj[RULE_TYPE.REQ])
+        resFlag = _findRuleFlag(urlObj[RULE_TYPE.RES])
+        if (!reqFlag && !resFlag) {
+          continue
+        }
+
+        msg.push(reqFlag)
+        msg.push(resFlag)
+
+        url = Array.from(encoder.encode(url))
+        msg.push(Math.floor(url.length / 256));
+        msg.push(url.length % 256);
+        msg.push(...url);
+      }
+      return new Uint8Array(msg)
+    }
 
     function _findRuleFlag(typeObj) { // 0:无规则，1:请求头/响应头，2:请求体/响应体
       let flag = 0
@@ -258,7 +233,7 @@ export default class {
   }
   async checkRule(dataObj) {
     let { msgType, head, body, reqHeader, resHeader } = dataObj
-    let result = Array.from(encoder.encode('data:'));
+    let result = Array.from(encoder.encode('rule-check:'));
     result.push(msgType)
     result.push(dataObj.idSize)
     result.push(...Array.from(bigintToUint8Array(dataObj.id, dataObj.idSize)))

@@ -57,4 +57,10 @@ export default class {
     }
     this.processing = flag
   }
+  send(data) {
+    this.socket.send(data)
+  }
+  state() {
+    return this.socketState
+  }
 }
