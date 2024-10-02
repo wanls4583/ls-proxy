@@ -45,9 +45,11 @@
   },
   "license": "MIT",
   "dependencies": {
+    "brotli-wasm": "^3.0.1",
     "core-js": "^3.8.3",
     "electron-squirrel-startup": "^1.0.1",
     "element-ui": "^2.15.14",
+    "fflate": "^0.8.2",
     "find-process": "^1.4.7",
     "hexy": "^0.3.5",
     "jquery": "^3.7.1",

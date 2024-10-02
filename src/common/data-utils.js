@@ -1,5 +1,7 @@
 import { getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint, extList } from '../common/utils'
 import { MSG_REQ_HEAD, MSG_RULE } from '../common/utils'
+import { gunzip, inflate } from 'fflate';
+import brotliPromise from 'brotli-wasm'
 
 export function getDecoededBody(header, body) {
   let arr = []
@@ -30,21 +32,28 @@ export function getDecoededBody(header, body) {
     arr = Array.from(body)
   }
   let encoding = header['Content-Encoding']
-  if (window.require && arr.length && ['gzip', 'br', 'deflate'].includes(encoding)) {
-    const zlib = window.require('node:zlib')
-    return new Promise((resolve) => {
+  if (arr.length && ['gzip', 'br', 'deflate'].includes(encoding)) {
+    return new Promise(async (resolve) => {
       let decodeFun = null
-      arr = new Uint8Array(arr).buffer
+      let zlib = {}
+      if (window.require) {
+        zlib = window.require('node:zlib')
+      }
+      arr = new Uint8Array(arr)
       if (encoding === 'gzip') {
-        decodeFun = zlib.gunzip
+        decodeFun = zlib.gunzip || gunzip
+      }
+      if (encoding === 'deflate') {
+        decodeFun = zlib.inflate || inflate
       }
       if (encoding === 'br') {
         decodeFun = zlib.brotliDecompress
+        if (!decodeFun) {
+          const brotli = await brotliPromise;
+          resolve(Array.from(brotli.decompress(arr)))
+        }
       }
-      if (encoding === 'deflate') {
-        decodeFun = zlib.inflate
-      }
-      decodeFun(arr, (err, buf) => {
+      decodeFun?.(arr, (err, buf) => {
         if (err) {
           return resolve([])
         }
