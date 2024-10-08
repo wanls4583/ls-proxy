@@ -106,18 +106,38 @@ export function getDataInfo(dataObj, u8Array) {
         dataObj.protocol = 'wss:'
         break
     }
-    let ptSize = u8Array[index]
-    let portU8Array = u8Array.slice(index + 1, index + ptSize + 1)
+    let ptSize = u8Array[index++]
+    let portU8Array = u8Array.slice(index, index + ptSize)
     if (ptSize === 4) {
       dataObj.clntPort = u8To32Uint(portU8Array) // 客户端端口号
     } else {
       dataObj.clntPort = u8To16Uint(portU8Array) // 客户端端口号
     }
-    index += ptSize + 1
+    index += ptSize
 
     let ipSize = u8Array[index++]
     dataObj.clntIp = getStringFromU8Array(u8Array.slice(index, index + ipSize))
     index += ipSize
+
+    let pathLenBytes = u8Array[index++]
+    let pathLen = 0
+    if (pathLenBytes === 4) {
+      pathLen = u8To32Uint(u8Array, index) // 路径长度
+    } else {
+      pathLen = u8To16Uint(u8Array, index) // 路径长度
+    }
+    index += pathLenBytes
+    if (pathLen) {
+      let processPath = getStringFromU8Array(u8Array.slice(index, index + pathLen))
+      let divIndex = processPath.indexOf('.app')
+      if (divIndex > -1) {
+        processPath = processPath.slice(0, divIndex)
+      }
+      dataObj.processPath = processPath
+      divIndex = processPath.lastIndexOf('/')
+      dataObj.processName = processPath.slice(divIndex + 1)
+    }
+    index += pathLen
   }
   u8Array = u8Array.slice(index)
 
