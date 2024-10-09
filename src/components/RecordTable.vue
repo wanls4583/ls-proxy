@@ -366,22 +366,24 @@ export default {
     },
     getReqBodyDataObj(dataObj, u8Array) {
       let sizeBytes = u8Array[0]
+      dataObj.reqBodySize = dataObj.reqBodySize || 0
       if (sizeBytes === 8) {
-        dataObj.reqBodySize = u8To64Uint(u8Array, 1) + ''
+        dataObj.reqBodySize += Number(u8To64Uint(u8Array, 1) + '')
       } else {
-        dataObj.reqBodySize = u8To32Uint(u8Array, 1) + ''
+        dataObj.reqBodySize += u8To32Uint(u8Array, 1)
       }
     },
     getReqBodyEndDataObj(dataObj) {
     },
     getResBodyDataObj(dataObj, u8Array) {
       let sizeBytes = u8Array[0]
+      dataObj.reqBodySize = dataObj.reqBodySize || 0
       if (sizeBytes === 8) {
-        dataObj.reqBodySize = u8To64Uint(u8Array, 1) + ''
+        dataObj.reqBodySize += Number(u8To64Uint(u8Array, 1) + '')
       } else {
-        dataObj.reqBodySize = u8To32Uint(u8Array, 1) + ''
+        dataObj.reqBodySize += u8To32Uint(u8Array, 1)
       }
-      dataObj.size = this.getSize(dataObj.reqBodySize)
+      dataObj.size = this.getSize(dataObj.reqBodySize + '')
     },
     getResBodyEndDataObj(dataObj) {
     },
@@ -663,8 +665,8 @@ export default {
       this.setContentHeight()
       this.setStartLine(0)
       this.render()
-      this.db && this.db.close((err) => { console.log('db-close:', err) })
       this.initDB()
+      window.database.clearData()
     },
     onVScroll(scrollTop) {
       this.scrollTop = scrollTop

@@ -58,7 +58,9 @@ export default class {
     this.processing = flag
   }
   send(data) {
-    this.socket.send(data)
+    try {
+      this.socket.send(data)
+    } catch (e) { }
   }
   state() {
     return this.socketState

@@ -63,6 +63,10 @@ export default class {
     data = data.concat(Array.from(u8Array))
     this.socket.send(new Uint8Array(data))
   }
+  clearData() {
+    let data = Array.from(encoder.encode('data-clear:'));
+    this.socket.send(new Uint8Array(data))
+  }
   parseData(u8Array) {
     let dataObj = {}
     let index = 0
