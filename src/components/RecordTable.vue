@@ -554,7 +554,7 @@ export default {
       if (dataObj.cert) {
         return
       }
-      let obj = await window.database.getData(DATA_TYPE_CERT)
+      let obj = await window.database.getData(DATA_TYPE_CERT, dataObj.id)
       if (obj.pem && window.require) {
         const { X509Certificate } = window.require('node:crypto')
         const x509 = new X509Certificate(obj.pem)
