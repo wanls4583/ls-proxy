@@ -163,7 +163,7 @@ export default {
           }
         })
         children.push({
-          label: 'Subject',
+          label: '主题',
           children: subjectChilren
         })
 
@@ -183,6 +183,25 @@ export default {
           label: '签发者',
           children: isuserChildren
         })
+
+        if (this.data.cert.altName) {
+          let altNames = this.data.cert.altName.split(';').filter(item => item).map(item => {
+            return {
+              label: item
+            }
+          })
+          children.push({
+            label: '备用名称',
+            children: altNames
+          })
+        }
+
+        if (this.data.cert.version) {
+          children.push({
+            label: '证书版本',
+            value: 'V' + this.data.cert.version
+          })
+        }
 
         children.push({
           label: '开始时间',

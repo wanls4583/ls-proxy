@@ -63,6 +63,8 @@
 
   .el-tree-node__expand-icon+.overview-tree-node {
     user-select: none;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .el-tree-node__expand-icon.is-leaf+.overview-tree-node {

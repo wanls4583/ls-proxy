@@ -72,6 +72,7 @@ import { STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT } from '../common/utils'
 import { TIME_DNS_START, TIME_CONNECT_START, TIME_REQ_START, TIME_RES_END } from '../common/utils'
 import { MSG_REQ_HEAD, MSG_REQ_BODY, MSG_REQ_BODY_END, MSG_RES_HEAD, MSG_RES_BODY, MSG_RES_BODY_END, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT } from '../common/utils'
 import { DATA_TYPE_REQ_HEAD, DATA_TYPE_RES_HEAD, DATA_TYPE_REQ_BODY, DATA_TYPE_RES_BODY, DATA_TYPE_CERT } from '../common/utils'
+import { pem } from 'node-forge'
 
 let dataList = []
 let dataIdMap = {}
@@ -555,12 +556,29 @@ export default {
         return
       }
       let obj = await window.database.getData(DATA_TYPE_CERT, dataObj.id)
-      if (obj.pem && window.require) {
-        const { X509Certificate } = window.require('node:crypto')
-        const x509 = new X509Certificate(obj.pem)
-        dataObj.cert = x509
+      if (obj.pem) {
+        let index = obj.pem.indexOf('@@@@')
+        let infos = obj.pem.slice(index + 4).split('\n');
+        let cert = {}
+        obj.pem = obj.pem.slice(0, index)
+        cert.subject = infos[0]?.replace(/\/([a-zA-Z\d]+\=)/g, '\n$1').slice(1)
+        cert.issuer = infos[1]?.replace(/\/([a-zA-Z\d]+\=)/g, '\n$1').slice(1)
+        cert.version = infos[2]
+        cert.serialNumber = infos[3]
+        cert.fingerprint = infos[4]
+        cert.validFrom = infos[5]
+        cert.validTo = infos[6]
+        cert.altName = infos[7]
         dataObj.pem = obj.pem
+        dataObj.cert = cert
       }
+      // if (obj.pem && window.require) {
+      //   const { X509Certificate } = window.require('node:crypto')
+      //   const x509 = new X509Certificate(obj.pem)
+      //   dataObj.cert = x509
+      //   dataObj.pem = obj.pem
+      // }
+      
     },
     async getDataInfo(dataObj) {
       rawData = { id: dataObj.id }
