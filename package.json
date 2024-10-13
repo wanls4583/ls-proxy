@@ -45,6 +45,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "axios": "^1.7.7",
     "brotli-wasm": "^3.0.1",
     "core-js": "^3.8.3",
     "electron-squirrel-startup": "^1.0.1",

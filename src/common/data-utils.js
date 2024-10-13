@@ -2,6 +2,22 @@ import { getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint, extList } fro
 import { MSG_REQ_HEAD, MSG_RULE } from '../common/utils'
 import { gunzip, inflate } from 'fflate';
 import brotliPromise from 'brotli-wasm'
+const axios = require('axios');
+
+const api = 'http://localhost:8000/api'
+
+function decodeBr(byteArray) {
+  console.log('lisong', byteArray)
+  return axios({
+    method: 'post',
+    url: `${api}/decompress/br`,
+    data: byteArray,
+    responseType: 'arraybuffer',
+    headers: {
+      'Content-Type': 'application/octet-stream',
+    },
+  })
+}
 
 export function getDecoededBody(header, body) {
   let arr = []
@@ -47,11 +63,13 @@ export function getDecoededBody(header, body) {
         decodeFun = zlib.inflate || inflate
       }
       if (encoding === 'br') {
-        decodeFun = zlib.brotliDecompress
-        if (!decodeFun) {
-          const brotli = await brotliPromise;
-          resolve(Array.from(brotli.decompress(arr)))
-        }
+        // decodeFun = zlib.brotliDecompress
+        // if (!decodeFun) {
+        //   const brotli = await brotliPromise;
+        //   resolve(Array.from(brotli.decompress(arr)))
+        // }
+        const res = await decodeBr(arr)
+        resolve(Array.from(new Uint8Array(res.data)))
       }
       decodeFun?.(arr, (err, buf) => {
         if (err) {
