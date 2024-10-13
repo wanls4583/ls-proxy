@@ -1,16 +1,15 @@
 import { getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint, extList } from '../common/utils'
 import { MSG_REQ_HEAD, MSG_RULE } from '../common/utils'
-import { gunzip, inflate } from 'fflate';
-import brotliPromise from 'brotli-wasm'
+// import { gunzip, inflate } from 'fflate';
+// import brotliPromise from 'brotli-wasm'
 const axios = require('axios');
 
 const api = 'http://localhost:8000/api'
 
-function decodeBr(byteArray) {
-  console.log('lisong', byteArray)
+function remoteDecode(byteArray, type) {
   return axios({
     method: 'post',
-    url: `${api}/decompress/br`,
+    url: `${api}/decompress/${type}`,
     data: byteArray,
     responseType: 'arraybuffer',
     headers: {
@@ -49,34 +48,34 @@ export function getDecoededBody(header, body) {
   }
   let encoding = header['Content-Encoding']
   if (arr.length && ['gzip', 'br', 'deflate'].includes(encoding)) {
+    arr = new Uint8Array(arr)
     return new Promise(async (resolve) => {
-      let decodeFun = null
-      let zlib = {}
-      if (window.require) {
-        zlib = window.require('node:zlib')
-      }
-      arr = new Uint8Array(arr)
-      if (encoding === 'gzip') {
-        decodeFun = zlib.gunzip || gunzip
-      }
-      if (encoding === 'deflate') {
-        decodeFun = zlib.inflate || inflate
-      }
-      if (encoding === 'br') {
-        // decodeFun = zlib.brotliDecompress
-        // if (!decodeFun) {
-        //   const brotli = await brotliPromise;
-        //   resolve(Array.from(brotli.decompress(arr)))
-        // }
-        const res = await decodeBr(arr)
-        resolve(Array.from(new Uint8Array(res.data)))
-      }
-      decodeFun?.(arr, (err, buf) => {
-        if (err) {
-          return resolve([])
-        }
-        resolve(Array.from(buf))
-      })
+      // let decodeFun = null
+      // let zlib = {}
+      // if (window.require) {
+      //   zlib = window.require('node:zlib')
+      // }
+      // if (encoding === 'gzip') {
+      //   decodeFun = zlib.gunzip || gunzip
+      // }
+      // if (encoding === 'deflate') {
+      //   decodeFun = zlib.inflate || inflate
+      // }
+      // if (encoding === 'br') {
+      //   decodeFun = zlib.brotliDecompress
+      //   if (!decodeFun) {
+      //     const brotli = await brotliPromise;
+      //     resolve(Array.from(brotli.decompress(arr)))
+      //   }
+      // }
+      // decodeFun?.(arr, (err, buf) => {
+      //   if (err) {
+      //     return resolve([])
+      //   }
+      //   resolve(Array.from(buf))
+      // })
+      const res = await remoteDecode(arr, encoding)
+      resolve(Array.from(new Uint8Array(res.data)))
     })
   }
   return arr
