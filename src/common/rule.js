@@ -1,9 +1,9 @@
-import { bigintToUint8Array } from './utils'
-import { DATA_TYPE_RULE } from './utils'
+import { bigintToUint8Array, getStringFromU8Array } from './utils'
 import { RULE_TYPE, RULE_WAY } from './utils'
 import { MSG_REQ_HEAD, MSG_RES_HEAD, MSG_RULE } from './utils'
 import { getDataInfo, getReqDataObj, getResDataObj, getDecoededBody } from './data-utils'
 import Socket from './socket'
+import { saveRule, getRule } from './http'
 const encoder = new TextEncoder()
 const decoder = new TextDecoder()
 export default class {
@@ -169,12 +169,18 @@ export default class {
     this.regMag = {}
     this.storeRule()
   }
-  storeRule() {
-    window.database.saveData(DATA_TYPE_RULE, encoder.encode(JSON.stringify(this.store)))
-    this.sendRuleParseMsg()
+  async storeRule() {
+    let res = await saveRule(encoder.encode(JSON.stringify(this.store)))
+    if (res.status === 200) {
+      this.sendRuleParseMsg()
+    }
   }
   async restoreRule() {
-    let dataObj = await window.database.getData(DATA_TYPE_RULE)
+    let res = await getRule()
+    let dataObj = {}
+    if (res.status === 200) {
+      dataObj.ruleStore = JSON.parse(getStringFromU8Array(new Uint8Array(res.data)) || '{}')
+    }
     this.store = dataObj.ruleStore
     for (let url in this.store) {
       if (!this.regMag[url]) {

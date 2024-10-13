@@ -8,13 +8,11 @@ import Scheduler from './common/scheduler';
 import { kmpSearch } from './common/utils';
 import './assets/font/icon'
 import './assets/font/ext-icon'
-import Database from './common/database'
 
 Vue.use(ElementUI);
 Vue.config.productionTip = false;
 Vue.prototype.eventBus = eventBus
 window.eventBus = eventBus
-window.database = new Database()
 
 String.prototype.search = kmpSearch
 Uint8Array.prototype.search = kmpSearch

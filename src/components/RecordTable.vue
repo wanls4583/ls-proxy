@@ -71,13 +71,10 @@ import DialogDetail from './DialogDetail.vue'
 import { STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT } from '../common/utils'
 import { TIME_DNS_START, TIME_CONNECT_START, TIME_REQ_START, TIME_RES_END } from '../common/utils'
 import { MSG_REQ_HEAD, MSG_REQ_BODY, MSG_REQ_BODY_END, MSG_RES_HEAD, MSG_RES_BODY, MSG_RES_BODY_END, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT } from '../common/utils'
-import { DATA_TYPE_REQ_HEAD, DATA_TYPE_RES_HEAD, DATA_TYPE_REQ_BODY, DATA_TYPE_RES_BODY, DATA_TYPE_CERT } from '../common/utils'
-import { pem } from 'node-forge'
+import { getReqHead, getResHead, getReqBody, getResBody, getCert, clearData } from '../common/http'
 
 let dataList = []
 let dataIdMap = {}
-let dataPortMap = {}
-let dataPortingMap = {}
 let rawData = {}
 export default {
   components: {
@@ -284,7 +281,6 @@ export default {
       if (msgType == MSG_REQ_HEAD) {
         // req
         getReqDataObj({ dataObj, u8Array })
-        // this.getClientPath(dataObj)
       } else if (msgType == MSG_REQ_BODY) {
         // req-body
         if (!dataIdMap[dataObj.id]) {
@@ -456,50 +452,6 @@ export default {
       result = result.replace(/\.00$/, '') + ' ' + unit
       return result
     },
-    getClientPath(dataObj) {
-      // 获取客户端程路径
-      let cacheObj = dataPortMap[dataObj.sockId]
-      if (cacheObj) {
-        dataObj.processName = cacheObj.processName
-        dataObj.processPath = cacheObj.processPath
-        return
-      }
-      if (dataPortingMap[dataObj.sockId]) {
-        dataPortingMap[dataObj.sockId].push(dataObj)
-        return
-      }
-      if (window.require) {
-        const findProcess = window.require('find-process')
-        dataPortingMap[dataObj.sockId] = [dataObj]
-        // console.log('clntPort:', dataObj.clntPort)
-        findProcess(dataObj.pid ? 'pid' : 'port', dataObj.pid || dataObj.clntPort).then(
-          (list) => {
-            if (list.length) {
-              let needRender = false
-              dataPortingMap[dataObj.sockId].forEach(obj => {
-                obj.processName = list[0].name
-                obj.processPath = list[0].bin
-                needRender = needRender || this.renderList.find(item => item.sockId === dataObj.sockId)
-              })
-              if (needRender) {
-                this.render()
-              }
-              delete dataPortingMap[dataObj.sockId]
-
-              dataPortMap[dataObj.sockId] = { processName: dataObj.processName, processPath: dataObj.processPath }
-              setTimeout(() => {
-                delete dataPortMap[dataObj.sockId]
-              }, 5000)
-            } else {
-              // console.log('clntPort-result:null:', dataObj.sockId, dataObj.id, dataObj.clntPort)
-            }
-          },
-          (err) => {
-            // console.log('find-process-err:', err.stack || err, ':', dataObj.sockId, dataObj.id, dataObj.clntPort)
-          }
-        )
-      }
-    },
     getSize(size) {
       const G = 1024 * 1024 * 1024
       const M = 1024 * 1024
@@ -528,25 +480,41 @@ export default {
       this.contentWidth = this.$refs.title.scrollWidth
     },
     async getReqHeadFromDb(dataObj) {
-      let obj = await window.database.getData(DATA_TYPE_REQ_HEAD, dataObj.id)
+      let res = await getReqHead(dataObj.id)
+      let obj = {}
+      if (res.status === 200) {
+        obj.reqHead = Array.from(new Uint8Array(res.data))
+      }
       if (dataObj.id === this.activeId) {
         rawData.reqHead = obj.reqHead
       }
     },
     async getReqBodyFromDb(dataObj) {
-      let obj = await window.database.getData(DATA_TYPE_REQ_BODY, dataObj.id)
+      let res = await getReqBody(dataObj.id)
+      let obj = {}
+      if (res.status === 200) {
+        obj.reqBody = Array.from(new Uint8Array(res.data))
+      }
       if (dataObj.id === this.activeId) {
         rawData.reqBody = obj.reqBody
       }
     },
     async getResHeadFromDb(dataObj) {
-      let obj = await window.database.getData(DATA_TYPE_RES_HEAD, dataObj.id)
+      let res = await getResHead(dataObj.id)
+      let obj = {}
+      if (res.status === 200) {
+        obj.resHead = Array.from(new Uint8Array(res.data))
+      }
       if (dataObj.id === this.activeId) {
         rawData.resHead = obj.resHead
       }
     },
     async getResBodyFromDb(dataObj) {
-      let obj = await window.database.getData(DATA_TYPE_RES_BODY, dataObj.id)
+      let res = await getResBody(dataObj.id)
+      let obj = {}
+      if (res.status === 200) {
+        obj.resBody = Array.from(new Uint8Array(res.data))
+      }
       if (dataObj.id === this.activeId) {
         rawData.resBody = obj.resBody
       }
@@ -555,7 +523,11 @@ export default {
       if (dataObj.cert) {
         return
       }
-      let obj = await window.database.getData(DATA_TYPE_CERT, dataObj.id)
+      let res = await getCert(dataObj.id)
+      let obj = {}
+      if (res.status === 200) {
+        obj.pem = getStringFromU8Array(new Uint8Array(res.data))
+      }
       if (obj.pem) {
         let index = obj.pem.indexOf('@@@@')
         let infos = obj.pem.slice(index + 4).split('\n');
@@ -578,7 +550,6 @@ export default {
       //   dataObj.cert = x509
       //   dataObj.pem = obj.pem
       // }
-      
     },
     async getDataInfo(dataObj) {
       rawData = { id: dataObj.id }
@@ -684,7 +655,7 @@ export default {
       this.setStartLine(0)
       this.render()
       this.initDB()
-      window.database.clearData()
+      clearData()
     },
     onVScroll(scrollTop) {
       this.scrollTop = scrollTop

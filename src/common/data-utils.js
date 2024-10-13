@@ -2,21 +2,7 @@ import { getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint, extList } fro
 import { MSG_REQ_HEAD, MSG_RULE } from '../common/utils'
 // import { gunzip, inflate } from 'fflate';
 // import brotliPromise from 'brotli-wasm'
-const axios = require('axios');
-
-const api = 'http://localhost:8000/api'
-
-function remoteDecode(byteArray, type) {
-  return axios({
-    method: 'post',
-    url: `${api}/decompress/${type}`,
-    data: byteArray,
-    responseType: 'arraybuffer',
-    headers: {
-      'Content-Type': 'application/octet-stream',
-    },
-  })
-}
+import { remoteDecode } from './http'
 
 export function getDecoededBody(header, body) {
   let arr = []
