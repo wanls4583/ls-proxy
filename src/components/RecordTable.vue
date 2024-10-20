@@ -63,7 +63,6 @@
 import { getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint } from '../common/utils'
 import { getDataInfo, getReqDataObj, getResDataObj } from '../common/data-utils'
 import Socket from '../common/socket'
-import Rule from '../common/rule'
 import HScrollBar from './HScrollBar.vue'
 import VScrollBar from './VScrollBar.vue'
 import SvgIcon from './Svg.vue'
@@ -209,8 +208,6 @@ export default {
       this.initEvent()
       this.initSocket()
       this.clearTable()
-      this.rule = new Rule()
-      window.ruleStore = this.rule
     },
     initDB() {
     },

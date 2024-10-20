@@ -65,7 +65,7 @@ export default {
     }
   },
   data() {
-    var wayValidator = (rule, value, callback) => {
+    var typeValidator = (rule, value, callback) => {
       if (value === '') {
         callback(new Error('类型不能为空'));
       } else if (this.isConfirm && !this.ruleObj.way) {
@@ -85,7 +85,7 @@ export default {
       rules: {
         name: [{ required: true, message: '名称不能为空' }],
         url: [{ required: true, message: 'URL不能为空' }],
-        type: [{ validator: wayValidator }],
+        type: [{ validator: typeValidator }],
       },
       ruleDetailVisible: false,
       ruleObj: {},
@@ -100,8 +100,7 @@ export default {
         this.form.url = ruleObj.url
         this.form.type = ruleObj.type
         this.form.id = ruleObj.id
-        this.ruleObj.way = ruleObj.way
-        this.ruleObj.option = ruleObj.option
+        this.ruleObj = Object.assign({}, ruleObj)
       }
     }
     this.ruleObj.type = this.form.type
@@ -109,11 +108,15 @@ export default {
   methods: {
     handleChangeType() {
       if (this.originRuleObj?.type === this.form.type) {
-        this.ruleObj.way = this.originRuleObj.way
-        this.ruleObj.option = this.originRuleObj.option
+        this.ruleObj.method = this.originRuleObj.method
+        this.ruleObj.methodType = this.originRuleObj.methodType
+        this.ruleObj.key = this.originRuleObj.key
+        this.ruleObj.value = this.originRuleObj.value
       } else {
-        this.ruleObj.way = ''
-        this.ruleObj.option = null
+        this.ruleObj.method = null
+        this.ruleObj.methodType = null
+        this.ruleObj.key = ''
+        this.ruleObj.value = ''
       }
       this.ruleObj.type = this.form.type
     },

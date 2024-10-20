@@ -37,8 +37,8 @@
         </el-table-column>
         <el-table-column prop="name" label="名称" width="150"></el-table-column>
         <el-table-column prop="url" label="URL" min-width="180"></el-table-column>
-        <el-table-column prop="way" label="行为" width="150">
-          <template slot-scope="scope">{{wayDesc(scope.row.way)}}</template>
+        <el-table-column prop="method" label="行为" width="150">
+          <template slot-scope="scope">{{methodDesc(scope.row.methodType, scope.row.method)}}</template>
         </el-table-column>
       </el-table>
       <div slot="footer" class="dialog-footer">
@@ -55,7 +55,7 @@
 </template>
 <script>
 import DialogEditRule from './DialogEditRule.vue'
-import { ruleWayList } from '../common/utils'
+import { ruleMethodList } from '../common/utils'
 export default {
   components: {
     DialogEditRule
@@ -72,9 +72,9 @@ export default {
     }
   },
   computed: {
-    wayDesc() {
-      return (way) => {
-        return ruleWayList.find(item => item.value === way).label
+    methodDesc() {
+      return (methodType, method) => {
+        return ruleMethodList.find(item => item.methodType === methodType && item.value === method).label
       }
     }
   },
