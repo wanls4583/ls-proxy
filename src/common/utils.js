@@ -26,92 +26,92 @@ export const ruleMethodList = [
   {
     type: RULE_TYPE.REQ,
     methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_WAY.MODIFY_PARAM_ADD,
-    value: RULE_TYPE.REQ + '_' + RULE_WAY.MODIFY_PARAM_ADD,
+    method: RULE_METHOD.MODIFY_PARAM_ADD,
+    value: RULE_TYPE.REQ + '_' + RULE_METHOD.MODIFY_PARAM_ADD,
     label: '新增参数'
   },
   {
     type: RULE_TYPE.REQ,
     methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_WAY.MODIFY_PARAM_MOD,
-    value: RULE_TYPE.REQ + '_' + RULE_WAY.MODIFY_PARAM_MOD,
+    method: RULE_METHOD.MODIFY_PARAM_MOD,
+    value: RULE_TYPE.REQ + '_' + RULE_METHOD.MODIFY_PARAM_MOD,
     label: '修改参数'
   },
   {
     type: RULE_TYPE.REQ,
     methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_WAY.MODIFY_PARAM_DEL,
-    value: RULE_TYPE.REQ + '_' + RULE_WAY.MODIFY_PARAM_DEL,
+    method: RULE_METHOD.MODIFY_PARAM_DEL,
+    value: RULE_TYPE.REQ + '_' + RULE_METHOD.MODIFY_PARAM_DEL,
     label: '删除参数'
   },
   {
     type: RULE_TYPE.REQ,
     methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_WAY.MODIFY_HEADER_ADD,
-    value: RULE_TYPE.REQ + '_' + RULE_WAY.MODIFY_HEADER_ADD,
+    method: RULE_METHOD.MODIFY_HEADER_ADD,
+    value: RULE_TYPE.REQ + '_' + RULE_METHOD.MODIFY_HEADER_ADD,
     label: '新增请求头'
   },
   {
     type: RULE_TYPE.REQ,
     methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_WAY.MODIFY_HEADER_MOD,
-    value: RULE_TYPE.REQ + '_' + RULE_WAY.MODIFY_HEADER_MOD,
+    method: RULE_METHOD.MODIFY_HEADER_MOD,
+    value: RULE_TYPE.REQ + '_' + RULE_METHOD.MODIFY_HEADER_MOD,
     label: '修改请求头'
   },
   {
     type: RULE_TYPE.REQ,
     methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_WAY.MODIFY_HEADER_DEL,
-    value: RULE_TYPE.REQ + '_' + RULE_WAY.MODIFY_HEADER_DEL,
+    method: RULE_METHOD.MODIFY_HEADER_DEL,
+    value: RULE_TYPE.REQ + '_' + RULE_METHOD.MODIFY_HEADER_DEL,
     label: '删除请求头'
   },
   {
     type: RULE_TYPE.REQ,
     methodType: RULE_METHOD_TYPE.RULE_METHOD_BODY,
-    method: RULE_WAY.MODIFY_BODY_REP,
-    value: RULE_TYPE.REQ + '_' + RULE_WAY.MODIFY_BODY_REP,
+    method: RULE_METHOD.MODIFY_BODY_REP,
+    value: RULE_TYPE.REQ + '_' + RULE_METHOD.MODIFY_BODY_REP,
     label: '替换请求体'
   },
   {
     type: RULE_TYPE.REQ,
     methodType: RULE_METHOD_TYPE.RULE_METHOD_BODY,
-    method: RULE_WAY.MODIFY_BODY_MOD,
-    value: RULE_TYPE.REQ + '_' + RULE_WAY.MODIFY_BODY_MOD,
+    method: RULE_METHOD.MODIFY_BODY_MOD,
+    value: RULE_TYPE.REQ + '_' + RULE_METHOD.MODIFY_BODY_MOD,
     label: '修改请求体'
   },
   {
     type: RULE_TYPE.RES,
     methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_WAY.MODIFY_HEADER_ADD,
-    value: RULE_TYPE.RES + '_' + RULE_WAY.MODIFY_HEADER_ADD,
+    method: RULE_METHOD.MODIFY_HEADER_ADD,
+    value: RULE_TYPE.RES + '_' + RULE_METHOD.MODIFY_HEADER_ADD,
     label: '新增响应头'
   },
   {
     type: RULE_TYPE.RES,
     methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_WAY.MODIFY_HEADER_MOD,
-    value: RULE_TYPE.RES + '_' + RULE_WAY.MODIFY_HEADER_MOD,
+    method: RULE_METHOD.MODIFY_HEADER_MOD,
+    value: RULE_TYPE.RES + '_' + RULE_METHOD.MODIFY_HEADER_MOD,
     label: '修改响应头'
   },
   {
     type: RULE_TYPE.RES,
     methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_WAY.MODIFY_HEADER_DEL,
-    value: RULE_TYPE.RES + '_' + RULE_WAY.MODIFY_HEADER_DEL,
+    method: RULE_METHOD.MODIFY_HEADER_DEL,
+    value: RULE_TYPE.RES + '_' + RULE_METHOD.MODIFY_HEADER_DEL,
     label: '删除响应头'
   },
   {
     type: RULE_TYPE.RES,
     methodType: RULE_METHOD_TYPE.RULE_METHOD_BODY,
-    method: RULE_WAY.MODIFY_BODY_REP,
-    value: RULE_TYPE.RES + '_' + RULE_WAY.MODIFY_BODY_REP,
+    method: RULE_METHOD.MODIFY_BODY_REP,
+    value: RULE_TYPE.RES + '_' + RULE_METHOD.MODIFY_BODY_REP,
     label: '替换响应体'
   },
   {
     type: RULE_TYPE.RES,
     methodType: RULE_METHOD_TYPE.RULE_METHOD_BODY,
-    method: RULE_WAY.MODIFY_BODY_MOD,
-    value: RULE_TYPE.RES + '_' + RULE_WAY.MODIFY_BODY_MOD,
+    method: RULE_METHOD.MODIFY_BODY_MOD,
+    value: RULE_TYPE.RES + '_' + RULE_METHOD.MODIFY_BODY_MOD,
     label: '修改响应体'
   }
 ]

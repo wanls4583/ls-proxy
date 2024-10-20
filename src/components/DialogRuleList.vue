@@ -38,7 +38,7 @@
         <el-table-column prop="name" label="名称" width="150"></el-table-column>
         <el-table-column prop="url" label="URL" min-width="180"></el-table-column>
         <el-table-column prop="method" label="行为" width="150">
-          <template slot-scope="scope">{{methodDesc(scope.row.methodType, scope.row.method)}}</template>
+          <template slot-scope="scope">{{methodDesc(scope.row.type, scope.row.method)}}</template>
         </el-table-column>
       </el-table>
       <div slot="footer" class="dialog-footer">
@@ -65,6 +65,7 @@ export default {
   },
   data() {
     return {
+      ruleMethodList,
       list: [],
       ruleId: '',
       allEnable: false,
@@ -73,8 +74,8 @@ export default {
   },
   computed: {
     methodDesc() {
-      return (methodType, method) => {
-        return ruleMethodList.find(item => item.methodType === methodType && item.value === method).label
+      return (type, method) => {
+        return ruleMethodList.find(item => item.type === type && item.method === method).label
       }
     }
   },

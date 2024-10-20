@@ -68,7 +68,7 @@ export default {
     var typeValidator = (rule, value, callback) => {
       if (value === '') {
         callback(new Error('类型不能为空'));
-      } else if (this.isConfirm && !this.ruleObj.way) {
+      } else if (this.isConfirm && !this.ruleObj.method) {
         callback(new Error('请编辑规则'));
       } else {
         callback();
