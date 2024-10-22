@@ -93,6 +93,40 @@
   }
 }
 
+.el-message-box__wrapper {
+  .el-message-box {
+    border-color: #464646;
+    padding-bottom: 0;
+    background-color: #2b2b2b;
+
+    .el-message-box__header {
+      padding: 10px;
+
+      .el-message-box__headerbtn {
+        top: 10px;
+
+        .el-message-box__close {
+          font-size: 18px;
+        }
+
+        &:hover {
+          .el-message-box__close {
+            color: #efae22;
+          }
+        }
+      }
+    }
+
+    .el-message-box__content {
+      color: #dfdfdf;
+    }
+
+    .el-message-box__btns {
+      padding: 5px 8px;
+    }
+  }
+}
+
 .el-input__inner,
 .el-textarea__inner {
 

@@ -13,10 +13,13 @@ export default class {
     reg = reg.replace(/\\\*/g, '.?')
     return new RegExp(reg)
   }
-  addRule({ id, url, type, methodType, method, name, key, value, icase, enableReg = false, enable = true }) {
-    this.delRule(id, false)
+  addRule({ id, url, type, methodType, method, name, key, value, icase, enableReg = false, enable = true, enableWildcard = true }) {
+    if (this.getRuleById(id)) {
+      this.modRule({ id, url, type, methodType, method, name, key, value, icase, enableReg, enable, enableWildcard })
+      return
+    }
     this.ruleList.push({
-      id, url, type, methodType, method, name, key, value, icase, enableReg, enable
+      id, url, type, methodType, method, name, key, value, icase, enableReg, enable, enableWildcard
     })
     this.storeRule()
   }
@@ -30,6 +33,7 @@ export default class {
   delRule(id, store = true) {
     let ruleObj = this.getRuleById(id)
     if (ruleObj) {
+      this.ruleList = this.ruleList.filter(item => item.id !== id)
       store && this.storeRule()
       return true
     }

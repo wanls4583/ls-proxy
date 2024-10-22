@@ -21,6 +21,9 @@
         </el-form-item>
         <el-form-item prop="url" label="URL">
           <el-input v-model="form.url"></el-input>
+          <div>
+            <el-checkbox v-model="form.enableWildcard">启用 Wildcard</el-checkbox>
+          </div>
         </el-form-item>
         <el-form-item prop="type" label="行为">
           <div class="border">
@@ -81,6 +84,7 @@ export default {
         name: '',
         url: '',
         type: RULE_TYPE.REQ,
+        enableWildcard: true,
       },
       rules: {
         name: [{ required: true, message: '名称不能为空' }],
@@ -100,6 +104,7 @@ export default {
         this.form.url = ruleObj.url
         this.form.type = ruleObj.type
         this.form.id = ruleObj.id
+        this.form.enableWildcard = ruleObj.enableWildcard || false
         this.ruleObj = Object.assign({}, ruleObj)
       }
     }
@@ -112,19 +117,21 @@ export default {
         this.ruleObj.methodType = this.originRuleObj.methodType
         this.ruleObj.key = this.originRuleObj.key
         this.ruleObj.value = this.originRuleObj.value
+        this.ruleObj.icase = this.originRuleObj.icase
+        this.ruleObj.enableReg = this.originRuleObj.enableReg
       } else {
         this.ruleObj.method = null
         this.ruleObj.methodType = null
         this.ruleObj.key = ''
         this.ruleObj.value = ''
+        this.ruleObj.icase = false
+        this.ruleObj.enableReg = false
       }
       this.ruleObj.type = this.form.type
     },
     handleAddRule(ruleObj) {
       this.ruleObj = ruleObj
-      this.isConfirm = true
-      this.$refs.form.validate(() => { })
-      this.isConfirm = false
+      this.handleConfirm()
     },
     handleConfirm() {
       this.isConfirm = true

@@ -17,7 +17,12 @@
         size="medium"
       >
         <el-form-item prop="value" label="类型">
-          <el-select v-model="form.value" placeholder="请选择" style="width:100%">
+          <el-select
+            v-model="form.value"
+            placeholder="请选择"
+            style="width:100%"
+            @change="handleValChange"
+          >
             <el-option
               v-for="item in methodList"
               :key="item.value"
@@ -28,6 +33,10 @@
         </el-form-item>
         <el-form-item prop="prop" :label="propLabel" v-if="!isBodyReplace">
           <el-input v-model="form.prop" :disabled="isBodyReplace"></el-input>
+          <div v-if="propLabel==='匹配'">
+            <el-checkbox v-model="form.icase">忽略大小写</el-checkbox>
+            <el-checkbox v-model="form.enableReg">启用正则</el-checkbox>
+          </div>
         </el-form-item>
         <el-form-item prop="propVal" :label="valLabel" v-if="!isHeaderDelete">
           <el-input v-model="form.propVal" :type="isBodyReplace?'textarea':'text'" :rows="5"></el-input>
@@ -63,6 +72,8 @@ export default {
         prop: '',
         propVal: '',
         value: '',
+        icase: false,
+        enableReg: false,
       },
       rules: {
         prop: [{ required: true, validator: propValidator }],
@@ -110,9 +121,16 @@ export default {
       if (!this.isHeaderDelete) {
         this.form.propVal = this.ruleObj.value || ''
       }
+      this.form.icase = this.ruleObj.icase
+      this.form.enableReg = this.ruleObj.enableReg
     }
   },
   methods: {
+    handleValChange() {
+      if ([RULE_METHOD.MODIFY_HEADER_MOD, RULE_METHOD.MODIFY_HEADER_DEL].includes(this.methodObj.method)) {
+        this.form.icase = true
+      }
+    },
     close() {
       this.$emit('update:visible', false)
     },
@@ -122,6 +140,8 @@ export default {
         if (valid) {
           param.key = this.form.prop
           param.value = this.isHeaderDelete ? true : this.form.propVal
+          param.icase = this.form.icase
+          param.enableReg = this.form.enableReg
           param.methodType = this.methodObj.methodType
           param.method = this.methodObj.method
           param.type = this.ruleObj.type
