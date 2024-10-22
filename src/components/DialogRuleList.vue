@@ -66,6 +66,7 @@
 <script>
 import DialogEditRule from './DialogEditRule.vue'
 import { ruleMethodList } from '../common/utils'
+import { getRuleOnOff, saveRuleOnOff } from '../common/http'
 export default {
   components: {
     DialogEditRule
@@ -92,6 +93,9 @@ export default {
   },
   created() {
     this.getList()
+    getRuleOnOff().then((res) => {
+      this.enableRule = !!res.data
+    })
   },
   methods: {
     getList() {
@@ -113,6 +117,7 @@ export default {
       })
     },
     handleEnableRuleChange() {
+      saveRuleOnOff(this.enableRule)
     },
     handleRowCLick(row) {
       this.hanleEdit(row)
@@ -131,6 +136,7 @@ export default {
         cancelButtonText: '取消',
         confirmButtonClass: 'btn btn-text',
         cancelButtonClass: 'btn btn-text',
+        closeOnClickModal: false,
         type: 'warning'
       }).then(() => {
         window.ruleStore.delRule(row.id)

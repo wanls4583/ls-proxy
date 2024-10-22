@@ -65,7 +65,7 @@ export default class {
   async restoreRule() {
     let res = await getRule()
     if (res.status === 200) {
-      this.ruleList = JSON.parse(getStringFromU8Array(new Uint8Array(res.data)) || '[]')
+      this.ruleList = res.data || []
     }
   }
 }

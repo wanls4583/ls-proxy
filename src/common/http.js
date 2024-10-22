@@ -11,7 +11,7 @@ export function request(url, data, conifg = {}) {
     headers: {
       'Content-Type': conifg.contentType || 'application/octet-stream',
     },
-  })
+  }).catch((res) => { return res })
 }
 
 export function remoteDecode(byteArray, type) {
@@ -26,8 +26,16 @@ export function saveRule(byteArray) {
   return request(`${api}/put/rule`, byteArray)
 }
 
+export function saveRuleOnOff(enable) {
+  return request(`${api}/put/rule/${enable ? 'on' : 'off'}`)
+}
+
 export function getRule() {
-  return request(`${api}/get/rule`)
+  return request(`${api}/get/rule`, undefined, { responseType: 'json' })
+}
+
+export function getRuleOnOff() {
+  return request(`${api}/get/rule/on_off`, undefined, { responseType: 'json' })
 }
 
 export function getCert(reqId) {
