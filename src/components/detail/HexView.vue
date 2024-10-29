@@ -14,7 +14,7 @@
 <script>
 import hexy from 'hexy'
 import * as monaco from 'monaco-editor';
-import { getCharWidth } from '@/common/utils'
+import { getCharWidth, writeClipboard } from '@/common/utils'
 
 export default {
   data() {
@@ -22,6 +22,7 @@ export default {
       hexWidth: 8,
       clientWidth: 0,
       clientHeight: 0,
+      value: '',
     }
   },
   created() {
@@ -35,6 +36,9 @@ export default {
     this.resizeObserver?.unobserve(this.$refs.detail)
     this.needRenderData = null
     this.renderedData = null
+    this.startPos = null
+    this.nowPos = null
+    this.value = ''
   },
   methods: {
     initResizeEvent() {
@@ -103,80 +107,64 @@ export default {
 
       let decOption = { isWholeLine: false, className: "detail-hex-selection" }
       this.decorations = null
-      editor.onDidChangeCursorPosition(e => {
+
+      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC, () => {
+        if (this.preStartPos && this.nowPos && this.value) {
+          let text = this.getText(this.preStartPos, this.nowPos, this.value)
+          writeClipboard(text || '')
+        }
+      });
+
+      editor.onMouseDown(e => {
         this.decorations && this.decorations.clear()
+        this.preStartPos = null
       })
-      editor.onDidChangeCursorSelection(e => {
+
+      editor.onMouseUp(e => {
+        this.startPos = null
+      })
+
+      editor.onDidChangeCursorPosition(e => {
         const width = this.hexWidth
         const leftEndColumn = width * 3
         const rightStartColumn = leftEndColumn + 4
         const rightEndColumn = rightStartColumn + width
-        const { selection } = e;
-        let { startColumn, endColumn, startLineNumber, endLineNumber } = selection
+        let cols = 0, needUpdate = false
+        let { lineNumber, column } = e.position
 
-        if (startLineNumber === endLineNumber && startColumn === endColumn) {
-          if (startColumn >= leftEndColumn) {
-            if (startColumn < rightStartColumn) {
-              endColumn = leftEndColumn
-              startColumn = endColumn - 2
-            } else if (startColumn >= rightEndColumn) {
-              endColumn = leftEndColumn
-              startColumn = endColumn - 2
-            } else {
-              startColumn = (startColumn - rightStartColumn) * 3 + 1
-              endColumn = startColumn + 2
-            }
-          } else {
-            if ((startColumn - 2) % 3 === 0) {
-              startColumn -= 1
-            } else if ((startColumn - 3) % 3 === 0) {
-              startColumn -= 2
-            }
-            endColumn = startColumn + 2
+        if (column < leftEndColumn) {
+          cols = Math.floor((column - 1) / 3)
+          if (column - 1 >= cols * 3 + 2) {
+            cols++;
           }
+          needUpdate = true
+        } else if (column < rightStartColumn) {
+          cols = width
+          needUpdate = true
         } else {
-          if (startColumn >= leftEndColumn) {
-            if (startColumn <= rightStartColumn) {
-              startColumn = 1
-            } else {
-              startColumn = (startColumn - rightStartColumn) * 3 + 1
-            }
-          }
-          if (endColumn >= leftEndColumn) {
-            if (endColumn <= rightStartColumn) {
-              endColumn = leftEndColumn
-            } else {
-              endColumn = (endColumn - rightStartColumn) * 3
-            }
-          }
-          startColumn = Math.floor(startColumn / 3) * 3 + 1
-          endColumn = Math.ceil((endColumn - 1) / 3) * 3
+          cols = column - rightStartColumn
         }
 
-        if (startLineNumber === endLineNumber && startColumn >= endColumn) { // 选中了空格
-          startColumn = endColumn - 2
-        }
+        column = cols * 3 + 1
+        column = column > leftEndColumn ? leftEndColumn : column
 
-        if (selection.positionColumn < rightStartColumn || selection.positionColumn > rightEndColumn) {
-          if (selection.selectionStartLineNumber === selection.endLineNumber && selection.selectionStartColumn === selection.endColumn) {
-            editor.setSelections([{
-              positionColumn: startColumn,
-              positionLineNumber: startLineNumber,
-              selectionStartColumn: endColumn,
-              selectionStartLineNumber: endLineNumber,
-            }])
-          } else {
-            editor.setSelections([{
-              positionColumn: endColumn,
-              positionLineNumber: endLineNumber,
-              selectionStartColumn: startColumn,
-              selectionStartLineNumber: startLineNumber,
-            }])
-          }
+        this.nowPos = { lineNumber, column }
+        this.startPos = this.startPos || this.nowPos
+        this.preStartPos = this.startPos
+
+        if (needUpdate && column !== e.position.column) {
+          editor.setPosition(this.nowPos)
+          return
         }
 
         let ranges = []
-        this.decorations && this.decorations.clear()
+        let [startLineNumber, startColumn, endLineNumber, endColumn] = [this.startPos.lineNumber, this.startPos.column, this.nowPos.lineNumber, this.nowPos.column]
+        if (startLineNumber > endLineNumber || startLineNumber === endLineNumber && startColumn > endColumn) {
+          startLineNumber = this.nowPos.lineNumber
+          startColumn = this.nowPos.column
+          endLineNumber = this.startPos.lineNumber
+          endColumn = this.startPos.column
+        }
 
         if (startLineNumber === endLineNumber) {
           let startColumn2 = startColumn / 3 + rightStartColumn
@@ -194,6 +182,7 @@ export default {
           ranges.push(new monaco.Range(endLineNumber, rightStartColumn, endLineNumber, endColumn / 3 + rightStartColumn))
         }
 
+        this.decorations && this.decorations.clear()
         this.decorations = editor.createDecorationsCollection(ranges.map(range => {
           return {
             range: range,
@@ -203,6 +192,31 @@ export default {
       })
 
       return editor
+    },
+    getText(startPos, nowPos, value) {
+      const leftEndColumn = this.hexWidth * 3
+      let [startLineNumber, startColumn, endLineNumber, endColumn] = [startPos.lineNumber, startPos.column, nowPos.lineNumber, nowPos.column]
+      if (startLineNumber > endLineNumber || startLineNumber === endLineNumber && startColumn > endColumn) {
+        startLineNumber = nowPos.lineNumber
+        startColumn = nowPos.column
+        endLineNumber = startPos.lineNumber
+        endColumn = startPos.column
+      }
+
+      let text = ''
+      let values = value.split('\n')
+      if (startLineNumber === endLineNumber) {
+        text += values[startLineNumber - 1].slice(startColumn - 1, endColumn - 1)
+      } else {
+        text += values[startLineNumber - 1].slice(startColumn - 1, leftEndColumn - 1)
+        for (let line = startLineNumber + 1; line < endLineNumber; line++) {
+          text += '\n' + values[line - 1].slice(0, leftEndColumn - 1)
+        }
+        text += '\n' + values[endLineNumber - 1].slice(0, endColumn - 1)
+      }
+      text = text[text.length - 1] == ' ' ? text.slice(0, -1) : text
+
+      return text
     },
     render(data) {
       data = data || this.needRenderData
@@ -221,10 +235,12 @@ export default {
 
           value = hexy.hexy(data, { littleEndian: true, numbering: 'none', format: 'twos', radix: 16, width: this.hexWidth })
           value = value[value.length - 1] == '\n' ? value.slice(0, -1) : value
+          this.value = value
           this.editor.setValue(value)
           this.decorations && this.decorations.clear()
           document.activeElement?.blur()
           this.needRenderData = null
+          this.startPos = null
           this.renderedData = data
         }
       })
