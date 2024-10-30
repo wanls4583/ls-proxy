@@ -60,7 +60,7 @@
 </template>
 
 <script>
-import { getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint } from '../common/utils'
+import { getStringFromU8Array, u8To64Uint, u8To32Uint, getUUID } from '../common/utils'
 import { getDataInfo, getReqDataObj, getResDataObj } from '../common/data-utils'
 import Socket from '../common/socket'
 import HScrollBar from './HScrollBar.vue'
@@ -352,8 +352,8 @@ export default {
         return null
       }
 
-      if (this.detailVisible && dataObj.id === this.detailData.id) {
-        this.onClickRow(dataObj)
+      if (this.detailVisible && dataObj.id === this.activeId) {
+        this.onClickRow(dataObj, true)
       }
 
       return dataObj
@@ -691,13 +691,15 @@ export default {
       if (this.detailVisible && this.activeId === row.id && !refresh) {
         return
       }
+      let infoReqId = getUUID()
       let dataObj = dataList.find(item => item.id === row.id)
+      this.infoReqId = infoReqId
       if (!refresh) {
         rawData = { id: row.id }
       }
       this.activeId = row.id
       rawData = await this.getDataInfo(dataObj)
-      if (this.activeId !== row.id) {
+      if (infoReqId !== this.infoReqId || this.activeId !== row.id) {
         return
       }
       if (this.detailData) { // 清除之前数据
