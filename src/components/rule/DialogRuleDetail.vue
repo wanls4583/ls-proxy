@@ -50,7 +50,7 @@
   </div>
 </template>
 <script>
-import { RULE_METHOD, ruleMethodList, RULE_TYPE } from '../common/utils'
+import { RULE_METHOD, ruleMethodList, RULE_TYPE } from '../../common/utils'
 export default {
   props: {
     visible: Boolean,

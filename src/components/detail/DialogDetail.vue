@@ -43,12 +43,12 @@
   </div>
 </template>
 <script>
-import OverView from './detail/OverView.vue'
-import ObjectView from './detail/ObjectView.vue'
-import HexView from './detail/HexView.vue'
-import SourceView from './detail/SourceView.vue'
+import OverView from './OverView.vue'
+import ObjectView from './ObjectView.vue'
+import HexView from './HexView.vue'
+import SourceView from './SourceView.vue'
 import * as monaco from 'monaco-editor';
-import { getDecoededBody } from '../common/data-utils'
+import { getDecoededBody } from '../../common/data-utils'
 
 let oldRawData = {}
 export default {

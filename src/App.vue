@@ -13,7 +13,7 @@
 import Header from './components/Header.vue'
 import TypeFilter from './components/TypeFilter.vue'
 import RecordTable from './components/RecordTable.vue'
-import DialogRuleList from './components/DialogRuleList.vue'
+import DialogRuleList from './components/rule/DialogRuleList.vue'
 export default {
   name: 'App',
   components: {

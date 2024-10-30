@@ -44,7 +44,7 @@
         <el-table-column prop="method" label="行为" width="150">
           <template slot-scope="scope">{{methodDesc(scope.row.type, scope.row.method)}}</template>
         </el-table-column>
-        <el-table-column prop="method" label="行为" width="80">
+        <el-table-column prop="method" label="操作" width="80">
           <div slot-scope="scope" class="flex-center-between op" style="width: 40px">
             <i class="el-icon-edit" @click="hanleEdit(scope.row)"></i>
             <i class="el-icon-delete" @click="hanleDel(scope.row)"></i>
@@ -65,8 +65,8 @@
 </template>
 <script>
 import DialogEditRule from './DialogEditRule.vue'
-import { ruleMethodList } from '../common/utils'
-import { getRuleOnOff, saveRuleOnOff } from '../common/http'
+import { ruleMethodList } from '../../common/utils'
+import { getRuleOnOff, saveRuleOnOff } from '../../common/http'
 export default {
   components: {
     DialogEditRule
