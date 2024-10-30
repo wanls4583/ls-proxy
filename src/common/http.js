@@ -26,16 +26,32 @@ export function saveRule(byteArray) {
   return request(`${api}/put/rule`, byteArray)
 }
 
+export function saveBreak(byteArray) {
+  return request(`${api}/put/break`, byteArray)
+}
+
 export function saveRuleOnOff(enable) {
   return request(`${api}/put/rule/${enable ? 'on' : 'off'}`)
+}
+
+export function saveBreakOnOff(enable) {
+  return request(`${api}/put/break/${enable ? 'on' : 'off'}`)
 }
 
 export function getRule() {
   return request(`${api}/get/rule`, undefined, { responseType: 'json' })
 }
 
+export function getBreak() {
+  return request(`${api}/get/break`, undefined, { responseType: 'json' })
+}
+
 export function getRuleOnOff() {
   return request(`${api}/get/rule/on_off`, undefined, { responseType: 'json' })
+}
+
+export function getBreakOnOff() {
+  return request(`${api}/get/break/on_off`, undefined, { responseType: 'json' })
 }
 
 export function getCert(reqId) {

@@ -4,6 +4,7 @@ import App from './App.vue';
 import eventBus from './event'
 import Scheduler from './common/scheduler';
 import Rule from './common/rule';
+import Breakpoint from './common/breakpoint';
 import { kmpSearch } from './common/utils';
 import 'element-ui/lib/theme-chalk/index.css';
 import './scss/index.scss';
@@ -15,6 +16,7 @@ Vue.config.productionTip = false;
 Vue.prototype.eventBus = eventBus
 window.eventBus = eventBus
 window.ruleStore = new Rule()
+window.breakStore = new Breakpoint()
 
 String.prototype.search = kmpSearch
 Uint8Array.prototype.search = kmpSearch

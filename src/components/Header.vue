@@ -30,7 +30,7 @@
         >
           <div class="op-btn-list">
             <div class="op-group">
-              <div class="op-btn-item" @click="onClickPen">{{penAactive?'禁用':'启用'}}</div>
+              <div class="op-btn-item" @click="onClickPen">{{penAactive?'禁用重写':'启用重写'}}</div>
             </div>
             <div class="op-group">
               <div class="op-btn-item" @click="onClickRule">管理规则</div>
@@ -38,7 +38,22 @@
           </div>
           <i slot="reference" class="icon icon-pen hover-icon" :class="{ active: penAactive }"></i>
         </el-popover>
-        <i class="icon icon-bug hover-icon" :class="{ active: bugAactive }" @click="onClickBug"></i>
+        <el-popover
+          width="150"
+          trigger="hover"
+          popper-class="op-list is-menu dark"
+          :visible-arrow="true"
+        >
+          <div class="op-btn-list">
+            <div class="op-group">
+              <div class="op-btn-item" @click="onClickBug">{{penAactive?'禁用断点':'启用断点'}}</div>
+            </div>
+            <div class="op-group">
+              <div class="op-btn-item" @click="onClickBreak">管理断点</div>
+            </div>
+          </div>
+          <i slot="reference" class="icon icon-bug hover-icon" :class="{ active: bugAactive }"></i>
+        </el-popover>
         <i
           class="icon icon-network hover-icon"
           :class="{ active: networkAactive }"
@@ -123,6 +138,9 @@ export default {
     },
     onClickBug() {
       this.bugAactive = !this.bugAactive
+    },
+    onClickBreak() {
+      this.eventBus.$emit('show-break')
     },
     onClickNetwork() {
       this.networkAactive = !this.networkAactive
