@@ -40,7 +40,8 @@
   </div>
 </template>
 <script>
-import { getUUID, RULE_TYPE } from '../../common/utils'
+import { getUUID } from '../../common/utils'
+import { RULE_TYPE } from '../../common/const'
 export default {
   props: {
     visible: Boolean,

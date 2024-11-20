@@ -55,7 +55,8 @@
 </template>
 <script>
 import DialogRuleDetail from './DialogRuleDetail.vue'
-import { getUUID, RULE_TYPE } from '../../common/utils'
+import { getUUID } from '../../common/utils'
+import { RULE_TYPE } from '../../common/const'
 export default {
   components: {
     DialogRuleDetail

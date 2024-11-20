@@ -23,6 +23,7 @@
           @click="onClickMirror"
         ></i>
         <el-popover
+          ref="rulePopover"
           width="150"
           trigger="hover"
           popper-class="op-list is-menu dark"
@@ -30,15 +31,19 @@
         >
           <div class="op-btn-list">
             <div class="op-group">
-              <div class="op-btn-item" @click="onClickPen">{{penAactive?'禁用重写':'启用重写'}}</div>
+              <div class="op-btn-item" @click="onRuleEnableChange">
+                <i v-if="enableRule" class="el-icon-check"></i>
+                <span>启用重写</span>
+              </div>
             </div>
             <div class="op-group">
               <div class="op-btn-item" @click="onClickRule">管理规则</div>
             </div>
           </div>
-          <i slot="reference" class="icon icon-pen hover-icon" :class="{ active: penAactive }"></i>
+          <i slot="reference" class="icon icon-pen hover-icon" :class="{ active: enableRule }"></i>
         </el-popover>
         <el-popover
+          ref="breakPopover"
           width="150"
           trigger="hover"
           popper-class="op-list is-menu dark"
@@ -46,13 +51,21 @@
         >
           <div class="op-btn-list">
             <div class="op-group">
-              <div class="op-btn-item" @click="onClickBug">{{penAactive?'禁用断点':'启用断点'}}</div>
+              <div class="op-btn-item" @click="onBreakEnableChange">
+                <i v-if="enableBreak" class="el-icon-check"></i>
+                <span>启用断点</span>
+              </div>
+              <div class="op-btn-item" @click="onBreakAutoPopChange">
+                <i v-if="autoPopBreak" class="el-icon-check"></i>
+                <span>自动弹出</span>
+              </div>
             </div>
             <div class="op-group">
               <div class="op-btn-item" @click="onClickBreak">管理断点</div>
+              <div class="op-btn-item" @click="onShowBreak">执行断点</div>
             </div>
           </div>
-          <i slot="reference" class="icon icon-bug hover-icon" :class="{ active: bugAactive }"></i>
+          <i slot="reference" class="icon icon-bug hover-icon" :class="{ active: enableBreak }"></i>
         </el-popover>
         <i
           class="icon icon-network hover-icon"
@@ -74,8 +87,9 @@
     </div>
   </div>
 </template>
-
 <script>
+import { mapState, mapMutations } from 'vuex'
+import { getRuleOnOff, getBreakOnOff, saveRuleOnOff, saveBreakOnOff } from '../common/http'
 export default {
   name: 'Header',
   data() {
@@ -83,23 +97,32 @@ export default {
       hostname: '127.0.0.1:8000',
       gatewayAactive: false,
       mirrorAactive: false,
-      penAactive: false,
-      bugAactive: false,
       networkAactive: false,
       sslAactive: false,
       processing: false,
       headerMarginLeft: '0px',
       isMac: window.process?.platform == 'darwin',
       isWin: window.process?.platform == 'win32',
-      isLinux: window.process?.platform == 'linux'
+      isLinux: window.process?.platform == 'linux',
+      loading: {}
     }
+  },
+  computed: {
+    ...mapState(['enableRule', 'enableBreak', 'autoPopBreak'])
   },
   created() {
     this.init()
   },
   methods: {
+    ...mapMutations(['changeRuleEnable', 'changeBreakEnable', 'changeAutoPopBreak']),
     init() {
       this.initEvent()
+      getRuleOnOff().then((res) => {
+        this.changeRuleEnable(!!res.data)
+      })
+      getBreakOnOff().then((res) => {
+        this.changeBreakEnable(!!res.data)
+      })
       if (this.isMac) {
         this.headerMarginLeft = '55px'
       }
@@ -130,17 +153,46 @@ export default {
     onClickMirror() {
       this.mirrorAactive = !this.mirrorAactive
     },
-    onClickPen() {
-      this.penAactive = !this.penAactive
+    async onRuleEnableChange() {
+      if (this.loading.rule) {
+        return
+      }
+      this.loading.rule = true
+      let enableRule = !this.enableRule
+      let res = await saveRuleOnOff(enableRule)
+      this.loading.rule = false
+      if (res.status === 200) {
+        this.changeRuleEnable(enableRule)
+      }
+      // this.$refs.rulePopover.doClose()
     },
     onClickRule() {
       this.eventBus.$emit('show-rule')
     },
-    onClickBug() {
-      this.bugAactive = !this.bugAactive
+    async onBreakEnableChange() {
+      if (this.loading.break) {
+        return
+      }
+      this.loading.break = true
+      let enableBreak = !this.enableBreak
+      let res = await saveBreakOnOff(enableBreak)
+      this.loading.break = false
+      if (res.status === 200) {
+        this.changeBreakEnable(enableBreak)
+      }
+      // this.$refs.breakPopover.doClose()
+    },
+    onBreakAutoPopChange() {
+      let autoPopBreak = !this.autoPopBreak
+      this.changeAutoPopBreak(autoPopBreak)
+      window.localStorage.setItem('autoPopBreak', autoPopBreak)
+      // this.$refs.breakPopover.doClose()
     },
     onClickBreak() {
       this.eventBus.$emit('show-break')
+    },
+    onShowBreak() {
+      this.eventBus.$emit('show-break-run')
     },
     onClickNetwork() {
       this.networkAactive = !this.networkAactive

@@ -55,6 +55,7 @@
 
   .el-dialog {
     margin-top: 0 !important;
+    margin-bottom: 0 !important;
     padding: 0 15px;
     background-color: #363636;
 
@@ -63,11 +64,27 @@
       align-items: center;
       min-height: 50px;
       padding: 0;
+      user-select: none;
 
       .el-dialog__title {
         width: 100%;
         font-size: 16px;
         color: #dfdfdf;
+      }
+
+      .el-dialog__headerbtn {
+        top: 16px;
+        right: 15px;
+        font-size: 20px;
+
+        .el-dialog__close {
+          color: #999;
+
+          &:hover {
+            font-weight: bold;
+            color: #dfdfdf;
+          }
+        }
       }
     }
 
@@ -131,12 +148,41 @@
 .el-textarea__inner {
 
   &,
-  .el-input.is-disabled & {
+  .el-input.is-disabled &,
+  .el-select .el-input.is-disabled & {
     background-color: transparent;
     border-radius: 0;
     border: 1px solid #464646;
     color: #dfdfdf;
 
+    &:hover {
+      border-color: #464646;
+    }
+
+    &:focus {
+      border-color: #efae22;
+    }
+  }
+
+  &::placeholder {
+    color: #999;
+  }
+}
+
+.el-select {
+  .el-input.is-focus {
+    .el-input__inner {
+      border-color: #efae22;
+    }
+  }
+
+  &:hover {
+    .el-input__inner {
+      border-color: #464646;
+    }
+  }
+
+  .el-input__inner {
     &:hover {
       border-color: #464646;
     }
@@ -168,26 +214,17 @@
   }
 }
 
-.el-select {
-  .el-input.is-focus {
-    .el-input__inner {
-      border-color: #efae22;
-    }
-  }
+.el-input-group__prepend {
+  background-color: transparent;
+  border-color: #464646;
 
-  &:hover {
-    .el-input__inner {
-      border-color: #464646;
-    }
-  }
+  div.el-select {
 
-  .el-input__inner {
+    &,
     &:hover {
-      border-color: #464646;
-    }
-
-    &:focus {
-      border-color: #efae22;
+      .el-input__inner {
+        color: #dfdfdf;
+      }
     }
   }
 }
@@ -313,5 +350,48 @@
     td.el-table__cell {
       border-bottom: 0;
     }
+  }
+}
+
+.el-tabs {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+
+  .el-tabs__header {
+    flex-shrink: 0;
+    margin: 0;
+  }
+
+  .el-tabs__content {
+    flex-grow: 1;
+    overflow: hidden;
+
+    .el-tab-pane {
+      height: 100%;
+      overflow: hidden;
+    }
+  }
+
+  .el-tabs__nav {
+    margin: 0 12px;
+  }
+
+  .el-tabs__item {
+    height: 32px;
+    line-height: 32px;
+    color: #999;
+  }
+
+  .el-tabs__item.is-active {
+    color: #dfdfdf;
+  }
+
+  .el-tabs__active-bar {
+    background-color: #efae22;
+  }
+
+  .el-tabs__nav-wrap::after {
+    background-color: transparent;
   }
 }

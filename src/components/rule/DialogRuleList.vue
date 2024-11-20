@@ -64,9 +64,10 @@
   </div>
 </template>
 <script>
+import { mapMutations } from 'vuex'
 import DialogEditRule from './DialogEditRule.vue'
-import { ruleMethodList } from '../../common/utils'
-import { getRuleOnOff, saveRuleOnOff } from '../../common/http'
+import { RULE_METHOD_LIST } from '../../common/const'
+import { saveRuleOnOff } from '../../common/http'
 export default {
   components: {
     DialogEditRule
@@ -76,7 +77,7 @@ export default {
   },
   data() {
     return {
-      ruleMethodList,
+      RULE_METHOD_LIST,
       list: [],
       ruleId: '',
       enableRule: false,
@@ -87,17 +88,16 @@ export default {
   computed: {
     methodDesc() {
       return (type, method) => {
-        return ruleMethodList.find(item => item.type === type && item.method === method).label
+        return RULE_METHOD_LIST.find(item => item.type === type && item.method === method).label
       }
     }
   },
   created() {
     this.getList()
-    getRuleOnOff().then((res) => {
-      this.enableRule = !!res.data
-    })
+    this.enableRule = this.$store.state.enableRule
   },
   methods: {
+    ...mapMutations(['changeRuleEnable']),
     getList() {
       this.list = window.ruleStore.getRuleList()
       this.setEnableAll()
@@ -116,8 +116,12 @@ export default {
         this.handleCheckChange(item)
       })
     },
-    handleEnableRuleChange() {
-      saveRuleOnOff(this.enableRule)
+    async handleEnableRuleChange() {
+      let enableRule = this.enableRule
+      let res = await saveRuleOnOff(enableRule)
+      if (res.status === 200) {
+        this.changeRuleEnable(enableRule)
+      }
     },
     handleRowCLick(row) {
       this.hanleEdit(row)

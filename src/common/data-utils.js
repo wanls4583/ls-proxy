@@ -1,5 +1,5 @@
-import { getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint, extList } from '../common/utils'
-import { MSG_REQ_HEAD, MSG_RULE } from '../common/utils'
+import { getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint } from '../common/utils'
+import { MSG_REQ_HEAD, MSG_RULE_BREAK_REQ, MSG_RULE_BREAK_RES, extList } from '../common/const'
 // import { gunzip, inflate } from 'fflate';
 // import brotliPromise from 'brotli-wasm'
 import { remoteDecode } from './http'
@@ -71,7 +71,7 @@ export function getDataInfo(dataObj, u8Array) {
   let index = 0
   let msgType = u8Array[index++]
 
-  if (msgType > MSG_RULE) {
+  if (msgType > MSG_RULE_BREAK_RES) {
     return {}
   }
 
@@ -94,7 +94,7 @@ export function getDataInfo(dataObj, u8Array) {
   }
   index += sockIdSize
 
-  if (msgType == MSG_REQ_HEAD) {
+  if (msgType == MSG_REQ_HEAD || msgType === MSG_RULE_BREAK_REQ) {
     switch (u8Array[index++]) {
       case 1:
         dataObj.protocol = 'http:'
@@ -207,10 +207,11 @@ export function getResDataObj({ dataObj, u8Array, hasBobdy }) {
   head = u8Array.slice(0, index + 4)
   hasBobdy && (dataObj.head = head)
   hasBobdy && (dataObj.body = u8Array.slice(index + 4))
-  dataObj.reqBodySize = u8Array.length
+  dataObj.resBodySize = u8Array.length
   dataObj.resBodyIndex = 0
 
   spaceIndex = u8Array.search(32)
+  dataObj.version = getStringFromU8Array(head.slice(0, spaceIndex))
   head = head.slice(spaceIndex + 1)
   spaceIndex = head.search(32)
   dataObj.status = getStringFromU8Array(head.slice(0, spaceIndex))

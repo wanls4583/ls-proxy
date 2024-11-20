@@ -47,7 +47,6 @@ import OverView from './OverView.vue'
 import ObjectView from './ObjectView.vue'
 import HexView from './HexView.vue'
 import SourceView from './SourceView.vue'
-import * as monaco from 'monaco-editor';
 import { getDecoededBody } from '../../common/data-utils'
 
 let oldRawData = {}
@@ -69,7 +68,7 @@ export default {
     }
   },
   async created() {
-    this.initMonacoTheme()
+
   },
   methods: {
     initData(rawData) {
@@ -110,34 +109,6 @@ export default {
       }
       this.$refs.resData.render(resData)
       this.$refs.resBody.render(resBody)
-    },
-    initMonacoTheme() {
-      let themId = 'myTheme'
-      monaco.editor.defineTheme(themId, {
-        base: "vs",
-        inherit: true,
-        rules: [
-          { token: 'method-token', foreground: '#E54073' },
-          { token: 'protocol-token', foreground: '#74ACE8' },
-          { token: 'num-token', foreground: '#C99C6E' },
-          { token: 'header-token', foreground: '#A0C180' },
-        ],
-        colors: {
-          "editor.foreground": "#DFDFDF",
-          "editor.background": "#2B2B2B",
-          "editorCursor.foreground": "#EFAE22",
-          "editor.lineHighlightBorder": "#00000000",
-          "editor.lineHighlightBackground": "#00000000",
-          "editorLineNumber.foreground": "#DFDFDF",
-          "editorLineNumber.activeForeground": "#DFDFDF",
-          // "editor.selectionBackground": "#EFAE22BB",
-          // "editor.inactiveSelectionBackground": "#EFAE22BB",
-          "scrollbarSlider.background": "#606060",
-          "scrollbarSlider.hoverBackground": "#AEAEAE",
-          "scrollbarSlider.activeBackground": "#C3C3C3",
-        }
-      })
-      monaco.editor.setTheme(themId)
     },
     getIfText(header) {
       let contentType = header?.['Content-Type'] || ''

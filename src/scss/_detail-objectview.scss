@@ -7,7 +7,7 @@
 
   .title-wrap {
     flex-shrink: 0;
-    height: 30px;
+    height: 35px;
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -39,6 +39,14 @@
       display: flex;
       align-items: center;
       border-bottom: 1px solid #464646;
+
+      &.editable {
+        height: 40px;
+        .detail-object-table-cell {
+          line-height: 38px;
+          padding: 0;
+        }
+      }
     }
 
     &-cell {
@@ -53,6 +61,30 @@
 
       &:last-child {
         border-right: 1px solid #464646;
+      }
+
+      &.op {
+        width: 40px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+
+        i {
+          cursor: pointer;
+
+          &:hover {
+            color: #efae22;
+          }
+        }
+      }
+
+      .el-input__inner {
+        height: 38px;
+        border-color: transparent;
+
+        &:focus {
+          border-color: #efae22;
+        }
       }
     }
   }

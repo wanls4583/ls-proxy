@@ -1,6 +1,6 @@
 <template>
   <div class="detail-hex-view" ref="detail">
-    <div class="title-wrap">
+    <div class="title-wrap" v-if="!hideTitle">
       <span class="title">Hex</span>
       <span class="op-wrap">
         <i class="icon icon-copy"></i>
@@ -17,6 +17,12 @@ import * as monaco from 'monaco-editor';
 import { getCharWidth, writeClipboard } from '@/common/utils'
 
 export default {
+  props: {
+    hideTitle: {
+      type: Boolean,
+      default: false
+    }
+  },
   data() {
     return {
       hexWidth: 8,
@@ -52,9 +58,9 @@ export default {
             let clientHeight = this.$refs.detail?.clientHeight
             if (clientHeight && (this.clientWidth !== clientWidth || this.clientHeight !== clientHeight || this.needRenderData)) {
               this.render(this.needRenderData || this.renderedData)
-              this.clientWidth = clientWidth
-              this.clientHeight = clientHeight
             }
+            this.clientWidth = clientWidth
+            this.clientHeight = clientHeight
           }
           this.resizeTimer = null
         }, 50)
@@ -221,10 +227,10 @@ export default {
     render(data) {
       data = data || this.needRenderData
       this.needRenderData = data
+      this.editor.layout()
       if (!data || !this.$refs.detail.clientHeight) {
         return
       }
-      this.editor.layout()
       requestAnimationFrame(() => {
         this.charObj = getCharWidth(this.$refs.detail.querySelector('.view-lines'), '<div class="view-line">[dom]</div>')
         if (this.charObj.charWidth) {

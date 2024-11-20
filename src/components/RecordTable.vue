@@ -67,9 +67,10 @@ import HScrollBar from './HScrollBar.vue'
 import VScrollBar from './VScrollBar.vue'
 import SvgIcon from './Svg.vue'
 import DialogDetail from './detail/DialogDetail.vue'
-import { STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT } from '../common/utils'
-import { TIME_DNS_START, TIME_CONNECT_START, TIME_REQ_START, TIME_RES_END } from '../common/utils'
-import { MSG_REQ_HEAD, MSG_REQ_BODY, MSG_REQ_BODY_END, MSG_RES_HEAD, MSG_RES_BODY, MSG_RES_BODY_END, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT } from '../common/utils'
+import { RULE_TYPE } from '../common/const'
+import { STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT } from '../common/const'
+import { TIME_DNS_START, TIME_CONNECT_START, TIME_REQ_START, TIME_RES_END } from '../common/const'
+import { MSG_REQ_HEAD, MSG_REQ_BODY, MSG_REQ_BODY_END, MSG_RES_HEAD, MSG_RES_BODY, MSG_RES_BODY_END, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT, MSG_RULE_BREAK_REQ, MSG_RULE_BREAK_RES } from '../common/const'
 import { getReqHead, getResHead, getReqBody, getResBody, getCert, clearData } from '../common/http'
 
 let dataList = []
@@ -349,6 +350,10 @@ export default {
         dataObj = dataIdMap[dataObj.id]
         this.getCertDataObj(dataObj, u8Array)
       } else {
+        if (msgType == MSG_RULE_BREAK_REQ || msgType == MSG_RULE_BREAK_RES) {
+          // 断点
+          this.getBreakDataObj(dataObj, u8Array, msgType)
+        }
         return null
       }
 
@@ -424,6 +429,15 @@ export default {
       }
     },
     getCertDataObj(dataObj, u8Array) {
+    },
+    getBreakDataObj(dataObj, u8Array, msgType) {
+      dataObj.breakType = msgType == MSG_RULE_BREAK_REQ ? RULE_TYPE.REQ : RULE_TYPE.RES
+      if (dataObj.breakType == RULE_TYPE.REQ) {
+        getReqDataObj({ dataObj, u8Array, hasBobdy: true })
+      } else {
+        getResDataObj({ dataObj, u8Array, hasBobdy: true })
+      }
+      this.eventBus.$emit('show-break-run', dataObj)
     },
     getTImeDisplay(duration) {
       const H = 60 * 60 * 1000

@@ -5,6 +5,7 @@ import eventBus from './event'
 import Scheduler from './common/scheduler';
 import Rule from './common/rule';
 import Breakpoint from './common/breakpoint';
+import store from './store';
 import { kmpSearch } from './common/utils';
 import 'element-ui/lib/theme-chalk/index.css';
 import './scss/index.scss';
@@ -14,6 +15,7 @@ import './assets/font/ext-icon'
 Vue.use(ElementUI);
 Vue.config.productionTip = false;
 Vue.prototype.eventBus = eventBus
+Vue.prototype.$store = store
 window.eventBus = eventBus
 window.ruleStore = new Rule()
 window.breakStore = new Breakpoint()
@@ -27,5 +29,6 @@ window.globalData = {
 };
 
 new Vue({
+	store,
 	render: h => h(App),
 }).$mount('#app');

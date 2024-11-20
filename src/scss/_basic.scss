@@ -127,14 +127,22 @@ body {
 
   .op-btn-list {
     .op-btn-item {
+      position: relative;
       height: 25px;
       line-height: 25px;
-      padding: 0 10px;
+      padding: 0 10px 0 16px;
       font-size: 14px;
       color: #dfdfdf;
       cursor: pointer;
       user-select: none;
       white-space: nowrap;
+
+      i {
+        position: absolute;
+        line-height: 25px;
+        top: 0;
+        left: 1px;
+      }
 
       &:hover {
         background-color: rgba(255, 255, 255, 0.05);

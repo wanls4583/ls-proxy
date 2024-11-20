@@ -2,7 +2,7 @@ const axios = require('axios')
 
 const api = 'http://localhost:8000/api'
 
-export function request(url, data, conifg = {}) {
+export async function request(url, data, conifg = {}) {
   return axios({
     method: conifg.method || 'post',
     url: url,
@@ -36,6 +36,10 @@ export function saveRuleOnOff(enable) {
 
 export function saveBreakOnOff(enable) {
   return request(`${api}/put/break/${enable ? 'on' : 'off'}`)
+}
+
+export function runBreak(reqId, byteArray) {
+  return request(`${api}/put/break/run/${reqId}`, byteArray)
 }
 
 export function getRule() {

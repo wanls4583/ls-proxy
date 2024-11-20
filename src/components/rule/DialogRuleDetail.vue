@@ -50,7 +50,7 @@
   </div>
 </template>
 <script>
-import { RULE_METHOD, ruleMethodList, RULE_TYPE } from '../../common/utils'
+import { RULE_TYPE, RULE_METHOD, RULE_METHOD_LIST } from '../../common/const'
 export default {
   props: {
     visible: Boolean,
@@ -82,7 +82,7 @@ export default {
   },
   computed: {
     methodObj() {
-      return ruleMethodList.find(item => item.value === this.form.value) || {}
+      return RULE_METHOD_LIST.find(item => item.value === this.form.value) || {}
     },
     propLabel() {
       let label = '匹配'
@@ -108,13 +108,13 @@ export default {
       return [RULE_METHOD.MODIFY_PARAM_DEL, RULE_METHOD.MODIFY_HEADER_DEL, RULE_METHOD.MODIFY_HEADER_DEL].includes(this.methodObj.method)
     },
     methodList() {
-      return ruleMethodList.filter(item => item.type === this.ruleObj.type)
+      return RULE_METHOD_LIST.filter(item => item.type === this.ruleObj.type)
     }
   },
   created() {
   },
   mounted() {
-    this.form.value = ruleMethodList.find(item => item.type === this.ruleObj.type).value
+    this.form.value = RULE_METHOD_LIST.find(item => item.type === this.ruleObj.type).value
     if (this.ruleObj.method) {
       this.form.value = this.ruleObj.type + '_' + this.ruleObj.method
       this.form.prop = this.ruleObj.key || ''

@@ -39,6 +39,11 @@
       overflow: hidden;
 
       .monaco-editor {
+        .line-numbers {
+          width: 100% !important;
+          text-align: center;
+        }
+
         .scroll-decoration {
           display: none;
         }

@@ -10,7 +10,8 @@
     >
       <div class="bar_wrap">
         <div class="left_wrap">
-          <el-checkbox v-model="enableBreak" @change="handleEnableBreakChange()">启用断点</el-checkbox>
+          <el-checkbox v-model="enableBreak" @change="handleEnableChange()">启用断点</el-checkbox>
+          <el-checkbox v-model="autoPopBreak" @change="handleAutoPopChange()">自动弹出</el-checkbox>
         </div>
         <div class="right_wrp">
           <i class="icon icon-import hover-icon" style="font-weight:bold;font-size:18px"></i>
@@ -43,7 +44,11 @@
         <el-table-column prop="url" label="URL" min-width="200"></el-table-column>
         <el-table-column prop="types" label="中断" width="160">
           <template slot-scope="scope">
-            <el-checkbox-group v-model="scope.row.types" @change="handleChangeType(scope.row)" style="display:flex">
+            <el-checkbox-group
+              v-model="scope.row.types"
+              @change="handleChangeType(scope.row)"
+              style="display:flex"
+            >
               <el-checkbox :label="RULE_TYPE.REQ">请求</el-checkbox>
               <el-checkbox :label="RULE_TYPE.RES">响应</el-checkbox>
             </el-checkbox-group>
@@ -69,9 +74,10 @@
   </div>
 </template>
 <script>
+import { mapMutations } from 'vuex'
 import DialogEditBreak from './DialogEditBreak.vue'
-import { RULE_TYPE } from '../../common/utils'
-import { getBreakOnOff, saveBreakOnOff } from '../../common/http'
+import { RULE_TYPE } from '../../common/const'
+import { saveBreakOnOff } from '../../common/http'
 export default {
   components: {
     DialogEditBreak
@@ -85,17 +91,18 @@ export default {
       list: [],
       breakId: '',
       enableBreak: false,
+      autoPopBreak: false,
       allEnable: false,
       editBreakVisible: false
     }
   },
   created() {
+    this.enableBreak = this.$store.state.enableBreak
+    this.autoPopBreak = this.$store.state.autoPopBreak
     this.getList()
-    getBreakOnOff().then((res) => {
-      this.enableBreak = !!res.data
-    })
   },
   methods: {
+    ...mapMutations(['changeBreakEnable', 'changeAutoPopBreak']),
     getList() {
       this.list = window.breakStore.getBreakList()
       this.setEnableAll()
@@ -114,8 +121,16 @@ export default {
         this.handleCheckChange(item)
       })
     },
-    handleEnableBreakChange() {
-      saveBreakOnOff(this.enableBreak)
+    async handleEnableChange() {
+      let enableBreak = this.enableBreak
+      let res = await saveBreakOnOff(enableBreak)
+      if (res.status === 200) {
+        this.changeBreakEnable(enableBreak)
+      }
+    },
+    handleAutoPopChange() {
+      this.changeAutoPopBreak(this.autoPopBreak)
+      window.localStorage.setItem('autoPopBreak', this.autoPopBreak)
     },
     handleRowCLick(row) {
       this.hanleEdit(row)

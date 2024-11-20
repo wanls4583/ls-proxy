@@ -1,181 +1,5 @@
 import $ from 'jquery'
 
-export const RULE_TYPE = {
-  REQ: 1, // 请求
-  RES: 2 // 响应
-}
-
-export const RULE_METHOD_TYPE = {
-  RULE_METHOD_HEAD: 1, // 头部
-  RULE_METHOD_BODY: 2 // 实体
-}
-
-export const RULE_METHOD = {
-  MODIFY_PARAM_ADD: 1, // 新增参数
-  MODIFY_PARAM_MOD: 2, // 修改参数
-  MODIFY_PARAM_DEL: 3, // 删除参数
-  MODIFY_HEADER_ADD: 4, // 新增首部
-  MODIFY_HEADER_MOD: 5, // 修改首部
-  MODIFY_HEADER_DEL: 6, // 删除首部
-  MODIFY_BODY_REP: 7, // 替换实体
-  MODIFY_BODY_MOD: 8, // 修改实体
-  BREAK_POINT: 9 // 断点
-}
-
-export const ruleMethodList = [
-  {
-    type: RULE_TYPE.REQ,
-    methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_METHOD.MODIFY_PARAM_ADD,
-    value: RULE_TYPE.REQ + '_' + RULE_METHOD.MODIFY_PARAM_ADD,
-    label: '新增参数'
-  },
-  {
-    type: RULE_TYPE.REQ,
-    methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_METHOD.MODIFY_PARAM_MOD,
-    value: RULE_TYPE.REQ + '_' + RULE_METHOD.MODIFY_PARAM_MOD,
-    label: '修改参数'
-  },
-  {
-    type: RULE_TYPE.REQ,
-    methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_METHOD.MODIFY_PARAM_DEL,
-    value: RULE_TYPE.REQ + '_' + RULE_METHOD.MODIFY_PARAM_DEL,
-    label: '删除参数'
-  },
-  {
-    type: RULE_TYPE.REQ,
-    methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_METHOD.MODIFY_HEADER_ADD,
-    value: RULE_TYPE.REQ + '_' + RULE_METHOD.MODIFY_HEADER_ADD,
-    label: '新增请求头'
-  },
-  {
-    type: RULE_TYPE.REQ,
-    methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_METHOD.MODIFY_HEADER_MOD,
-    value: RULE_TYPE.REQ + '_' + RULE_METHOD.MODIFY_HEADER_MOD,
-    label: '修改请求头'
-  },
-  {
-    type: RULE_TYPE.REQ,
-    methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_METHOD.MODIFY_HEADER_DEL,
-    value: RULE_TYPE.REQ + '_' + RULE_METHOD.MODIFY_HEADER_DEL,
-    label: '删除请求头'
-  },
-  {
-    type: RULE_TYPE.REQ,
-    methodType: RULE_METHOD_TYPE.RULE_METHOD_BODY,
-    method: RULE_METHOD.MODIFY_BODY_REP,
-    value: RULE_TYPE.REQ + '_' + RULE_METHOD.MODIFY_BODY_REP,
-    label: '替换请求体'
-  },
-  {
-    type: RULE_TYPE.REQ,
-    methodType: RULE_METHOD_TYPE.RULE_METHOD_BODY,
-    method: RULE_METHOD.MODIFY_BODY_MOD,
-    value: RULE_TYPE.REQ + '_' + RULE_METHOD.MODIFY_BODY_MOD,
-    label: '修改请求体'
-  },
-  {
-    type: RULE_TYPE.RES,
-    methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_METHOD.MODIFY_HEADER_ADD,
-    value: RULE_TYPE.RES + '_' + RULE_METHOD.MODIFY_HEADER_ADD,
-    label: '新增响应头'
-  },
-  {
-    type: RULE_TYPE.RES,
-    methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_METHOD.MODIFY_HEADER_MOD,
-    value: RULE_TYPE.RES + '_' + RULE_METHOD.MODIFY_HEADER_MOD,
-    label: '修改响应头'
-  },
-  {
-    type: RULE_TYPE.RES,
-    methodType: RULE_METHOD_TYPE.RULE_METHOD_HEAD,
-    method: RULE_METHOD.MODIFY_HEADER_DEL,
-    value: RULE_TYPE.RES + '_' + RULE_METHOD.MODIFY_HEADER_DEL,
-    label: '删除响应头'
-  },
-  {
-    type: RULE_TYPE.RES,
-    methodType: RULE_METHOD_TYPE.RULE_METHOD_BODY,
-    method: RULE_METHOD.MODIFY_BODY_REP,
-    value: RULE_TYPE.RES + '_' + RULE_METHOD.MODIFY_BODY_REP,
-    label: '替换响应体'
-  },
-  {
-    type: RULE_TYPE.RES,
-    methodType: RULE_METHOD_TYPE.RULE_METHOD_BODY,
-    method: RULE_METHOD.MODIFY_BODY_MOD,
-    value: RULE_TYPE.RES + '_' + RULE_METHOD.MODIFY_BODY_MOD,
-    label: '修改响应体'
-  }
-]
-
-export const [
-  TIME_DNS_START,
-  TIME_DNS_END,
-  TIME_CONNECT_START,
-  TIME_CONNECT_END,
-  TIME_CONNECT_SSL_START,
-  TIME_CONNECT_SSL_END,
-  TIME_REQ_START,
-  TIME_REQ_END,
-  TIME_RES_START,
-  TIME_RES_END
-] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
-
-export const [
-  MSG_REQ_HEAD,
-  MSG_REQ_BODY,
-  MSG_REQ_BODY_END,
-  MSG_RES_HEAD,
-  MSG_RES_BODY,
-  MSG_RES_BODY_END,
-  MSG_DNS,
-  MSG_STATUS,
-  MSG_TIME,
-  MSG_CIPHER,
-  MSG_CERT,
-  MSG_RULE
-] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]
-
-export const [STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT] = [1, 2]
-
-// 拥有图标的文件扩展名
-export const extList = [
-  '3g2', '3gp', '7z',
-  'aac', 'adt', 'ai', 'aiff', 'aly', 'amiga', 'amr', 'ape', 'apk', 'arj', 'asf', 'asm', 'asx', 'au', 'avc', 'avi', 'avs',
-  'bak', 'bas', 'bat', 'bmp', 'bom',
-  'c', 'cda', 'cdr', 'chm', 'cmd', 'com', 'cpp', 'css', 'csv',
-  'dat', 'ddb', 'dif', 'divx', 'dll', 'doc', 'docm', 'docx', 'dot', 'dotm', 'dotx', 'dsl', 'dv', 'dvd', 'dvdaudio', 'dwg', 'dxf',
-  'emf', 'env', 'eot', 'eps', 'exe', 'exif',
-  'f4v', 'flc', 'fli', 'flv', 'fon', 'font', 'for', 'fpx',
-  'gif', 'gz',
-  'hdri', 'hlp', 'htm', 'html',
-  'int', 'iso',
-  'jpeg', 'jpg', 'js', 'json',
-  'ksp',
-  'lib', 'lic', 'lst', 'lua',
-  'm4v', 'mac', 'map', 'md', 'mdf', 'mht', 'mhtml', 'mid', 'midi', 'mkv', 'mmf', 'mod', 'mov', 'mp3', 'mp3pro', 'mp4', 'mpa', 'mpe', 'mpeg', 'mpeg-1', 'mpeg-2', 'mpeg-4', 'mpeg1', 'mpeg2', 'mpeg4', 'mpg', 'msg', 'mts', 'mux',
-  'navi',
-  'obj', 'ogg', 'otf',
-  'pas', 'pcd', 'pcx', 'pdf', 'pic', 'png', 'ppt', 'pptx', 'proe', 'prt', 'psd', 'py',
-  'qsv', 'quicktime',
-  'ra', 'ram', 'rar', 'raw', 'realaudio', 'rm', 'rmvb', 'rp', 'rtf',
-  's48', 'sacd', 'sch', 'sh', 'stp', 'svcd', 'svg', 'swf', 'sys',
-  'tga', 'tiff', 'tmp', 'ttc', 'ttf', 'txt',
-  'ufo',
-  'vcd', 'vob', 'voc', 'vqf',
-  'wav', 'wdl', 'webm', 'wki', 'wma', 'wmf', 'wmv', 'wmvhd', 'woff', 'woff2', 'wps', 'wpt',
-  'x_t', 'xls', 'xlsm', 'xlsx', 'xlt', 'xltm', 'xltx', 'xmind', 'xml', 'xv', 'xvid',
-  'z', 'zip'
-];
-
 //KMP 算法核心（获取失败连接数组）
 function getFlink(p) {
   var flink = [-1, 0]; //为-1是为了标记第一个位置（方便之后使用flink去匹配）
@@ -215,11 +39,23 @@ export const kmpSearch = function (p) {
 }
 
 export const getStringFromU8Array = function (uint8array) {
-  // var uint8array = new TextEncoder().encode("someString啊哈哈ddd");
   var string = new TextDecoder().decode(uint8array);
   return string
 }
 
+export const getStringFromU8ArrayWithCheck = function (uint8array) {
+  try {
+    var string = new TextDecoder('utf-8', { fatal: true }).decode(uint8array)
+    return string
+  } catch (e) {
+    return false
+  }
+}
+
+export const getU8ArrayFromString = function (str) {
+  var uint8array = new TextEncoder().encode(str);
+  return uint8array
+}
 export const u8To16Uint = function (uint8array, offset = 0) {
   return new DataView(uint8array.buffer).getUint16(offset)
 }
@@ -244,7 +80,7 @@ export const bigintToUint8Array = function (value, len) {
 
 const formatNumber = (n) => {
   n = n.toString();
-  return n[1] ? n : "0" + n;
+  return n[1] ? n : '0' + n;
 }
 
 const formatWeek = (week) => {
@@ -259,8 +95,8 @@ const formatThousand = (num) => {
   return num
 }
 
-export function formatTime(date, joinSymbol = "-", isUsec) {
-  if (!date) return "";
+export function formatTime(date, joinSymbol = '-', isUsec) {
+  if (!date) return '';
   let usec = 0
   if (isUsec) {
     usec = formatThousand(date % 1000)
@@ -277,14 +113,14 @@ export function formatTime(date, joinSymbol = "-", isUsec) {
   const second = formatNumber(date.getSeconds());
   const msecond = date.getTime()
   return {
-    result: [year, month, day].map(formatNumber).join(joinSymbol) + " " + [hour, minute, second].map(formatNumber).join(":"),
-    fullResult: [year, month, day].map(formatNumber).join(joinSymbol) + " " + [hour, minute, second].map(formatNumber).join(":") + '.' + msec + usec,
-    ymdhm: [year, month, day].map(formatNumber).join(joinSymbol) + " " + [hour, minute].map(formatNumber).join(":"),
+    result: [year, month, day].map(formatNumber).join(joinSymbol) + ' ' + [hour, minute, second].map(formatNumber).join(':'),
+    fullResult: [year, month, day].map(formatNumber).join(joinSymbol) + ' ' + [hour, minute, second].map(formatNumber).join(':') + '.' + msec + usec,
+    ymdhm: [year, month, day].map(formatNumber).join(joinSymbol) + ' ' + [hour, minute].map(formatNumber).join(':'),
     date: [year, month, day].map(formatNumber).join(joinSymbol),
     chinaDate: `${year}年${month}月${day}日`,
-    clock: [hour, minute, second].map(formatNumber).join(":"),
-    hm: [hour, minute].map(formatNumber).join(":"),
-    mdhm: [month, day].map(formatNumber).join(joinSymbol) + " " + [hour, minute].map(formatNumber).join(":"),
+    clock: [hour, minute, second].map(formatNumber).join(':'),
+    hm: [hour, minute].map(formatNumber).join(':'),
+    mdhm: [month, day].map(formatNumber).join(joinSymbol) + ' ' + [hour, minute].map(formatNumber).join(':'),
     year,
     month,
     week,

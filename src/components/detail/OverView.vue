@@ -22,18 +22,7 @@
 </template>
 <script>
 import { formatTime } from '@/common/utils'
-const [
-  TIME_DNS_START,
-  TIME_DNS_END,
-  TIME_CONNECT_START,
-  TIME_CONNECT_END,
-  TIME_CONNECT_SSL_START,
-  TIME_CONNECT_SSL_END,
-  TIME_REQ_START,
-  TIME_REQ_END,
-  TIME_RES_START,
-  TIME_RES_END
-] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+import { TIME_REQ_START, TIME_REQ_END, TIME_RES_START, TIME_RES_END } from '@/common/const'
 export default {
   props: {
     data: {
