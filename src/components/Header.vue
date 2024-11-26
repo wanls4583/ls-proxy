@@ -67,6 +67,31 @@
           </div>
           <i slot="reference" class="icon icon-bug hover-icon" :class="{ active: enableBreak }"></i>
         </el-popover>
+        <el-popover
+          ref="rulePopover"
+          width="150"
+          trigger="hover"
+          popper-class="op-list is-menu dark"
+          :visible-arrow="true"
+        >
+          <div class="op-btn-list">
+            <div class="op-group">
+              <div class="op-btn-item" @click="onScriptEnableChange">
+                <i v-if="enableScript" class="el-icon-check"></i>
+                <span>启用脚本</span>
+              </div>
+            </div>
+            <div class="op-group">
+              <div class="op-btn-item" @click="onClickScript">管理脚本</div>
+            </div>
+          </div>
+          <i
+            slot="reference"
+            class="icon icon-script hover-icon"
+            style="font-size:17px"
+            :class="{ active: enableScript }"
+          ></i>
+        </el-popover>
         <i
           class="icon icon-network hover-icon"
           :class="{ active: networkAactive }"
@@ -108,13 +133,13 @@ export default {
     }
   },
   computed: {
-    ...mapState(['enableRule', 'enableBreak', 'autoPopBreak'])
+    ...mapState(['enableRule', 'enableBreak', 'autoPopBreak', 'enableScript'])
   },
   created() {
     this.init()
   },
   methods: {
-    ...mapMutations(['changeRuleEnable', 'changeBreakEnable', 'changeAutoPopBreak']),
+    ...mapMutations(['changeRuleEnable', 'changeBreakEnable', 'changeAutoPopBreak', 'changeScriptEnable']),
     init() {
       this.initEvent()
       getRuleOnOff().then((res) => {
@@ -188,11 +213,17 @@ export default {
       window.localStorage.setItem('autoPopBreak', autoPopBreak)
       // this.$refs.breakPopover.doClose()
     },
+    async onScriptEnableChange() {
+      this.changeScriptEnable(!this.enableScript)
+    },
     onClickBreak() {
       this.eventBus.$emit('show-break')
     },
     onShowBreak() {
       this.eventBus.$emit('show-break-run')
+    },
+    onClickScript() {
+
     },
     onClickNetwork() {
       this.networkAactive = !this.networkAactive

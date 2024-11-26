@@ -8,6 +8,7 @@ export default new Vuex.Store({
     enableRule: false,
     enableBreak: false,
     autoPopBreak: false,
+    enableScript: false,
   },
   mutations: {
     changeRuleEnable(state, enableRule) {
@@ -18,6 +19,9 @@ export default new Vuex.Store({
     },
     changeAutoPopBreak(state, autoPopBreak) {
       state.autoPopBreak = autoPopBreak
+    },
+    changeScriptEnable(state, enableScript) {
+      state.enableScript = enableScript
     }
   }
 })
