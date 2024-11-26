@@ -161,10 +161,11 @@ export default {
       let boundary = isMultipart ? (this.$refs.body.getBoundary() || '----' + getUUID()) : ''
       let head = this.getHead(boundary)
       let body = this.getBody(boundary)
-      let req = Array.from(head)
-      req = req.concat(Array.from(body))
+      let req = new Uint8Array(head.length + body.length)
+      req.set(head)
+      req.set(body, head.length)
 
-      return new Uint8Array(req)
+      return req
     },
     onChangeBreak(item) {
       this.nowBreak = item

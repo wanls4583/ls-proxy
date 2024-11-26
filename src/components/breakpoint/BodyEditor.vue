@@ -83,8 +83,9 @@ export default {
           value: 3,
         },
       ],
-      hex: [],
+      hex: new Uint8Array([]),
       partList: [{}],
+      maxRnederByte: 512 * 1024, //512
     }
   },
   computed: {
@@ -104,7 +105,7 @@ export default {
     initType() {
       this.$nextTick(() => {
         let boundary = this.getBoundary()
-        this.hex = Array.from(this.body || [])
+        this.hex = this.body || new Uint8Array([])
         this.partList = []
         this.$refs.hex.render([])
         this.$refs.source.render([])
@@ -117,7 +118,7 @@ export default {
           this.$refs.source.render([])
           if (text === false) {
             this.type = 2
-            this.$refs.hex.render(this.hex.slice())
+            this.$refs.hex.render(this.hex.slice(0, this.maxRnederByte)) // 最大渲染100万字节
           } else {
             this.type = 1
             this.$refs.source.render(this.hex.slice())
@@ -176,7 +177,7 @@ export default {
       if (this.type === 1) {
         return getU8ArrayFromString(this.$refs.source.getValue())
       } else if (this.type === 2) {
-        return new Uint8Array(this.hex)
+        return this.hex
       } else {
         return this.$refs.part.getValue(boundary)
       }
@@ -197,8 +198,8 @@ export default {
       reader.readAsArrayBuffer(file)
       reader.onload = (e) => {
         let buffer = e.target.result
-        this.hex = Array.from(new Uint8Array(buffer))
-        this.$refs.hex.render(this.hex)
+        this.hex = new Uint8Array(buffer)
+        this.$refs.hex.render(this.hex.slice(0, this.maxRnederByte))
       }
     },
     onAddPart() {

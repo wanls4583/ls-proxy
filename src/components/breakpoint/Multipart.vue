@@ -53,15 +53,28 @@ export default {
       let arr = []
       list.forEach(item => {
         let header = this.getHeader(item.header) + '\r\n'
-        arr.push(...Array.from(getU8ArrayFromString('--' + boundary + '\r\n')))
-        arr = arr.concat(Array.from(getU8ArrayFromString(header)))
-        arr = arr.concat(Array.from(item.body))
-        arr.push(13, 10)
+        arr.push(getU8ArrayFromString('--' + boundary + '\r\n'))
+        arr.push(getU8ArrayFromString(header))
+        arr.push(item.body)
+        arr.push(new Uint8Array([13, 10]))
       })
       if (list.length) {
-        arr.push(...Array.from(getU8ArrayFromString('--' + boundary + '--\r\n')))
+        arr.push(getU8ArrayFromString('--' + boundary + '--\r\n'))
       }
-      return new Uint8Array(arr)
+
+      let result = null
+      let length = 0
+      arr.forEach(item => {
+        length += item.length
+      })
+      result = new Uint8Array(length)
+      length = 0
+      arr.forEach(item => {
+        result.set(item, length)
+        length += item.length
+      })
+
+      return result
     },
     onClickEdit(item) {
       this.nowPart = item
