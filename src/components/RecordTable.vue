@@ -571,7 +571,6 @@ export default {
         this.getResBodyFromDb(dataObj),
         this.getCertFromDb(dataObj)
       ])
-      Object.freeze(rawData)
       return rawData
     },
     setContentHeight() {
@@ -723,6 +722,7 @@ export default {
       this.detailData = dataObj
       this.detailVisible = true
       this.$nextTick(() => {
+        Object.freeze(rawData)
         this.eventBus.$emit('refresh-detail-data')
         this.$refs.detail.initData(rawData)
       })
