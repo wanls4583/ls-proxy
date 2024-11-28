@@ -30,8 +30,16 @@ export function saveBreak(byteArray) {
   return request(`${api}/put/break`, byteArray)
 }
 
+export function saveScript(byteArray) {
+  return request(`${api}/put/script`, byteArray)
+}
+
 export function saveRuleOnOff(enable) {
   return request(`${api}/put/rule/${enable ? 'on' : 'off'}`)
+}
+
+export function saveScriptOnOff(enable) {
+  return request(`${api}/put/script/${enable ? 'on' : 'off'}`)
 }
 
 export function saveBreakOnOff(enable) {
@@ -50,12 +58,20 @@ export function getBreak() {
   return request(`${api}/get/break`, undefined, { responseType: 'json' })
 }
 
+export function getScript() {
+  return request(`${api}/get/script`, undefined, { responseType: 'json' })
+}
+
 export function getRuleOnOff() {
   return request(`${api}/get/rule/on_off`, undefined, { responseType: 'json' })
 }
 
 export function getBreakOnOff() {
   return request(`${api}/get/break/on_off`, undefined, { responseType: 'json' })
+}
+
+export function getScriptOnOff() {
+  return request(`${api}/get/script/on_off`, undefined, { responseType: 'json' })
 }
 
 export function getCert(reqId) {

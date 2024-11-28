@@ -114,7 +114,7 @@
 </template>
 <script>
 import { mapState, mapMutations } from 'vuex'
-import { getRuleOnOff, getBreakOnOff, saveRuleOnOff, saveBreakOnOff } from '../common/http'
+import { getRuleOnOff, getBreakOnOff, getScriptOnOff, saveRuleOnOff, saveBreakOnOff, saveScriptOnOff } from '../common/http'
 export default {
   name: 'Header',
   data() {
@@ -147,6 +147,9 @@ export default {
       })
       getBreakOnOff().then((res) => {
         this.changeBreakEnable(!!res.data)
+      })
+      getScriptOnOff().then((res) => {
+        this.changeScriptEnable(!!res.data)
       })
       if (this.isMac) {
         this.headerMarginLeft = '55px'
@@ -214,16 +217,25 @@ export default {
       // this.$refs.breakPopover.doClose()
     },
     async onScriptEnableChange() {
-      this.changeScriptEnable(!this.enableScript)
+      if (this.loading.script) {
+        return
+      }
+      this.loading.script = true
+      let enableScript = !this.enableScript
+      let res = await saveScriptOnOff(enableScript)
+      this.loading.script = false
+      if (res.status === 200) {
+        this.changeScriptEnable(enableScript)
+      }
     },
     onClickBreak() {
-      this.eventBus.$emit('show-break')
+      this.eventBus.$emit('show-break-list')
     },
     onShowBreak() {
       this.eventBus.$emit('show-break-run')
     },
     onClickScript() {
-
+      this.eventBus.$emit('show-script-list')
     },
     onClickNetwork() {
       this.networkAactive = !this.networkAactive

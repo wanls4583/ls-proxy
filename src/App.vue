@@ -6,6 +6,7 @@
       <record-table />
       <DialogRuleList :visible.sync="ruleListVisible" v-if="ruleListVisible" />
       <DialogBreakList :visible.sync="breakListVisible" v-if="breakListVisible" />
+      <DialogScriptList :visible.sync="scriptListVisible" v-if="scriptListVisible" />
       <DialogRunBreak />
     </div>
   </div>
@@ -19,6 +20,7 @@ import TypeFilter from './components/TypeFilter.vue'
 import RecordTable from './components/RecordTable.vue'
 import DialogRuleList from './components/rule/DialogRuleList.vue'
 import DialogBreakList from './components/breakpoint/DialogBreakList.vue'
+import DialogScriptList from './components/script/DialogScriptList.vue';
 import DialogRunBreak from './components/breakpoint/DialogRunBreak.vue'
 export default {
   name: 'App',
@@ -28,12 +30,14 @@ export default {
     RecordTable,
     DialogRuleList,
     DialogBreakList,
+    DialogScriptList,
     DialogRunBreak,
   },
   data() {
     return {
       ruleListVisible: false,
       breakListVisible: false,
+      scriptListVisible: false,
     }
   },
   created() {
@@ -48,14 +52,17 @@ export default {
       this.eventBus.$on('show-rule', () => {
         this.ruleListVisible = true
       })
-      this.eventBus.$on('show-break', () => {
+      this.eventBus.$on('show-break-list', () => {
         this.breakListVisible = true
+      })
+      this.eventBus.$on('show-script-list', () => {
+        this.scriptListVisible = true
       })
     },
     initMonacoTheme() {
       let themId = 'myTheme'
       monaco.editor.defineTheme(themId, {
-        base: "vs",
+        base: "vs-dark",
         inherit: true,
         rules: [
           { token: 'method-token', foreground: '#E54073' },

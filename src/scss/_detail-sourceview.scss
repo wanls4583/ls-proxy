@@ -33,6 +33,10 @@
     border: 1px solid #464646;
     overflow: hidden;
 
+    &.error {
+      border: 1px solid #f56c6c;
+    }
+
     .editor {
       width: 100%;
       height: 100%;
@@ -55,18 +59,23 @@
         .overflowingContentWidgets {
           display: none;
         }
+      }
 
-        .wordHighlightText,
-        .selectionHighlight {
-          background-color: transparent;
-        }
+      &.plain {
+        .monaco-editor {
 
-        .selected-text {
-          background-color: #EFAE22BB;
-        }
+          .wordHighlightText,
+          .selectionHighlight {
+            background-color: transparent;
+          }
 
-        .focused .selected-text {
-          background-color: #EFAE22BB;
+          .selected-text {
+            background-color: #EFAE22BB;
+          }
+
+          .focused .selected-text {
+            background-color: #EFAE22BB;
+          }
         }
       }
     }

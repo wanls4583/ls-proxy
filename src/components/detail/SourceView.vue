@@ -6,8 +6,12 @@
         <i class="icon icon-copy"></i>
       </span>
     </div>
-    <div class="editor-wrap">
-      <div class="editor" ref="editor"></div>
+    <div class="editor-wrap" :class="{error: error}">
+      <div
+        :class="{plain: ['sourceLanguage', 'plaintext'].includes(nowLanguageId)}"
+        class="editor"
+        ref="editor"
+      ></div>
     </div>
   </div>
 </template>
@@ -29,6 +33,10 @@ export default {
     readOnly: {
       type: Boolean,
       default: true
+    },
+    error: {
+      type: Boolean,
+      default: false
     }
   },
   data() {
@@ -36,6 +44,7 @@ export default {
       hexWidth: 8,
       clientWidth: 0,
       clientHeight: 0,
+      nowLanguageId: '',
     }
   },
   created() {
@@ -75,6 +84,7 @@ export default {
       let languageId = this.languageId
       if (!languageId) {
         languageId = 'sourceLanguage'
+        this.nowLanguageId = languageId
         if (!window.hasRegisterLanguage) {
           monaco.languages.register({ id: languageId });
           monaco.languages.setMonarchTokensProvider(languageId, {
@@ -128,6 +138,10 @@ export default {
         wrappingIndent: "none",
         language: languageId,
       });
+
+      editor.getModel().onDidChangeContent((e) => {
+        this.$emit('change')
+      })
 
       return editor
     },

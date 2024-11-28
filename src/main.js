@@ -5,6 +5,7 @@ import eventBus from './event'
 import Scheduler from './common/scheduler';
 import Rule from './common/rule';
 import Breakpoint from './common/breakpoint';
+import Script from './common/script';
 import store from './store';
 import { kmpSearch } from './common/utils';
 import 'element-ui/lib/theme-chalk/index.css';
@@ -19,6 +20,7 @@ Vue.prototype.$store = store
 window.eventBus = eventBus
 window.ruleStore = new Rule()
 window.breakStore = new Breakpoint()
+window.scriptStore = new Script()
 
 String.prototype.search = kmpSearch
 Uint8Array.prototype.search = kmpSearch

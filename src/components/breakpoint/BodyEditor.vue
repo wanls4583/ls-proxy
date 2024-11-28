@@ -29,7 +29,7 @@
       </div>
     </div>
     <div class="content-wrap">
-      <SourceView ref="source" :hide-title="true" :read-only="false" v-show="type===1" />
+      <SourceView ref="source" :hide-title="true" :read-only="false" languageId="plaintext" v-show="type===1" />
       <HexView ref="hex" :hide-title="true" v-show="type===2" />
       <Multipart ref="part" v-show="type===3" :list="partList" />
     </div>
