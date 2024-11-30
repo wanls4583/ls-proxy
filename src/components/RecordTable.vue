@@ -70,7 +70,7 @@ import DialogDetail from './detail/DialogDetail.vue'
 import { RULE_TYPE } from '../common/const'
 import { STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT } from '../common/const'
 import { TIME_DNS_START, TIME_CONNECT_START, TIME_REQ_START, TIME_RES_END } from '../common/const'
-import { MSG_REQ_HEAD, MSG_REQ_BODY, MSG_REQ_BODY_END, MSG_RES_HEAD, MSG_RES_BODY, MSG_RES_BODY_END, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT, MSG_RULE_BREAK_REQ, MSG_RULE_BREAK_RES } from '../common/const'
+import { MSG_REQ_HEAD, MSG_REQ_BODY, MSG_REQ_BODY_END, MSG_RES_HEAD, MSG_RES_BODY, MSG_RES_BODY_END, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT, MSG_RULE_BREAK_REQ, MSG_RULE_BREAK_RES, MSG_RULE_SCRIPT_REQ, MSG_RULE_SCRIPT_RES } from '../common/const'
 import { getReqHead, getResHead, getReqBody, getResBody, getCert, clearData } from '../common/http'
 
 let dataList = []
@@ -354,6 +354,10 @@ export default {
           // 断点
           this.getBreakDataObj(dataObj, u8Array, msgType)
         }
+        if (msgType == MSG_RULE_SCRIPT_REQ || msgType == MSG_RULE_SCRIPT_RES) {
+          // 断点
+          this.getScriptDataObj(dataObj, u8Array, msgType)
+        }
         return null
       }
 
@@ -439,6 +443,15 @@ export default {
       }
       this.eventBus.$emit('show-break-run', dataObj)
     },
+    getScriptDataObj(dataObj, u8Array, msgType) {
+      dataObj.scriptType = msgType == MSG_RULE_SCRIPT_REQ ? RULE_TYPE.REQ : RULE_TYPE.RES
+      if (dataObj.scriptType == RULE_TYPE.REQ) {
+        getReqDataObj({ dataObj, u8Array, hasBobdy: true })
+      } else {
+        getResDataObj({ dataObj, u8Array, hasBobdy: true })
+      }
+      this.eventBus.$emit('show-script-run', dataObj)
+    },
     getTImeDisplay(duration) {
       const H = 60 * 60 * 1000
       const M = 60 * 1000
@@ -496,7 +509,7 @@ export default {
       if (res.status === 200) {
         obj.reqHead = Array.from(new Uint8Array(res.data))
       }
-      if (dataObj.id === this.activeId) {
+      if (dataObj.id === this.activeId && !rawData.reqHead) {
         rawData.reqHead = obj.reqHead
       }
     },
@@ -506,7 +519,7 @@ export default {
       if (res.status === 200) {
         obj.reqBody = Array.from(new Uint8Array(res.data))
       }
-      if (dataObj.id === this.activeId) {
+      if (dataObj.id === this.activeId && !rawData.reqBody) {
         rawData.reqBody = obj.reqBody
       }
     },
@@ -516,7 +529,7 @@ export default {
       if (res.status === 200) {
         obj.resHead = Array.from(new Uint8Array(res.data))
       }
-      if (dataObj.id === this.activeId) {
+      if (dataObj.id === this.activeId && !rawData.resHead) {
         rawData.resHead = obj.resHead
       }
     },
@@ -526,7 +539,7 @@ export default {
       if (res.status === 200) {
         obj.resBody = Array.from(new Uint8Array(res.data))
       }
-      if (dataObj.id === this.activeId) {
+      if (dataObj.id === this.activeId && !rawData.resBody) {
         rawData.resBody = obj.resBody
       }
     },

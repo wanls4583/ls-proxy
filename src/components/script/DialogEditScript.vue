@@ -30,7 +30,7 @@
           <span>脚本</span>
           <span class="error" v-if="error">{{error}}</span>
         </div>
-        <div style="flex-grow:1">
+        <div style="flex-grow:1;overflow:hidden">
           <SourceView
             ref="source"
             :hide-title="true"

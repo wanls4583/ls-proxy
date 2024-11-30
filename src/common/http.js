@@ -50,6 +50,10 @@ export function runBreak(reqId, byteArray) {
   return request(`${api}/put/break/run/${reqId}`, byteArray)
 }
 
+export function runScript(reqId, byteArray) {
+  return request(`${api}/put/script/run/${reqId}`, byteArray)
+}
+
 export function getRule() {
   return request(`${api}/get/rule`, undefined, { responseType: 'json' })
 }

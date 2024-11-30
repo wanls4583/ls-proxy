@@ -1,5 +1,5 @@
 import { getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint } from '../common/utils'
-import { MSG_REQ_HEAD, MSG_RULE_BREAK_REQ, MSG_RULE_BREAK_RES, extList } from '../common/const'
+import { MSG_REQ_HEAD, MSG_RULE_BREAK_REQ, MSG_RULE_SCRIPT_REQ, MSG_RULE_SCRIPT_RES, extList } from '../common/const'
 // import { gunzip, inflate } from 'fflate';
 // import brotliPromise from 'brotli-wasm'
 import { remoteDecode } from './http'
@@ -71,7 +71,7 @@ export function getDataInfo(dataObj, u8Array) {
   let index = 0
   let msgType = u8Array[index++]
 
-  if (msgType > MSG_RULE_BREAK_RES) {
+  if (msgType > MSG_RULE_SCRIPT_RES) {
     return {}
   }
 
@@ -94,7 +94,7 @@ export function getDataInfo(dataObj, u8Array) {
   }
   index += sockIdSize
 
-  if (msgType == MSG_REQ_HEAD || msgType === MSG_RULE_BREAK_REQ) {
+  if (msgType == MSG_REQ_HEAD || msgType === MSG_RULE_BREAK_REQ || msgType === MSG_RULE_SCRIPT_REQ) {
     switch (u8Array[index++]) {
       case 1:
         dataObj.protocol = 'http:'

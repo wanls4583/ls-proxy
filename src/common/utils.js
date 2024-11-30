@@ -56,6 +56,7 @@ export const getU8ArrayFromString = function (str) {
   var uint8array = new TextEncoder().encode(str);
   return uint8array
 }
+
 export const u8To16Uint = function (uint8array, offset = 0) {
   return new DataView(uint8array.buffer).getUint16(offset)
 }
@@ -189,10 +190,129 @@ export function readClipboard() {
   }
 }
 
+export function wildcardMatch(s, p) {
+  let len_s = s.length, len_p = p.length;
+  while (len_s && len_p && p[len_p - 1] != '*') {
+    if (charMatch(s[len_s - 1], p[len_p - 1])) {
+      len_s--;
+      len_p--;
+    } else {
+      return false;
+    }
+  }
+  if (len_p == 0) {
+    return len_s == 0;
+  }
+
+  let sIndex = 0, pIndex = 0;
+  let sRecord = -1, pRecord = -1;
+  while (sIndex < len_s && pIndex < len_p) {
+    if (p[pIndex] == '*') {
+      ++pIndex;
+      sRecord = sIndex;
+      pRecord = pIndex;
+    } else if (charMatch(s[sIndex], p[pIndex])) {
+      ++sIndex;
+      ++pIndex;
+    } else if (sRecord != -1 && sRecord + 1 < len_s) {
+      ++sRecord;
+      sIndex = sRecord;
+      pIndex = pRecord;
+    } else {
+      return false;
+    }
+  }
+  return allStars(p, pIndex, len_p);
+
+  function charMatch(u, v) { return u == v || v == '?'; }
+  function allStars(str, left, right) {
+    for (let i = left; i < right; ++i) {
+      if (str[i] != '*') {
+        return false;
+      }
+    }
+    return true;
+  }
+}
+
 export function writeClipboard(text) {
   if (window.clipboardData) {
     clipboardData.setData('Text', text)
   } else if (navigator.clipboard) {
     navigator.clipboard.writeText(text)
+  }
+}
+
+export function createWorker(fun) {
+  var funStr = `(${fun.toString()})()`;
+  var blob = new Blob([funStr]);
+  var url = window.URL.createObjectURL(blob);
+  var worker = new Worker(url);
+  return worker;
+}
+
+export function scriptWorker() {
+  const getStringFromU8ArrayWithCheck = function (uint8array) {
+    try {
+      var string = new TextDecoder('utf-8', { fatal: true }).decode(uint8array)
+      return string
+    } catch (e) {
+      return false
+    }
+  }
+
+  const getU8ArrayFromString = function (str) {
+    var uint8array = new TextEncoder().encode(str);
+    return uint8array
+  }
+
+  const evalCode = function ({ id, type, header, body, code }) {
+    try {
+      let newHeader = null
+      let newBody = null
+      let originBody = body
+      let bodyTxt = getStringFromU8ArrayWithCheck(body)
+
+      if (bodyTxt !== false) {
+        body = bodyTxt
+      }
+
+      eval(code)
+
+      if (type == 1 && typeof onHttpRequest === 'function') {
+        let obj = onHttpRequest({ header, body })
+        newHeader = obj.header
+        newBody = obj.body
+      } else if (typeof onHttpResponse === 'function') {
+        let obj = onHttpResponse({ header, body })
+        newHeader = obj.header
+        newBody = obj.body
+      } else {
+        newHeader = header
+        newBody = body
+      }
+
+      if (!(newHeader instanceof Object)) {
+        newHeader = header
+      }
+
+      if (typeof newBody === 'string') {
+        newBody = getU8ArrayFromString(newBody)
+      } else if (!(newBody instanceof Uint8Array)) {
+        newBody = originBody
+      }
+
+      self.postMessage({ id, type, header: newHeader, body: newBody }, [newBody.buffer])
+    } catch (e) { 
+      console.log(e)
+    }
+  }
+
+  self.onmessage = function (e) {
+    let data = e.data
+    let { id, type, header, body, code } = data
+    if (id && code) {
+      evalCode({ id, type, header, body, code })
+    }
   }
 }
