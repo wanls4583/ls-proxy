@@ -53,6 +53,10 @@
                 &.active {
                     color: rgb(31, 220, 31);
                 }
+
+                &.warn-active {
+                    color: rgb(210, 150, 21)
+                }
             }
         }
     }

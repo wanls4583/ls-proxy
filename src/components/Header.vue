@@ -94,7 +94,7 @@
         </el-popover>
         <i
           class="icon icon-network hover-icon"
-          :class="{ active: networkAactive }"
+          :class="{ active: networkAactive, 'warn-active': networkHalfAactive }"
           @click="onClickNetwork"
         ></i>
         <i class="icon icon-ssl hover-icon" :class="{ active: sslAactive }" @click="onClickSll"></i>
@@ -114,7 +114,7 @@
 </template>
 <script>
 import { mapState, mapMutations } from 'vuex'
-import { getRuleOnOff, getBreakOnOff, getScriptOnOff, saveRuleOnOff, saveBreakOnOff, saveScriptOnOff } from '../common/http'
+import { getRuleOnOff, getBreakOnOff, getScriptOnOff, saveRuleOnOff, saveBreakOnOff, saveScriptOnOff, getProxyOnOff, saveProxyOnOff } from '../common/http'
 export default {
   name: 'Header',
   data() {
@@ -123,6 +123,7 @@ export default {
       gatewayAactive: false,
       mirrorAactive: false,
       networkAactive: false,
+      networkHalfAactive: false,
       sslAactive: false,
       processing: false,
       headerMarginLeft: '0px',
@@ -142,14 +143,21 @@ export default {
     ...mapMutations(['changeRuleEnable', 'changeBreakEnable', 'changeAutoPopBreak', 'changeScriptEnable']),
     init() {
       this.initEvent()
-      getRuleOnOff().then((res) => {
+      getRuleOnOff().then(res => {
         this.changeRuleEnable(!!res.data)
       })
-      getBreakOnOff().then((res) => {
+      getBreakOnOff().then(res => {
         this.changeBreakEnable(!!res.data)
       })
-      getScriptOnOff().then((res) => {
+      getScriptOnOff().then(res => {
         this.changeScriptEnable(!!res.data)
+      })
+      getProxyOnOff().then(res => {
+        let httpEnable = !!res.data?.http
+        let httpsEnable = !!res.data?.https
+        let socketEnable = !!res.data?.socket
+        this.networkAactive = httpEnable && httpsEnable && socketEnable
+        this.networkHalfAactive = !this.networkAactive && (httpEnable || httpsEnable || socketEnable)
       })
       if (this.isMac) {
         this.headerMarginLeft = '55px'
@@ -237,8 +245,18 @@ export default {
     onClickScript() {
       this.eventBus.$emit('show-script-list')
     },
-    onClickNetwork() {
-      this.networkAactive = !this.networkAactive
+    async onClickNetwork() {
+      if (this.loading.proxy) {
+        return
+      }
+      this.loading.proxy = true
+      let networkAactive = !this.networkAactive
+      let res = await saveProxyOnOff(networkAactive)
+      this.loading.proxy = false
+      if (res.status === 200) {
+        this.networkAactive = networkAactive
+        this.networkHalfAactive = false
+      }
     },
     onClickSll() {
       this.sslAactive = !this.sslAactive

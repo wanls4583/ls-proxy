@@ -46,6 +46,10 @@ export function saveBreakOnOff(enable) {
   return request(`${api}/put/break/${enable ? 'on' : 'off'}`)
 }
 
+export function saveProxyOnOff(enable) {
+  return request(`${api}/put/proxy/${enable ? 'on' : 'off'}`)
+}
+
 export function runBreak(reqId, byteArray) {
   return request(`${api}/put/break/run/${reqId}`, byteArray)
 }
@@ -76,6 +80,10 @@ export function getBreakOnOff() {
 
 export function getScriptOnOff() {
   return request(`${api}/get/script/on_off`, undefined, { responseType: 'json' })
+}
+
+export function getProxyOnOff() {
+  return request(`${api}/get/proxy/on_off`, undefined, { responseType: 'json' })
 }
 
 export function getCert(reqId) {
