@@ -38,7 +38,7 @@
             :style="cellStyle(item)"
             :class="item.cellClass"
           >
-            <span class="label">{{ row[item.prop] }}</span>
+            <span class="label">{{ item.showProp ? item.showProp(row) : row[item.prop] }}</span>
           </div>
         </div>
       </div>
@@ -60,6 +60,7 @@
 </template>
 
 <script>
+import { mapState } from 'vuex'
 import { getStringFromU8Array, u8To64Uint, u8To32Uint, getUUID } from '../common/utils'
 import { getDataInfo, getReqDataObj, getResDataObj } from '../common/data-utils'
 import Socket from '../common/socket'
@@ -95,7 +96,10 @@ export default {
         {
           label: '类型',
           width: '60px',
-          prop: 'type'
+          prop: 'type',
+          showProp(dataObj) {
+            return dataObj.ext || dataObj.type
+          }
         },
         {
           label: 'URL',
@@ -154,10 +158,11 @@ export default {
       maxBodySize: 200000 * 5,
       detailData: {},
       activeId: '',
-      detailVisible: false
+      detailVisible: false,
     }
   },
   computed: {
+    ...mapState(['resType']),
     cellStyle() {
       return column => {
         let style = {}
@@ -190,6 +195,13 @@ export default {
           this.$refs.content.scrollLeft = this.scrollLeft
           this.$refs.title.scrollLeft = this.scrollLeft
         }
+      }
+    },
+    resType: {
+      handler() {
+        this.setContentHeight()
+        this.setStartLine(0)
+        this.render()
       }
     }
   },
@@ -271,6 +283,34 @@ export default {
           }
         }
       })
+    },
+    typeFilter(dataObj) {
+      switch (this.resType) {
+        case 'all':
+          return true;
+        case 'http':
+          return dataObj.protocol === 'http:'
+        case 'https':
+          return dataObj.protocol === 'https:'
+        case 'ws':
+          return dataObj.protocol === 'ws:'
+        case 'wss':
+          return dataObj.protocol === 'wss:'
+        case 'json':
+          return dataObj.type === 'JSON'
+        case 'js':
+          return dataObj.type === 'JS'
+        case 'html':
+          return dataObj.type === 'HTML'
+        case 'xml':
+          return dataObj.type === 'XML'
+        case 'txt':
+          return dataObj.type === 'TXT'
+        case 'image':
+          return dataObj.type === 'IMAGE'
+        case 'media':
+          return ['AUDIO', 'VIDEO'].includes(dataObj.type)
+      }
     },
     getDataObj(data) {
       let dataObj = {}
@@ -587,7 +627,11 @@ export default {
       return rawData
     },
     setContentHeight() {
-      this.contentHeight = dataList.length * this.cellheight
+      if (this.resType) {
+        this.contentHeight = dataList.filter(this.typeFilter).length * this.cellheight
+      } else {
+        this.contentHeight = dataList.length * this.cellheight
+      }
     },
     setStartLine(scrollTop) {
       let startLine = 1
@@ -635,15 +679,22 @@ export default {
         preRenderLineMap[item.line] = index
       })
 
-      for (let i = 0, line = this.startLine; i <= this.maxVisibleLines && line <= dataList.length; i++, line++) {
+      let filteredList = []
+      if (this.resType) {
+        filteredList = dataList.filter(this.typeFilter)
+      } else {
+        filteredList = dataList
+      }
+
+      for (let i = 0, line = this.startLine; i <= this.maxVisibleLines && line <= filteredList.length; i++, line++) {
         lines++
       }
 
-      for (let i = 0, line = this.startLine; i < lines && line <= dataList.length; i++, line++) {
+      for (let i = 0, line = this.startLine; i < lines && line <= filteredList.length; i++, line++) {
         let index = preRenderLineMap[line]
         if (index > -1 && index < lines) {
           // 尽量保持新的列表和旧的列表相同索引对应的行不变，减少渲染时顶部行的删除操作
-          this.renderList[index] = _getRowObj.call(this, dataList[line - 1], line)
+          this.renderList[index] = _getRowObj.call(this, filteredList[line - 1], line)
         } else {
           toRenderLines.push(line)
         }
@@ -654,7 +705,7 @@ export default {
       for (let i = 0; i < lines; i++) {
         if (!this.renderList[i]) {
           let line = toRenderLines.pop()
-          this.renderList[i] = _getRowObj.call(this, dataList[line - 1], line)
+          this.renderList[i] = _getRowObj.call(this, filteredList[line - 1], line)
         }
       }
 
@@ -663,6 +714,7 @@ export default {
         this.columns.forEach(propObj => {
           obj[propObj.prop] = item[propObj.prop]
         })
+        obj.ext = item.ext
         obj.sockId = item.sockId
         obj.top = (line - this.startLine) * this.cellheight + 'px'
         obj.line = line

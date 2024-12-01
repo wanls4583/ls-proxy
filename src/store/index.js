@@ -9,6 +9,7 @@ export default new Vuex.Store({
     enableBreak: false,
     autoPopBreak: false,
     enableScript: false,
+    resType: '',
   },
   mutations: {
     changeRuleEnable(state, enableRule) {
@@ -22,6 +23,9 @@ export default new Vuex.Store({
     },
     changeScriptEnable(state, enableScript) {
       state.enableScript = enableScript
-    }
+    },
+    changeResType(state, resType) {
+      state.resType = resType
+    },
   }
 })

@@ -222,6 +222,7 @@ export function getResDataObj({ dataObj, u8Array, hasBobdy }) {
   dataObj.resHeader = {}
   getHttpHeader(dataObj.resHeader, head)
 
+  dataObj.ext = getExt(dataObj).toUpperCase()
   dataObj.type = getFileType(dataObj).toUpperCase() || '?'
 }
 
@@ -257,7 +258,7 @@ export function getHttpParams(params, url) {
   } catch (e) { }
 }
 
-export function getFileType(dataObj) {
+export function getExt(dataObj) {
   let path = dataObj.path || ''
   let ext = path.lastIndexOf('/')
   path = path.slice(ext + 1)
@@ -265,30 +266,37 @@ export function getFileType(dataObj) {
   ext = ext && ext[1]
   if (ext && extList.includes(ext)) {
     return ext
-  } else {
-    let contentType = dataObj.resHeader['Content-Type'] || ''
-    let type = null
-    if (!type) {
-      if (contentType.startsWith('application/json')) {
-        type = 'json'
-      } else if (contentType.startsWith('text/')) {
-        if (contentType.indexOf('html') > -1) {
-          type = 'html'
-        } else if (contentType.indexOf('xml') > -1) {
-          type = 'xml'
-        } else {
-          type = 'txt'
-        }
-      } else if (contentType.startsWith('image/')) {
-        type = 'image'
-      } else if (contentType.startsWith('audio/')) {
-        type = 'audio'
-      } else if (contentType.startsWith('video/')) {
-        type = 'video'
-      } else {
-        type = ''
-      }
-    }
-    return type
   }
+  return ''
+}
+
+export function getFileType(dataObj) {
+  let contentType = dataObj.resHeader['Content-Type'] || ''
+  let type = null
+  if (!type) {
+    if (contentType.startsWith('application/json')) {
+      type = 'json'
+    } else if (contentType.startsWith('application/javascript')) {
+      type = 'js'
+    } else if (contentType.startsWith('text/')) {
+      if (contentType.indexOf('html') > -1) {
+        type = 'html'
+      } else if (contentType.indexOf('xml') > -1) {
+        type = 'xml'
+      } else if (contentType.indexOf('css') > -1) {
+        type = 'css'
+      } else {
+        type = 'txt'
+      }
+    } else if (contentType.startsWith('image/')) {
+      type = 'image'
+    } else if (contentType.startsWith('audio/')) {
+      type = 'audio'
+    } else if (contentType.startsWith('video/')) {
+      type = 'video'
+    } else {
+      type = ''
+    }
+  }
+  return type
 }
