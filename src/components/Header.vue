@@ -92,12 +92,42 @@
             :class="{ active: enableScript }"
           ></i>
         </el-popover>
-        <i
-          class="icon icon-network hover-icon"
-          :class="{ active: networkAactive, 'warn-active': networkHalfAactive }"
-          @click="onClickNetwork"
-        ></i>
-        <i class="icon icon-ssl hover-icon" :class="{ active: sslAactive }" @click="onClickSll"></i>
+        <el-popover
+          width="150"
+          trigger="hover"
+          popper-class="op-list is-menu dark"
+          :visible-arrow="true"
+        >
+          <div class="op-btn-list">
+            <div class="op-group">
+              <div class="op-btn-item" @click="onClickNetwork">
+                <i v-if="networkAactive" class="el-icon-check"></i>
+                <span>系统代理</span>
+              </div>
+            </div>
+          </div>
+          <i
+            slot="reference"
+            class="icon icon-network hover-icon"
+            :class="{ active: networkAactive, 'warn-active': networkHalfAactive }"
+          ></i>
+        </el-popover>
+        <el-popover
+          width="150"
+          trigger="hover"
+          popper-class="op-list is-menu dark"
+          :visible-arrow="true"
+        >
+          <div class="op-btn-list">
+            <div class="op-group">
+              <div class="op-btn-item" @click="onClickSll">
+                <i v-if="sslAactive" class="el-icon-check"></i>
+                <span>SSL证书</span>
+              </div>
+            </div>
+          </div>
+          <i slot="reference" class="icon icon-ssl hover-icon" :class="{ active: sslAactive }"></i>
+        </el-popover>
       </div>
     </div>
     <div class="right-wrap">
@@ -114,7 +144,7 @@
 </template>
 <script>
 import { mapState, mapMutations } from 'vuex'
-import { getRuleOnOff, getBreakOnOff, getScriptOnOff, saveRuleOnOff, saveBreakOnOff, saveScriptOnOff, getProxyOnOff, saveProxyOnOff } from '../common/http'
+import { getRuleOnOff, getBreakOnOff, getScriptOnOff, getRootCertStatus, saveRuleOnOff, saveBreakOnOff, saveScriptOnOff, getProxyOnOff, saveProxyOnOff, addRootCert } from '../common/http'
 export default {
   name: 'Header',
   data() {
@@ -158,6 +188,9 @@ export default {
         let socketEnable = !!res.data?.socket
         this.networkAactive = httpEnable && httpsEnable && socketEnable
         this.networkHalfAactive = !this.networkAactive && (httpEnable || httpsEnable || socketEnable)
+      })
+      getRootCertStatus().then(res => {
+        this.sslAactive = !!res.data
       })
       if (this.isMac) {
         this.headerMarginLeft = '55px'
@@ -258,8 +291,13 @@ export default {
         this.networkHalfAactive = false
       }
     },
-    onClickSll() {
-      this.sslAactive = !this.sslAactive
+    async onClickSll() {
+      if (!this.sslAactive) {
+        let res = await addRootCert()
+        if (res.status === 200) {
+          this.sslAactive = true
+        }
+      }
     },
     onStart() {
       this.processing = !this.processing

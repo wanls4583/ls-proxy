@@ -34,6 +34,10 @@ export function saveScript(byteArray) {
   return request(`${api}/put/script`, byteArray)
 }
 
+export function addRootCert(byteArray) {
+  return request(`${api}/put/cert_add`, byteArray)
+}
+
 export function saveRuleOnOff(enable) {
   return request(`${api}/put/rule/${enable ? 'on' : 'off'}`)
 }
@@ -68,6 +72,10 @@ export function getBreak() {
 
 export function getScript() {
   return request(`${api}/get/script`, undefined, { responseType: 'json' })
+}
+
+export function getRootCertStatus() {
+  return request(`${api}/get/cert_status`, undefined, { responseType: 'json' })
 }
 
 export function getRuleOnOff() {
