@@ -48,6 +48,7 @@ import ObjectView from './ObjectView.vue'
 import HexView from './HexView.vue'
 import SourceView from './SourceView.vue'
 import { getDecoededBody } from '../../common/data-utils'
+import { getStringFromU8ArrayWithCheck } from '../../common/utils'
 
 let oldRawData = {}
 export default {
@@ -84,12 +85,11 @@ export default {
       let reqData = rawData.reqHead || []
       let reqBody = await getDecoededBody(this.data?.reqHeader, rawData.reqBody || [])
       if (rawData.reqBody?.length) {
-        if (['gzip', 'br', 'deflate'].includes(this.data?.reqHeader?.['Content-Encoding'])) {
-          reqData = reqData.concat(Array.from(new TextEncoder().encode(`<${this.data.reqHeader['Content-Encoding']} binary body>`)))
-        } else if (!this.getIfText(this.data.reqHeader)) {
-          reqData = reqData.concat(Array.from(new TextEncoder().encode(`<binary body>`)))
-        } else {
+        let text = getStringFromU8ArrayWithCheck(new Uint8Array(reqBody))
+        if (text !== false) {
           reqData = reqData.concat(reqBody)
+        } else {
+          reqData = reqData.concat(Array.from(new TextEncoder().encode(`<binary body>`)))
         }
       }
       this.$refs.reqData.render(reqData)
@@ -99,12 +99,11 @@ export default {
       let resData = rawData.resHead || []
       let resBody = await getDecoededBody(this.data?.resHeader, rawData.resBody || [])
       if (rawData.resBody?.length) {
-        if (['gzip', 'br', 'deflate'].includes(this.data?.resHeader?.['Content-Encoding'])) {
-          resData = resData.concat(Array.from(new TextEncoder().encode(`<${this.data.resHeader['Content-Encoding']} binary body>`)))
-        } else if (!this.getIfText(this.data.resHeader)) {
-          resData = resData.concat(Array.from(new TextEncoder().encode(`<binary body>`)))
-        } else {
+        let text = getStringFromU8ArrayWithCheck(new Uint8Array(resBody))
+        if (text !== false) {
           resData = resData.concat(resBody)
+        } else {
+          resData = resData.concat(Array.from(new TextEncoder().encode(`<binary body>`)))
         }
       }
       this.$refs.resData.render(resData)

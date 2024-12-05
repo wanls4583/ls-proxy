@@ -140,6 +140,7 @@ export default {
       let headLine = ''
       if (this.isReq) {
         let path = this.path[0] === '/' ? this.path : '/' + this.path
+        path = encodeURI(path)
         headLine = `${this.method} ${path} ${this.nowBreak.version}\r\n`
       } else {
         headLine = `${this.nowBreak.version} ${this.status} ${this.statusDesc}\r\n`
