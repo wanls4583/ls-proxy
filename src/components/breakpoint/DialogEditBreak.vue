@@ -76,7 +76,7 @@ export default {
   },
   created() {
     if (this.breakId) {
-      let breakObj = window.breakStore.getBreakById(this.breakId)
+      let breakObj = window.breakStore.getNodeById(this.breakId)
       if (breakObj) {
         this.originBreakObj = breakObj
         this.form.name = breakObj.name
@@ -94,7 +94,7 @@ export default {
         if (valid) {
           let param = Object.assign({}, this.form)
           param.enable = this.originBreakObj ? this.originBreakObj.enable : true
-          window.breakStore.addBreak(param)
+          window.breakStore.addNode(param)
           this.$emit('confirm')
           this.close()
         } else {

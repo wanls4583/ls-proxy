@@ -99,7 +99,7 @@ export default {
   methods: {
     ...mapMutations(['changeRuleEnable']),
     getList() {
-      this.list = window.ruleStore.getRuleList()
+      this.list = window.ruleStore.getNodeList()
       this.setEnableAll()
     },
     setEnableAll() {
@@ -143,7 +143,7 @@ export default {
         closeOnClickModal: false,
         type: 'warning'
       }).then(() => {
-        window.ruleStore.delRule(row.id)
+        window.ruleStore.delNode(row.id)
         this.getList()
       }).catch(() => { })
     },

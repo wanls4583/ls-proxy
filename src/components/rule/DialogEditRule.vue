@@ -98,7 +98,7 @@ export default {
   },
   created() {
     if (this.ruleId) {
-      let ruleObj = window.ruleStore.getRuleById(this.ruleId)
+      let ruleObj = window.ruleStore.getNodeById(this.ruleId)
       this.originRuleObj = ruleObj
       if (ruleObj) {
         this.form.name = ruleObj.name
@@ -140,7 +140,7 @@ export default {
         if (valid) {
           let param = Object.assign({}, this.ruleObj, this.form)
           param.enable = this.originRuleObj ? this.originRuleObj.enable : true
-          window.ruleStore.addRule(param)
+          window.ruleStore.addNode(param)
           this.$emit('confirm')
           this.close()
         } else {

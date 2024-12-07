@@ -104,7 +104,7 @@ export default {
   methods: {
     ...mapMutations(['changeBreakEnable', 'changeAutoPopBreak']),
     getList() {
-      this.list = window.breakStore.getBreakList()
+      this.list = window.breakStore.getNodeList()
       this.setEnableAll()
     },
     setEnableAll() {
@@ -140,7 +140,7 @@ export default {
       this.editBreakVisible = true
     },
     handleChangeType(row) {
-      window.breakStore.addBreak(row)
+      window.breakStore.addNode(row)
     },
     hanleEdit(row) {
       this.breakId = row.id
@@ -155,7 +155,7 @@ export default {
         closeOnClickModal: false,
         type: 'warning'
       }).then(() => {
-        window.breakStore.delBreak(row.id)
+        window.breakStore.delNode(row.id)
         this.getList()
       }).catch(() => { })
     },
