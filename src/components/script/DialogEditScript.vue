@@ -80,7 +80,7 @@ export default {
   },
   created() {
     if (this.scriptId) {
-      let scriptObj = window.scriptStore.getScriptById(this.scriptId)
+      let scriptObj = window.scriptStore.getNodeById(this.scriptId)
       if (scriptObj) {
         this.originScriptObj = scriptObj
         this.form.name = scriptObj.name
@@ -108,7 +108,7 @@ export default {
           }
           let param = Object.assign({}, this.form)
           param.enable = this.originScriptObj ? this.originScriptObj.enable : true
-          window.scriptStore.addScript(param)
+          window.scriptStore.addNode(param)
           this.$emit('confirm')
           this.onClose()
         } else {

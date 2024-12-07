@@ -87,7 +87,7 @@ export default {
   methods: {
     ...mapMutations(['changeScriptEnable']),
     getList() {
-      this.list = window.scriptStore.getScriptList()
+      this.list = window.scriptStore.getNodeList()
       this.setEnableAll()
     },
     setEnableAll() {
@@ -131,7 +131,7 @@ export default {
         closeOnClickModal: false,
         type: 'warning'
       }).then(() => {
-        window.scriptStore.delScript(row.id)
+        window.scriptStore.delNode(row.id)
         this.getList()
       }).catch(() => { })
     },
