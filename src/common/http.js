@@ -34,6 +34,14 @@ export function saveScript(byteArray) {
   return request(`${api}/put/script`, byteArray)
 }
 
+export function saveMirror(byteArray) {
+  return request(`${api}/put/mirror`, byteArray)
+}
+
+export function saveGateway(byteArray) {
+  return request(`${api}/put/gateway`, byteArray)
+}
+
 export function addRootCert(byteArray) {
   return request(`${api}/put/cert_add`, byteArray)
 }
@@ -42,12 +50,20 @@ export function saveRuleOnOff(enable) {
   return request(`${api}/put/rule/${enable ? 'on' : 'off'}`)
 }
 
+export function saveBreakOnOff(enable) {
+  return request(`${api}/put/break/${enable ? 'on' : 'off'}`)
+}
+
 export function saveScriptOnOff(enable) {
   return request(`${api}/put/script/${enable ? 'on' : 'off'}`)
 }
 
-export function saveBreakOnOff(enable) {
-  return request(`${api}/put/break/${enable ? 'on' : 'off'}`)
+export function saveMirrorOnOff(enable) {
+  return request(`${api}/put/mirror/${enable ? 'on' : 'off'}`)
+}
+
+export function saveGatewayOnOff(enable) {
+  return request(`${api}/put/gateway/${enable ? 'on' : 'off'}`)
 }
 
 export function saveProxyOnOff(enable) {
@@ -74,6 +90,14 @@ export function getScript() {
   return request(`${api}/get/script`, undefined, { responseType: 'json' })
 }
 
+export function getMirror() {
+  return request(`${api}/get/mirror`, undefined, { responseType: 'json' })
+}
+
+export function getGateway() {
+  return request(`${api}/get/gateway`, undefined, { responseType: 'json' })
+}
+
 export function getRootCertStatus() {
   return request(`${api}/get/cert_status`, undefined, { responseType: 'json' })
 }
@@ -88,6 +112,14 @@ export function getBreakOnOff() {
 
 export function getScriptOnOff() {
   return request(`${api}/get/script/on_off`, undefined, { responseType: 'json' })
+}
+
+export function getMirrorOnOff() {
+  return request(`${api}/get/mirror/on_off`, undefined, { responseType: 'json' })
+}
+
+export function getGatewayOnOff() {
+  return request(`${api}/get/gateway/on_off`, undefined, { responseType: 'json' })
 }
 
 export function getProxyOnOff() {

@@ -8,6 +8,8 @@ import Breakpoint from './common/breakpoint';
 import Script from './common/script';
 import store from './store';
 import { kmpSearch } from './common/utils';
+import Node from './common/node';
+import { saveMirror, getMirror, saveGateway, getGateway } from './common/http';
 import 'element-ui/lib/theme-chalk/index.css';
 import './scss/index.scss';
 import './assets/font/icon'
@@ -21,6 +23,8 @@ window.eventBus = eventBus
 window.ruleStore = new Rule()
 window.breakStore = new Breakpoint()
 window.scriptStore = new Script()
+window.mirrorStore = new Node({ saveNode: saveMirror, getNode: getMirror })
+window.gatewayStore = new Node({ saveNode: saveGateway, getNode: getGateway })
 
 String.prototype.search = kmpSearch
 Uint8Array.prototype.search = kmpSearch

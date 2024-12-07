@@ -7,6 +7,8 @@
       <DialogRuleList :visible.sync="ruleListVisible" v-if="ruleListVisible" />
       <DialogBreakList :visible.sync="breakListVisible" v-if="breakListVisible" />
       <DialogScriptList :visible.sync="scriptListVisible" v-if="scriptListVisible" />
+      <DialogMirrorList :visible.sync="mirrorListVisible" v-if="mirrorListVisible" />
+      <DialogGatewayList :visible.sync="gatewayListVisible" v-if="gatewayListVisible" />
       <DialogRunBreak />
     </div>
   </div>
@@ -22,6 +24,8 @@ import DialogRuleList from './components/rule/DialogRuleList.vue'
 import DialogBreakList from './components/breakpoint/DialogBreakList.vue'
 import DialogScriptList from './components/script/DialogScriptList.vue';
 import DialogRunBreak from './components/breakpoint/DialogRunBreak.vue'
+import DialogMirrorList from './components/mirror/DialogMirrorList.vue';
+import DialogGatewayList from './components/gateway/DialogGatewayList.vue';
 export default {
   name: 'App',
   components: {
@@ -32,12 +36,16 @@ export default {
     DialogBreakList,
     DialogScriptList,
     DialogRunBreak,
+    DialogMirrorList,
+    DialogGatewayList,
   },
   data() {
     return {
       ruleListVisible: false,
       breakListVisible: false,
       scriptListVisible: false,
+      mirrorListVisible: false,
+      gatewayListVisible: false,
     }
   },
   created() {
@@ -57,6 +65,12 @@ export default {
       })
       this.eventBus.$on('show-script-list', () => {
         this.scriptListVisible = true
+      })
+      this.eventBus.$on('show-mirror-list', () => {
+        this.mirrorListVisible = true
+      })
+      this.eventBus.$on('show-gateway-list', () => {
+        this.gatewayListVisible = true
       })
     },
     initMonacoTheme() {

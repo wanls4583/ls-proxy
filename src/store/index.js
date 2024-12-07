@@ -9,6 +9,8 @@ export default new Vuex.Store({
     enableBreak: false,
     autoPopBreak: false,
     enableScript: false,
+    enableMirror: false,
+    enableGateway: false,
     resType: '',
   },
   mutations: {
@@ -23,6 +25,12 @@ export default new Vuex.Store({
     },
     changeScriptEnable(state, enableScript) {
       state.enableScript = enableScript
+    },
+    changeMirrorEnable(state, enableMirror) {
+      state.enableMirror = enableMirror
+    },
+    changeGatewayEnable(state, enableGateway) {
+      state.enableGateway = enableGateway
     },
     changeResType(state, resType) {
       state.resType = resType

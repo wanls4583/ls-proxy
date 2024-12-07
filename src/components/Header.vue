@@ -12,16 +12,48 @@
         </el-tooltip>
       </div>
       <div class="btn-wrap">
-        <i
-          class="icon icon-gateway hover-icon"
-          :class="{ active: gatewayAactive }"
-          @click="onClickGateWay"
-        ></i>
-        <i
-          class="icon icon-mirror hover-icon"
-          :class="{ active: mirrorAactive }"
-          @click="onClickMirror"
-        ></i>
+        <el-popover
+          width="150"
+          trigger="hover"
+          popper-class="op-list is-menu dark"
+          :visible-arrow="true"
+        >
+          <div class="op-btn-list">
+            <div class="op-group">
+              <div class="op-btn-item" @click="onGatewayEnableChange">
+                <i v-if="enableGateway" class="el-icon-check"></i>
+                <span>启用网关</span>
+              </div>
+            </div>
+            <div class="op-group">
+              <div class="op-btn-item" @click="onClickGateway">管理规则</div>
+            </div>
+          </div>
+          <i
+            slot="reference"
+            class="icon icon-gateway hover-icon"
+            :class="{ active: enableGateway }"
+          ></i>
+        </el-popover>
+        <el-popover
+          width="150"
+          trigger="hover"
+          popper-class="op-list is-menu dark"
+          :visible-arrow="true"
+        >
+          <div class="op-btn-list">
+            <div class="op-group">
+              <div class="op-btn-item" @click="onMirrorEnableChange">
+                <i v-if="enableMirror" class="el-icon-check"></i>
+                <span>启用镜像</span>
+              </div>
+            </div>
+            <div class="op-group">
+              <div class="op-btn-item" @click="onClickMirror">管理规则</div>
+            </div>
+          </div>
+          <i slot="reference" class="icon icon-mirror hover-icon" :class="{ active: enableMirror }"></i>
+        </el-popover>
         <el-popover
           ref="rulePopover"
           width="150"
@@ -144,14 +176,13 @@
 </template>
 <script>
 import { mapState, mapMutations } from 'vuex'
-import { getRuleOnOff, getBreakOnOff, getScriptOnOff, getRootCertStatus, saveRuleOnOff, saveBreakOnOff, saveScriptOnOff, getProxyOnOff, saveProxyOnOff, addRootCert } from '../common/http'
+import { getRuleOnOff, getBreakOnOff, getScriptOnOff, getRootCertStatus, saveMirrorOnOff, saveGatewayOnOff, saveRuleOnOff, saveBreakOnOff, saveScriptOnOff, getProxyOnOff, saveProxyOnOff, addRootCert, getMirrorOnOff, getGatewayOnOff } from '../common/http'
 export default {
   name: 'Header',
   data() {
     return {
       hostname: '127.0.0.1:8000',
       gatewayAactive: false,
-      mirrorAactive: false,
       networkAactive: false,
       networkHalfAactive: false,
       sslAactive: false,
@@ -164,15 +195,21 @@ export default {
     }
   },
   computed: {
-    ...mapState(['enableRule', 'enableBreak', 'autoPopBreak', 'enableScript'])
+    ...mapState(['enableMirror', 'enableGateway', 'enableRule', 'enableBreak', 'autoPopBreak', 'enableScript'])
   },
   created() {
     this.init()
   },
   methods: {
-    ...mapMutations(['changeRuleEnable', 'changeBreakEnable', 'changeAutoPopBreak', 'changeScriptEnable']),
+    ...mapMutations(['changeMirrorEnable', 'changeGatewayEnable', 'changeRuleEnable', 'changeBreakEnable', 'changeAutoPopBreak', 'changeScriptEnable']),
     init() {
       this.initEvent()
+      getGatewayOnOff().then(res => {
+        this.changeGatewayEnable(!!res.data)
+      })
+      getMirrorOnOff().then(res => {
+        this.changeMirrorEnable(!!res.data)
+      })
       getRuleOnOff().then(res => {
         this.changeRuleEnable(!!res.data)
       })
@@ -216,11 +253,35 @@ export default {
         });
       }
     },
-    onClickGateWay() {
-      this.gatewayAactive = !this.gatewayAactive
+    async onGatewayEnableChange() {
+      if (this.loading.gateway) {
+        return
+      }
+      this.loading.gateway = true
+      let enableGateway = !this.enableGateway
+      let res = await saveGatewayOnOff(enableGateway)
+      this.loading.gateway = false
+      if (res.status === 200) {
+        this.changeGatewayEnable(enableGateway)
+      }
+    },
+    onClickGateway() {
+      this.eventBus.$emit('show-gateway-list')
+    },
+    async onMirrorEnableChange() {
+      if (this.loading.mirror) {
+        return
+      }
+      this.loading.mirror = true
+      let enableMirror = !this.enableMirror
+      let res = await saveMirrorOnOff(enableMirror)
+      this.loading.mirror = false
+      if (res.status === 200) {
+        this.changeMirrorEnable(enableMirror)
+      }
     },
     onClickMirror() {
-      this.mirrorAactive = !this.mirrorAactive
+      this.eventBus.$emit('show-mirror-list')
     },
     async onRuleEnableChange() {
       if (this.loading.rule) {

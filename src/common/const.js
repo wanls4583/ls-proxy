@@ -147,6 +147,27 @@ export const [
 
 export const [STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT] = [1, 2]
 
+export const [GATEWAY_REFUSE_REQ, GATEWAY_REFUSE_RES, GATEWAY_HANG_REQ, GATEWAY_HANG_RES] = [1, 2, 3, 4]
+
+export const GATEWAY_METHODS = [
+  {
+    value: GATEWAY_REFUSE_REQ,
+    desc: '屏蔽请求'
+  },
+  {
+    value: GATEWAY_REFUSE_RES,
+    desc: '屏蔽响应'
+  },
+  {
+    value: GATEWAY_HANG_REQ,
+    desc: '挂起请求'
+  },
+  {
+    value: GATEWAY_HANG_RES,
+    desc: '挂起响应'
+  }
+]
+
 export const HTTP_METHODS = ['GET', 'POST', 'HEAD', 'PUT', 'DELETE', 'CONNECT', 'OPTIONS', 'TRACE', 'PATCH']
 
 export const HTTP_STATUS = [
