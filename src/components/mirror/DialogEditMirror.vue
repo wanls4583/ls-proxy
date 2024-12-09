@@ -27,6 +27,11 @@
         </el-form-item>
         <el-form-item prop="host" label="镜像">
           <el-input v-model="form.host"></el-input>
+          <div>
+            <el-checkbox v-model="form.changeHostHeader">更改 Host 首部</el-checkbox>
+            <el-checkbox v-model="form.changeRefererHeader">更改 Referer 首部</el-checkbox>
+            <el-checkbox v-model="form.changeOriginHeader">更改 Origin 首部</el-checkbox>
+          </div>
         </el-form-item>
       </el-form>
       <div slot="footer" class="dialog-footer">
@@ -54,6 +59,9 @@ export default {
         url: '',
         host: '',
         enableWildcard: true,
+        changeHostHeader: true,
+        changeRefererHeader: true,
+        changeOriginHeader: true,
       },
       error: '',
       rules: {
@@ -73,6 +81,9 @@ export default {
         this.form.host = node.host
         this.form.id = node.id
         this.form.enableWildcard = node.enableWildcard || false
+        this.form.changeHostHeader = node.changeHostHeader || false
+        this.form.changeRefererHeader = node.changeRefererHeader || false
+        this.form.changeOriginHeader = node.changeOriginHeader || false
       }
     }
   },
