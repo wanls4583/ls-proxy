@@ -90,11 +90,20 @@ export default {
           monaco.languages.setMonarchTokensProvider(languageId, {
             tokenizer: {
               root: [
-                [/^(GET|POST|OPTIONS|CONNECT|PUT|PUSH|DELETE)\s/, "method-token"],
-                [/HTTP\/[\d\.]+/, "protocol-token"],
-                [/\s\d+(\s|$)/, "num-token"],
-                [/^[\w\-]+(?=\:)/, "header-token"],
+                [/^/, '', '@firstLine'],
               ],
+              firstLine: [
+                [/^(GET|POST|OPTIONS|CONNECT|PUT|PUSH|DELETE)(?=\s)/, "method-token"],
+                [/HTTP\/[\d\.]+(?=\s)/, "protocol-token"],
+                [/HTTP\/[\d\.]+(?=$)/, "protocol-token", '@otherLine'],
+                [/\s\d+(?=\s|$)/, 'num-token', '@otherLine'],
+              ],
+              otherLine: [
+                [/^[a-zA-Z][\w\-]*(?=\:)/, "header-token"],
+                [/\s\d*\.\d+([eE][\-+]?\d+)?(?=\s|$)/, 'num-token'],
+                [/\s0[xX][0-9a-fA-F]+(?=\s|$)/, 'num-token'],
+                [/\s\d+(?=\s|$)/, 'num-token'],
+              ]
             },
           })
           window.hasRegisterLanguage = true
