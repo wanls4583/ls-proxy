@@ -34,9 +34,21 @@ export default {
       type: Boolean,
       default: true
     },
+    wordWrap: {
+      type: Boolean,
+      default: true
+    },
     error: {
       type: Boolean,
       default: false
+    }
+  },
+  watch: {
+    languageId() {
+      if (this.languageId) {
+        this.editor.getModel().setLanguage(this.languageId)
+        this.nowLanguageId = this.languageId
+      }
     }
   },
   data() {
@@ -84,7 +96,6 @@ export default {
       let languageId = this.languageId
       if (!languageId) {
         languageId = 'sourceLanguage'
-        this.nowLanguageId = languageId
         if (!window.hasRegisterLanguage) {
           monaco.languages.register({ id: languageId });
           monaco.languages.setMonarchTokensProvider(languageId, {
@@ -109,6 +120,7 @@ export default {
           window.hasRegisterLanguage = true
         }
       }
+      this.nowLanguageId = languageId
 
       let el = this.$refs.editor;
       let editor = monaco.editor.create(el, {
@@ -142,7 +154,7 @@ export default {
         contextmenu: false,
         matchBrackets: 'never',
         useShadowDOM: false,
-        wordWrap: "on",
+        wordWrap: this.wordWrap ? 'on' : 'off',
         wrappingStrategy: 'advanced',
         wrappingIndent: "none",
         language: languageId,
