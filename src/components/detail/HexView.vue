@@ -114,10 +114,23 @@ export default {
       let decOption = { isWholeLine: false, className: "detail-hex-selection" }
       this.decorations = null
 
-      editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC, () => {
-        if (this.preStartPos && this.nowPos && this.value) {
-          let text = this.getText(this.preStartPos, this.nowPos, this.value)
-          writeClipboard(text || '')
+      // addCommand 会污染其他实例
+      // editor.addCommand(monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC, () => {
+      //   if (this.preStartPos && this.nowPos && this.value) {
+      //     let text = this.getText(this.preStartPos, this.nowPos, this.value)
+      //     writeClipboard(text || '')
+      //   }
+      // });
+
+      editor.addAction({
+        id: 'copy',
+        label: 'copy',
+        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyC],
+        run: () => {
+          if (this.preStartPos && this.nowPos && this.value) {
+            let text = this.getText(this.preStartPos, this.nowPos, this.value)
+            writeClipboard(text || '')
+          }
         }
       });
 
