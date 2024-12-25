@@ -36,7 +36,7 @@
           <ObjectView title="响应头头列表" :data="data.resHeader" />
         </el-tab-pane>
         <el-tab-pane label="预览" name="预览">
-          <SourceView ref="resPreView" :languageId="resLanguageId" :wordWrap="false" />
+          <SourceView ref="resPreView" :languageId="resLanguageId" />
         </el-tab-pane>
         <el-tab-pane label="响应体" name="响应体">
           <HexView ref="hex" />

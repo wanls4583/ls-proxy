@@ -129,20 +129,20 @@ export default {
     parsePart(boundary) {
       let boundaryArr = Array.from(getU8ArrayFromString('--' + boundary))
       let body = this.body || new Uint8Array([])
-      let index = body.search([...boundaryArr, 13, 10])
+      let index = body.kmpSearch([...boundaryArr, 13, 10])
       if (index == -1) {
         return
       }
       body = body.slice(index + boundaryArr.length + 2)
       while (body.length) {
         let part = {}
-        index = body.search([13, 10, 13, 10])
+        index = body.kmpSearch([13, 10, 13, 10])
         if (index == -1) {
           return
         }
         part.header = _parseHeader(body.slice(0, index + 2))
         body = body.slice(index + 4)
-        index = body.search(boundaryArr)
+        index = body.kmpSearch(boundaryArr)
         if (index == -1) {
           return
         }

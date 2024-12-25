@@ -9,7 +9,7 @@ export function getDecoededBody(header, body) {
   header = header || {}
   if (header['Transfer-Encoding'] === 'chunked') {
     let index = -1
-    while ((index = body.search([13, 10])) > -1) {
+    while ((index = body.kmpSearch([13, 10])) > -1) {
       let num = getStringFromU8Array(new Uint8Array(body.slice(0, index)))
       num = parseInt(num, 16)
       if (!num) {
@@ -22,7 +22,7 @@ export function getDecoededBody(header, body) {
     let index = header['Content-Type'].indexOf('boundary=')
     let boundary = header['Content-Type'].slice(index + 'boundary='.length)
     body = body.slice(boundary.length + 2)
-    while ((index = body.search(boundary)) > -1) {
+    while ((index = body.kmpSearch(boundary)) > -1) {
       if (getStringFromU8Array(new Uint8Array(body.slice(index + boundary.length, index + boundary.length + 4))) === '--\r\n') {
         break
       }
@@ -148,7 +148,7 @@ export function getDataInfo(dataObj, u8Array) {
 }
 
 export function getReqDataObj({ dataObj, u8Array, hasBobdy }) {
-  let index = u8Array.search([13, 10, 13, 10]) // \r\n\r\n
+  let index = u8Array.kmpSearch([13, 10, 13, 10]) // \r\n\r\n
   let head, spaceIndex, lineIndex
 
   head = u8Array.slice(0, index + 4)
@@ -157,15 +157,15 @@ export function getReqDataObj({ dataObj, u8Array, hasBobdy }) {
   dataObj.size = '0 B'
   dataObj.reqBodyIndex = 0
 
-  spaceIndex = u8Array.search(32)
+  spaceIndex = u8Array.kmpSearch(32)
   dataObj.method = getStringFromU8Array(head.slice(0, spaceIndex))
 
   head = head.slice(spaceIndex + 1)
-  spaceIndex = head.search(32)
+  spaceIndex = head.kmpSearch(32)
   dataObj.path = getStringFromU8Array(head.slice(0, spaceIndex))
 
   head = head.slice(spaceIndex + 1)
-  lineIndex = head.search([13, 10]) // \r\n
+  lineIndex = head.kmpSearch([13, 10]) // \r\n
   dataObj.version = getStringFromU8Array(head.slice(0, lineIndex))
 
   head = head.slice(lineIndex + 2)
@@ -201,7 +201,7 @@ export function getResDataObj({ dataObj, u8Array, hasBobdy }) {
   }
   u8Array = u8Array.slice(urlLenSize + 1 + urlLen)
 
-  let index = u8Array.search([13, 10, 13, 10]) // \r\n\r\n
+  let index = u8Array.kmpSearch([13, 10, 13, 10]) // \r\n\r\n
   let head, spaceIndex, lineIndex
 
   head = u8Array.slice(0, index + 4)
@@ -210,13 +210,13 @@ export function getResDataObj({ dataObj, u8Array, hasBobdy }) {
   dataObj.resBodySize = u8Array.length
   dataObj.resBodyIndex = 0
 
-  spaceIndex = u8Array.search(32)
+  spaceIndex = u8Array.kmpSearch(32)
   dataObj.version = getStringFromU8Array(head.slice(0, spaceIndex))
   head = head.slice(spaceIndex + 1)
-  spaceIndex = head.search(32)
+  spaceIndex = head.kmpSearch(32)
   dataObj.status = getStringFromU8Array(head.slice(0, spaceIndex))
 
-  lineIndex = head.search([13, 10])
+  lineIndex = head.kmpSearch([13, 10])
   head = head.slice(lineIndex + 2)
 
   dataObj.resHeader = {}
@@ -234,13 +234,13 @@ export function getHttpHeader(reqHeader, head) {
     value
 
   while (head.length) {
-    lineIndex = head.search([13, 10])
+    lineIndex = head.kmpSearch([13, 10])
     if (lineIndex < 0) {
       break
     }
     line = head.slice(0, lineIndex)
     if (line.length) {
-      colonIndex = line.search([58, 32]) //': '
+      colonIndex = line.kmpSearch([58, 32]) //': '
       prop = getStringFromU8Array(line.slice(0, colonIndex))
       value = getStringFromU8Array(line.slice(colonIndex + 2))
       reqHeader[prop] = value

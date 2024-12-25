@@ -24,9 +24,9 @@ window.breakStore = new Node({ saveNode: saveBreak, getNode: getBreak })
 window.mirrorStore = new Node({ saveNode: saveMirror, getNode: getMirror })
 window.gatewayStore = new Node({ saveNode: saveGateway, getNode: getGateway })
 
-String.prototype.search = kmpSearch
-Uint8Array.prototype.search = kmpSearch
-Array.prototype.search = kmpSearch
+String.prototype.kmpSearch = kmpSearch
+Uint8Array.prototype.kmpSearch = kmpSearch
+Array.prototype.kmpSearch = kmpSearch
 
 window.globalData = {
 	scheduler: new Scheduler()
