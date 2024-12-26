@@ -547,7 +547,7 @@ export default {
       let res = await getReqHead(dataObj.id)
       let obj = {}
       if (res.status === 200) {
-        obj.reqHead = Array.from(new Uint8Array(res.data))
+        obj.reqHead = new Uint8Array(res.data)
       }
       if (dataObj.id === this.activeId && !rawData.reqHead) {
         rawData.reqHead = obj.reqHead
@@ -557,7 +557,7 @@ export default {
       let res = await getReqBody(dataObj.id)
       let obj = {}
       if (res.status === 200) {
-        obj.reqBody = Array.from(new Uint8Array(res.data))
+        obj.reqBody = new Uint8Array(res.data)
       }
       if (dataObj.id === this.activeId && !rawData.reqBody) {
         rawData.reqBody = obj.reqBody
@@ -567,7 +567,7 @@ export default {
       let res = await getResHead(dataObj.id)
       let obj = {}
       if (res.status === 200) {
-        obj.resHead = Array.from(new Uint8Array(res.data))
+        obj.resHead = new Uint8Array(res.data)
       }
       if (dataObj.id === this.activeId && !rawData.resHead) {
         rawData.resHead = obj.resHead
@@ -577,7 +577,7 @@ export default {
       let res = await getResBody(dataObj.id)
       let obj = {}
       if (res.status === 200) {
-        obj.resBody = Array.from(new Uint8Array(res.data))
+        obj.resBody = new Uint8Array(res.data)
       }
       if (dataObj.id === this.activeId && !rawData.resBody) {
         rawData.resBody = obj.resBody

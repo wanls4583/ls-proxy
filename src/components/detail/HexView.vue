@@ -240,7 +240,9 @@ export default {
     render(data) {
       data = data || this.needRenderData
       this.needRenderData = data
-      this.editor.layout()
+      if (this.$refs.detail.clientHeight) {
+        this.editor.layout()
+      }
       if (!data || !this.$refs.detail.clientHeight) {
         return
       }

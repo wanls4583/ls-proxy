@@ -25,8 +25,17 @@ window.mirrorStore = new Node({ saveNode: saveMirror, getNode: getMirror })
 window.gatewayStore = new Node({ saveNode: saveGateway, getNode: getGateway })
 
 String.prototype.kmpSearch = kmpSearch
-Uint8Array.prototype.kmpSearch = kmpSearch
 Array.prototype.kmpSearch = kmpSearch
+Uint8Array.prototype.kmpSearch = kmpSearch
+Uint8Array.prototype.concat = function(u8Array) {
+	if (!(u8Array instanceof Uint8Array)) {
+		return this
+	}
+	let newArr = new Uint8Array(this.length + u8Array.length)
+	newArr.set(this)
+	newArr.set(u8Array, this.length)
+	return newArr
+}
 
 window.globalData = {
 	scheduler: new Scheduler()

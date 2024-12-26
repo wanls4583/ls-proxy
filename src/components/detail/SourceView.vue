@@ -82,7 +82,7 @@ export default {
             let clientWidth = this.$refs.detail?.clientWidth
             let clientHeight = this.$refs.detail?.clientHeight
             if (clientHeight && (this.clientWidth !== clientWidth || this.clientHeight !== clientHeight || this.needRenderData)) {
-              this.render(this.needRenderData || this.renderedData)
+              this.render(this.needRenderData)
             }
             this.clientWidth = clientWidth
             this.clientHeight = clientHeight
@@ -169,11 +169,14 @@ export default {
     render(data) {
       data = data || this.needRenderData
       this.needRenderData = data
-      this.editor.layout()
+      if (this.$refs.detail.clientHeight) {
+        this.editor.layout()
+      }
       if (!data || !this.$refs.detail.clientHeight) {
         return
       }
-      requestAnimationFrame(() => {
+      cancelAnimationFrame(this.renderTimer)
+      this.renderTimer = requestAnimationFrame(() => {
         this.charObj = getCharWidth(this.$refs.detail.querySelector('.view-lines'), '<div class="view-line">[dom]</div>')
         if (this.charObj.charWidth) {
           this.editor.setValue(getStringFromU8Array(new Uint8Array(data)))

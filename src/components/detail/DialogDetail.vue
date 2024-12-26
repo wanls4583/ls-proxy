@@ -5,8 +5,8 @@
         <el-tab-pane label="总览" name="总览">
           <OverView :data="data" />
         </el-tab-pane>
-        <el-tab-pane label="原始" name="原始">
-          <SourceView ref="reqData" />
+        <el-tab-pane label="标头" name="标头">
+          <SourceView ref="reqHead" />
         </el-tab-pane>
         <el-tab-pane label="参数" name="参数">
           <ObjectView title="参数头列表" :data="data.params" />
@@ -14,8 +14,11 @@
         <el-tab-pane label="请求头" name="请求头">
           <ObjectView title="请求头列表" :data="data.reqHeader" />
         </el-tab-pane>
+        <el-tab-pane label="载荷" name="载荷">
+          <SourceView ref="reqPreView" :languageId="reqLanguageId" />
+        </el-tab-pane>
         <el-tab-pane label="请求体" name="请求体">
-          <HexView ref="reqBody" />
+          <HexView ref="reqHex" />
         </el-tab-pane>
       </el-tabs>
       <div class="op-wrap">
@@ -29,7 +32,7 @@
     </div>
     <div class="res-detail-wrap">
       <el-tabs v-model="resTab" @tab-click="onResTabChagne">
-        <el-tab-pane label="原始" name="原始">
+        <el-tab-pane label="标头" name="标头">
           <SourceView ref="resHead" />
         </el-tab-pane>
         <el-tab-pane label="响应头" name="响应头">
@@ -39,7 +42,7 @@
           <SourceView ref="resPreView" :languageId="resLanguageId" />
         </el-tab-pane>
         <el-tab-pane label="响应体" name="响应体">
-          <HexView ref="hex" />
+          <HexView ref="resHex" />
         </el-tab-pane>
       </el-tabs>
     </div>
@@ -68,8 +71,9 @@ export default {
   data() {
     return {
       reqTab: '总览',
-      resTab: '原始',
+      resTab: '标头',
       resLanguageId: '',
+      reqLanguageId: '',
     }
   },
   async created() {
@@ -86,25 +90,35 @@ export default {
       oldRawData = rawData
     },
     async initReqData(rawData) {
-      let reqData = rawData.reqHead || []
-      let reqBody = await getDecoededBody(this.data?.reqHeader, rawData.reqBody || [])
+      let reqBody = await getDecoededBody(this.data?.reqHeader, rawData.reqBody || new Uint8Array())
+      let reqPreView = reqBody
+      this.reqLanguageId = 'plaintext'
       if (rawData.reqBody?.length) {
-        let text = getStringFromU8ArrayWithCheck(new Uint8Array(reqBody))
+        let text = getStringFromU8ArrayWithCheck(reqBody)
         if (text !== false) {
-          reqData = reqData.concat(reqBody)
+          if(this.data.reqType === 'JSON') {
+            try {
+              text = JSON.stringify(JSON.parse(text), null, 4)
+              this.reqLanguageId = 'json'
+              reqPreView = getU8ArrayFromString(text)
+            } catch (e) {
+              console.log('JSON.parse fail')
+            }
+          }
         } else {
-          reqData = reqData.concat(Array.from(new TextEncoder().encode(`<binary body>`)))
+          reqPreView = []
         }
       }
-      this.$refs.reqData.render(reqData)
-      this.$refs.reqBody.render(reqBody)
+      this.$refs.reqHead.render(rawData.reqHead || new Uint8Array())
+      this.$refs.reqPreView.render(reqPreView)
+      this.$refs.reqHex.render(reqBody)
     },
     async initResData(rawData) {
-      let resBody = await getDecoededBody(this.data?.resHeader, rawData.resBody || [])
+      let resBody = await getDecoededBody(this.data?.resHeader, rawData.resBody || new Uint8Array())
       let resPreView = resBody
       this.resLanguageId = 'plaintext'
       if (rawData.resBody?.length) {
-        let text = getStringFromU8ArrayWithCheck(new Uint8Array(resBody))
+        let text = getStringFromU8ArrayWithCheck(resBody)
         if (text !== false) {
           if (this.data.type === 'HTML') {
             this.resLanguageId = 'html'
@@ -127,9 +141,9 @@ export default {
           resPreView = []
         }
       }
-      this.$refs.resHead.render(rawData.resHead || [])
+      this.$refs.resHead.render(rawData.resHead || new Uint8Array())
       this.$refs.resPreView.render(resPreView)
-      this.$refs.hex.render(resBody)
+      this.$refs.resHex.render(resBody)
     },
     getIfText(header) {
       let contentType = header?.['Content-Type'] || ''

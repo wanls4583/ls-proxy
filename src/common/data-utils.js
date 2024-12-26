@@ -5,7 +5,7 @@ import { MSG_REQ_HEAD, MSG_RULE_BREAK_REQ, MSG_RULE_SCRIPT_REQ, MSG_RULE_SCRIPT_
 import { remoteDecode } from './http'
 
 export function getDecoededBody(header, body) {
-  let arr = []
+  let data = new Uint8Array()
   header = header || {}
   if (header['Transfer-Encoding'] === 'chunked') {
     let index = -1
@@ -15,7 +15,7 @@ export function getDecoededBody(header, body) {
       if (!num) {
         break
       }
-      arr = arr.concat(Array.from(body.slice(index + 2, index + 2 + num)))
+      data = data.concat(body.slice(index + 2, index + 2 + num))
       body = body.slice(index + 2 + num + 2)
     }
   } else if (header['Content-Type']?.indexOf('boundary=') > -1) {
@@ -26,15 +26,14 @@ export function getDecoededBody(header, body) {
       if (getStringFromU8Array(new Uint8Array(body.slice(index + boundary.length, index + boundary.length + 4))) === '--\r\n') {
         break
       }
-      arr.push(body.slice(0, index))
+      data.push(body.slice(0, index))
       body = body.slice(index + boundary.length + 2)
     }
   } else {
-    arr = Array.from(body)
+    data = body
   }
   let encoding = header['Content-Encoding']
-  if (arr.length && ['gzip', 'br', 'deflate'].includes(encoding)) {
-    arr = new Uint8Array(arr)
+  if (data.length && ['gzip', 'br', 'deflate'].includes(encoding)) {
     return new Promise(async (resolve) => {
       // let decodeFun = null
       // let zlib = {}
@@ -51,20 +50,20 @@ export function getDecoededBody(header, body) {
       //   decodeFun = zlib.brotliDecompress
       //   if (!decodeFun) {
       //     const brotli = await brotliPromise;
-      //     resolve(Array.from(brotli.decompress(arr)))
+      //     resolve(new Uint8Array(brotli.decompress(data)))
       //   }
       // }
-      // decodeFun?.(arr, (err, buf) => {
+      // decodeFun?.(data, (err, buf) => {
       //   if (err) {
       //     return resolve([])
       //   }
-      //   resolve(Array.from(buf))
+      //   resolve(new Uint8Array(buf))
       // })
-      const res = await remoteDecode(arr, encoding)
-      resolve(Array.from(new Uint8Array(res.data)))
+      const res = await remoteDecode(data, encoding)
+      resolve(new Uint8Array(res.data))
     })
   }
-  return arr
+  return new Uint8Array(data)
 }
 
 export function getDataInfo(dataObj, u8Array) {
@@ -174,6 +173,7 @@ export function getReqDataObj({ dataObj, u8Array, hasBobdy }) {
 
   dataObj.status = 'Pending'
   dataObj.params = {}
+  dataObj.reqType = getFileType(dataObj.reqHeader).toUpperCase() || '?'
 
   if (dataObj.reqHeader.Host) {
     let port = dataObj.reqHeader.Host.indexOf(':')
@@ -223,7 +223,7 @@ export function getResDataObj({ dataObj, u8Array, hasBobdy }) {
   getHttpHeader(dataObj.resHeader, head)
 
   dataObj.ext = getExt(dataObj).toUpperCase()
-  dataObj.type = getFileType(dataObj).toUpperCase() || '?'
+  dataObj.type = getFileType(dataObj.resHeader).toUpperCase() || '?'
 }
 
 export function getHttpHeader(reqHeader, head) {
@@ -270,8 +270,8 @@ export function getExt(dataObj) {
   return ''
 }
 
-export function getFileType(dataObj) {
-  let contentType = dataObj.resHeader['Content-Type'] || ''
+export function getFileType(header) {
+  let contentType = header['Content-Type'] || ''
   let type = null
   if (!type) {
     if (contentType.startsWith('application/json')) {
