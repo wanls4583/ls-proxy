@@ -118,7 +118,7 @@ export default {
           this.$refs.source.render([])
           if (text === false) {
             this.type = 2
-            this.$refs.hex.render(this.hex.slice(0, this.maxRnederByte)) // 最大渲染100万字节
+            this.$refs.hex.render(this.hex.slice(0, this.maxRnederByte)) // 最大渲染512KB
           } else {
             this.type = 1
             this.$refs.source.render(this.hex.slice())

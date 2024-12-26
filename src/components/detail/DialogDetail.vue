@@ -39,7 +39,15 @@
           <ObjectView title="响应头头列表" :data="data.resHeader" />
         </el-tab-pane>
         <el-tab-pane label="预览" name="预览">
-          <SourceView ref="resPreView" :languageId="resLanguageId" />
+          <div v-if="resImgUrl" class="img-wrap">
+            <img :src="resImgUrl" />
+          </div>
+          <div v-if="resVideoUrl" class="video-wrap">
+            <video ref="resVideo" controls>
+              <source :src="resVideoUrl" type="video/mp4" />
+            </video>
+          </div>
+          <SourceView v-show="resPreViewVisible" ref="resPreView" :languageId="resLanguageId" />
         </el-tab-pane>
         <el-tab-pane label="响应体" name="响应体">
           <HexView ref="resHex" />
@@ -74,6 +82,9 @@ export default {
       resTab: '标头',
       resLanguageId: '',
       reqLanguageId: '',
+      resImgUrl: '',
+      resVideoUrl: '',
+      resPreViewVisible: false,
     }
   },
   async created() {
@@ -81,6 +92,8 @@ export default {
   },
   methods: {
     initData(rawData) {
+      this.resImgUrl = ''
+      this.resVideoUrl = ''
       if (rawData.reqHead !== oldRawData.reqHead || rawData.reqBody !== oldRawData.reqBody) {
         this.initReqData(rawData)
       }
@@ -96,7 +109,7 @@ export default {
       if (rawData.reqBody?.length) {
         let text = getStringFromU8ArrayWithCheck(reqBody)
         if (text !== false) {
-          if(this.data.reqType === 'JSON') {
+          if (this.data.reqType === 'JSON') {
             try {
               text = JSON.stringify(JSON.parse(text), null, 4)
               this.reqLanguageId = 'json'
@@ -117,6 +130,8 @@ export default {
       let resBody = await getDecoededBody(this.data?.resHeader, rawData.resBody || new Uint8Array())
       let resPreView = resBody
       this.resLanguageId = 'plaintext'
+      this.resImgUrl = ''
+      this.resVideoUrl = ''
       if (rawData.resBody?.length) {
         let text = getStringFromU8ArrayWithCheck(resBody)
         if (text !== false) {
@@ -139,10 +154,19 @@ export default {
           }
         } else {
           resPreView = []
+          this.$nextTick(() => {
+            if (this.data.resHeader['Content-Type']?.startsWith('image/')) {
+              this.resImgUrl = URL.createObjectURL(new Blob([resBody], { type: this.data.resHeader['Content-Type'] }))
+            }
+            if (this.data.resHeader['Content-Type']?.startsWith('video/')) {
+              this.resVideoUrl = URL.createObjectURL(new Blob([resBody], { type: this.data.resHeader['Content-Type'] }))
+            }
+          })
         }
       }
-      this.$refs.resHead.render(rawData.resHead || new Uint8Array())
+      this.resPreViewVisible = resPreView.length > 0
       this.$refs.resPreView.render(resPreView)
+      this.$refs.resHead.render(rawData.resHead || new Uint8Array())
       this.$refs.resHex.render(resBody)
     },
     getIfText(header) {
@@ -157,6 +181,9 @@ export default {
     onReqTabChagne() {
     },
     onResTabChagne() {
+      if (this.$refs.resVideo && this.resTab !== '预览') {
+        this.$refs.resVideo.pause()
+      }
     },
     onClose() {
       this.eventBus.$emit('close-detail')

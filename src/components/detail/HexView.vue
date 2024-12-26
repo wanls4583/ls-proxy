@@ -29,6 +29,7 @@ export default {
       clientWidth: 0,
       clientHeight: 0,
       value: '',
+      maxRnederByte: 512 * 1024,
     }
   },
   created() {
@@ -57,7 +58,7 @@ export default {
             let clientWidth = this.$refs.detail?.clientWidth
             let clientHeight = this.$refs.detail?.clientHeight
             if (clientHeight && (this.clientWidth !== clientWidth || this.clientHeight !== clientHeight || this.needRenderData)) {
-              this.render(this.needRenderData || this.renderedData)
+              this.render()
             }
             this.clientWidth = clientWidth
             this.clientHeight = clientHeight
@@ -246,6 +247,7 @@ export default {
       if (!data || !this.$refs.detail.clientHeight) {
         return
       }
+      data = data.slice(0, this.maxRnederByte) // 最大渲染512KB
       requestAnimationFrame(() => {
         this.charObj = getCharWidth(this.$refs.detail.querySelector('.view-lines'), '<div class="view-line">[dom]</div>')
         if (this.charObj.charWidth) {
