@@ -83,4 +83,10 @@
     line-height: 38px;
     font-size: 18px;
   }
+
+  &[size="small"] {
+    height: 26px;
+    line-height: 24px;
+    font-size: 12px;
+  }
 }

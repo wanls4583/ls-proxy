@@ -12,10 +12,21 @@
         @node-expand="onToggle"
         @node-collapse="onToggle"
       >
-        <div class="overview-tree-node" slot-scope="scope">
-          <span class="label">{{scope.data.label}}</span>
-          <span class="value" :class="scope.data.valClass">{{scope.data.value}}</span>
-        </div>
+        <template slot-scope="scope">
+          <div class="overview-tree-node" @click="onClickNode($event, scope.data)">
+            <span class="label">{{scope.data.label}}</span>
+            <span class="value" :class="scope.data.valClass">
+              <span
+                v-if="scope.data.label === '证书'"
+                class="btn btn-text"
+                style="margin-left: -10px;"
+                size="small"
+                @click="onDownloadCert(scope.data.value)"
+              >下载证书</span>
+              <span v-else>{{scope.data.value}}</span>
+            </span>
+          </div>
+        </template>
       </el-tree>
     </div>
   </div>
@@ -300,6 +311,21 @@ export default {
           }
         })
       })
+    },
+    onDownloadCert(cert) {
+      if (!cert) return
+      const blob = new Blob([cert], { type: 'application/x-x509-ca-cert' })
+      const url = window.URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'certificate.crt'
+      a.click()
+      window.URL.revokeObjectURL(url)
+    },
+    onClickNode(event, node) {
+      if (node.label === '证书') {
+        event.stopPropagation()
+      }
     }
   }
 }

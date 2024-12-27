@@ -72,6 +72,9 @@ export default {
       this.eventBus.$on('show-gateway-list', () => {
         this.gatewayListVisible = true
       })
+      window.addEventListener('contextmenu', (e) => {
+        e.preventDefault()
+      })
     },
     initMonacoTheme() {
       let themId = 'myTheme'
