@@ -46,6 +46,7 @@ export default {
       scriptListVisible: false,
       mirrorListVisible: false,
       gatewayListVisible: false,
+      listData: []
     }
   },
   created() {
@@ -53,6 +54,14 @@ export default {
     this.changeAutoPopBreak(autoPopBreak === 'true')
     this.initEvent()
     this.initMonacoTheme()
+    for (let i = 0; i < 100; i++) {
+      this.listData.push({
+        id: i,
+        name: 'name' + i,
+        age: i,
+        address: 'address' + i
+      })
+    }
   },
   methods: {
     ...mapMutations(['changeAutoPopBreak']),

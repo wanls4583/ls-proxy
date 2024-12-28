@@ -11,7 +11,7 @@ export default new Vuex.Store({
     enableScript: false,
     enableMirror: false,
     enableGateway: false,
-    resType: '',
+    resType: 'all',
   },
   mutations: {
     changeRuleEnable(state, enableRule) {

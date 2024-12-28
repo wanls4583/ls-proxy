@@ -12,7 +12,11 @@ import 'element-ui/lib/theme-chalk/index.css';
 import './scss/index.scss';
 import './assets/font/icon'
 import './assets/font/ext-icon'
+import LsTable from './components/lib/table/Table.vue'
+import LsTableColumn from './components/lib/table/TableColumn.vue'
 
+Vue.component('LsTable', LsTable)
+Vue.component('LsTableColumn', LsTableColumn)
 Vue.use(ElementUI);
 Vue.config.productionTip = false;
 Vue.prototype.eventBus = eventBus

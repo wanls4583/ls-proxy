@@ -1,73 +1,27 @@
 <template>
-  <div class="record-table-wrap">
-    <div class="table-title-wrap" ref="title">
-      <div class="th-row">
-        <div
-          class="th-cell"
-          v-for="(item, index) in columns"
+  <div class="record-table-wrap" style="position: relative; flex-grow: 1">
+    <ls-table :data="filterList" :click-row="onClickRow">
+      <template v-for="(item, index) in columns">
+        <ls-table-column
           :key="index"
-          :style="cellStyle(item)"
-          :class="item.cellClass"
-        >
-          <span class="label">{{ item.label }}</span>
-        </div>
-      </div>
-    </div>
-    <div class="table-content-wrap" ref="wrap">
-      <div
-        class="table-content"
-        ref="content"
-        :style="{ transform: 'translate3d(0,' + _top + ',0)' }"
-        @mouseenter="showScrollBar"
-        @mouseleave="hideScrollBar"
-        @mousemove="showScrollBar"
-        @wheel.stop="onWheel"
-      >
-        <div
-          class="row"
-          v-for="row in renderList"
-          :key="row.lineId"
-          :style="{ top: row.top }"
-          :class="{ even: row.line % 2 === 0 , active: activeId === row.id}"
-          @click="onClickRow(row)"
-        >
-          <div
-            class="cell"
-            v-for="(item, index) in columns"
-            :key="index"
-            :style="cellStyle(item)"
-            :class="item.cellClass"
-          >
-            <span class="label">{{ item.showProp ? item.showProp(row) : row[item.prop] }}</span>
-          </div>
-        </div>
-      </div>
-      <v-scroll-bar
-        :height="contentHeight"
-        :scrollTop="scrollTop"
-        :class="{ 'scroll-visible': scrollVisible }"
-        @scroll="onVScroll"
-      />
-      <h-scroll-bar
-        :width="contentWidth"
-        :scrollLeft="scrollLeft"
-        :class="{ 'scroll-visible': scrollVisible }"
-        @scroll="onHScroll"
-      />
-      <DialogDetail ref="detail" v-if="detailVisible" :visible="detailVisible" :data="detailData" />
-    </div>
+          :label="item.label"
+          :width="item.width"
+          :prop="item.prop"
+          :cell-style="item.cellStyle"
+          :cell-class="item.cellClass"
+        ></ls-table-column>
+      </template>
+    </ls-table>
+    <DialogDetail ref="detail" v-if="detailVisible" :visible="detailVisible" :data="detailData" />
   </div>
 </template>
 
 <script>
+import DialogDetail from './detail/DialogDetail.vue'
+import Socket from '../common/socket'
 import { mapState } from 'vuex'
 import { getStringFromU8Array, u8To64Uint, u8To32Uint, getUUID } from '../common/utils'
 import { getDataInfo, getReqDataObj, getResDataObj } from '../common/data-utils'
-import Socket from '../common/socket'
-import HScrollBar from './HScrollBar.vue'
-import VScrollBar from './VScrollBar.vue'
-import SvgIcon from './Svg.vue'
-import DialogDetail from './detail/DialogDetail.vue'
 import { RULE_TYPE } from '../common/const'
 import { STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT } from '../common/const'
 import { TIME_DNS_START, TIME_CONNECT_START, TIME_REQ_START, TIME_RES_END } from '../common/const'
@@ -79,13 +33,11 @@ let dataIdMap = {}
 let rawData = {}
 export default {
   components: {
-    HScrollBar,
-    VScrollBar,
-    SvgIcon,
     DialogDetail
   },
   data() {
     return {
+      filterList: [],
       columns: [
         {
           label: 'ID',
@@ -117,6 +69,19 @@ export default {
           prop: 'status'
         },
         {
+          label: '大小',
+          width: '80px',
+          prop: 'size',
+          cellStyle: { 'text-align': 'right' }
+        },
+        {
+          label: '时长',
+          width: '80px',
+          prop: 'duration',
+          cellStyle: { 'text-align': 'right' },
+          cellClass: ['aequilate-font']
+        },
+        {
           label: '应用程序',
           width: '140px',
           prop: 'processName'
@@ -127,35 +92,7 @@ export default {
           prop: 'ip',
           cellClass: ['aequilate-font']
         },
-        {
-          label: '时长',
-          width: '80px',
-          prop: 'duration',
-          style: { 'text-align': 'right' },
-          cellClass: ['aequilate-font']
-        },
-        {
-          label: '大小',
-          width: '80px',
-          prop: 'size',
-          style: { 'text-align': 'right' }
-        }
       ],
-      renderList: [],
-      renderedCb: [],
-      wrapHeight: 0,
-      wrapWidth: 0,
-      contentHeight: 0,
-      contentWidth: 0,
-      cellheight: 22,
-      scrollTop: 0,
-      deltaTop: 0,
-      scrollLeft: 0,
-      scrollVisible: false,
-      startLine: 1,
-      maxLines: 10000000,
-      dbChunkSize: 200000,
-      maxBodySize: 200000 * 5,
       detailData: {},
       activeId: '',
       detailVisible: false,
@@ -163,58 +100,16 @@ export default {
   },
   computed: {
     ...mapState(['resType']),
-    cellStyle() {
-      return column => {
-        let style = {}
-        if (column.width) {
-          style['width'] = column.width
-          style.flex = `1 1 ${column.width}`
-        } else {
-          style.flex = `1 1 auto`
-        }
-        column.style && Object.assign(style, column.style)
-        return style
-      }
-    },
-    maxVisibleLines() {
-      return Math.ceil(this.wrapHeight / this.cellheight) + 2
-    },
-    _top() {
-      return -(this.scrollTop - this.deltaTop) + 'px'
-    }
   },
   watch: {
-    startLine: {
-      handler() {
-        this.render()
-      }
-    },
-    scrollLeft: {
-      handler() {
-        if (this.$refs.content) {
-          this.$refs.content.scrollLeft = this.scrollLeft
-          this.$refs.title.scrollLeft = this.scrollLeft
-        }
-      }
-    },
-    resType: {
-      handler() {
-        this.setContentHeight()
-        this.setStartLine(0)
-        this.render()
-      }
+    resType() {
+      this.filterList = dataList.filter(item => this.typeFilter(item))
     }
   },
   created() {
     this.init()
   },
   mounted() {
-    this.getDomSize()
-    this.initResizeEvent()
-    this.render()
-  },
-  beforeDestroy() {
-    this.resizeObserver?.unobserve(this.$refs.wrap)
   },
   methods: {
     init() {
@@ -239,22 +134,6 @@ export default {
         this.detailVisible = false
       })
     },
-    initResizeEvent() {
-      this.resizeObserver = new ResizeObserver(entries => {
-        if (this.resizeTimer) {
-          return
-        }
-        this.resizeTimer = setTimeout(() => {
-          if (this.$refs.wrap && this.$refs.wrap.clientHeight) {
-            this.getDomSize()
-            this.setStartLine(this.scrollTop)
-            this.onHScroll(this.scrollLeft)
-          }
-          this.resizeTimer = null
-        }, 30)
-      })
-      this.resizeObserver.observe(this.$refs.wrap)
-    },
     initSocket() {
       this.socket = new Socket({
         url: 'ws://localhost:8000/proxy',
@@ -276,9 +155,10 @@ export default {
                 dataIdMap[dataObj.id] = dataObj
                 dataObj.lineId = dataObj.id
                 dataList.push(dataObj)
-                this.setContentHeight()
+                if (this.typeFilter(dataObj)) {
+                  this.filterList.push(dataObj)
+                }
               }
-              this.render()
             })
           }
         }
@@ -538,11 +418,6 @@ export default {
       result = result.replace(/\.0$/, '') + ' ' + unit
       return result
     },
-    getDomSize() {
-      this.wrapHeight = this.$refs.wrap.clientHeight
-      this.wrapWidth = this.$refs.wrap.clientWidth
-      this.contentWidth = this.$refs.title.scrollWidth
-    },
     async getReqHeadFromDb(dataObj) {
       let res = await getReqHead(dataObj.id)
       let obj = {}
@@ -626,144 +501,12 @@ export default {
       ])
       return rawData
     },
-    setContentHeight() {
-      if (this.resType) {
-        this.contentHeight = dataList.filter(this.typeFilter).length * this.cellheight
-      } else {
-        this.contentHeight = dataList.length * this.cellheight
-      }
-    },
-    setStartLine(scrollTop) {
-      let startLine = 1
-      let maxScrollTop = this.contentHeight - this.wrapHeight
-      scrollTop = Math.round(scrollTop)
-      scrollTop = scrollTop < 0 ? 0 : scrollTop
-      maxScrollTop = maxScrollTop < 0 ? 0 : maxScrollTop
-      if (scrollTop > maxScrollTop) {
-        scrollTop = maxScrollTop
-      }
-      startLine = Math.floor(scrollTop / this.cellheight)
-      this.deltaTop = startLine * this.cellheight
-      this.startLine = startLine + 1
-      this.scrollTop = scrollTop
-    },
-    showScrollBar() {
-      this.scrollVisible = true
-    },
-    hideScrollBar() {
-      this.scrollVisible = false
-    },
-    // 渲染
-    render() {
-      if (this.renderTimer) {
-        return
-      }
-      this.renderTimer = requestAnimationFrame(() => {
-        this.renderTimer = null
-        this.renderLines()
-        this.renderedCb.forEach(cb => {
-          cb()
-        })
-        this.renderedCb = []
-      })
-    },
-    renderLines() {
-      let preRenderList = this.renderList
-      let toRenderLines = []
-      let preRenderLineMap = {}
-      let lines = 0
-
-      this.renderList = []
-
-      preRenderList.forEach((item, index) => {
-        preRenderLineMap[item.line] = index
-      })
-
-      let filteredList = []
-      if (this.resType) {
-        filteredList = dataList.filter(this.typeFilter)
-      } else {
-        filteredList = dataList
-      }
-
-      for (let i = 0, line = this.startLine; i <= this.maxVisibleLines && line <= filteredList.length; i++, line++) {
-        lines++
-      }
-
-      for (let i = 0, line = this.startLine; i < lines && line <= filteredList.length; i++, line++) {
-        let index = preRenderLineMap[line]
-        if (index > -1 && index < lines) {
-          // 尽量保持新的列表和旧的列表相同索引对应的行不变，减少渲染时顶部行的删除操作
-          this.renderList[index] = _getRowObj.call(this, filteredList[line - 1], line)
-        } else {
-          toRenderLines.push(line)
-        }
-      }
-
-      toRenderLines.reverse()
-
-      for (let i = 0; i < lines; i++) {
-        if (!this.renderList[i]) {
-          let line = toRenderLines.pop()
-          this.renderList[i] = _getRowObj.call(this, filteredList[line - 1], line)
-        }
-      }
-
-      function _getRowObj(item, line) {
-        let obj = {}
-        this.columns.forEach(propObj => {
-          obj[propObj.prop] = item[propObj.prop]
-        })
-        obj.ext = item.ext
-        obj.sockId = item.sockId
-        obj.top = (line - this.startLine) * this.cellheight + 'px'
-        obj.line = line
-        return obj
-      }
-    },
     clearTable() {
       dataList = []
       dataIdMap = {}
+      this.filterList = []
       this.activeId = ''
-      this.renderList = []
-      this.setContentHeight()
-      this.setStartLine(0)
-      this.render()
-      this.initDB()
       clearData()
-    },
-    onVScroll(scrollTop) {
-      this.scrollTop = scrollTop
-      this.setStartLine(scrollTop)
-    },
-    onHScroll(scrollLeft) {
-      let maxScrollLeft = this.contentWidth - this.wrapWidth
-      scrollLeft = scrollLeft < 0 ? 0 : scrollLeft
-      scrollLeft = scrollLeft > maxScrollLeft ? maxScrollLeft : scrollLeft
-      this.scrollLeft = scrollLeft
-    },
-    // 滚动滚轮
-    onWheel(e) {
-      this.scrollDeltaY = e.deltaY
-      this.scrollDeltaX = e.deltaX
-      this.wheelTime = Date.now()
-      this.onHScroll(this.scrollLeft + this.scrollDeltaX)
-      this.setStartLine(this.scrollTop + this.scrollDeltaY)
-      // if ((this.scrollDeltaY || this.scrollDeltaX) && !this.wheelTask) {
-      //   // 滑轮事件太密集，影响渲染性能，使用UI事件列表来控制
-      //   this.wheelTask = globalData.scheduler.addUiTask(() => {
-      //     if (this.scrollDeltaY) {
-      //       this.setStartLine(this.scrollTop + this.scrollDeltaY)
-      //       this.scrollDeltaY = 0
-      //     } else if (this.scrollDeltaX) {
-      //       this.onHScroll(this.scrollLeft + this.scrollDeltaX)
-      //       this.scrollDeltaX = 0
-      //     } else if (Date.now() - this.wheelTime > 2000) {
-      //       globalData.scheduler.removeUiTask(this.wheelTask)
-      //       this.wheelTask = null
-      //     }
-      //   })
-      // }
     },
     async onClickRow(row, refresh) {
       if (this.detailVisible && this.activeId === row.id && !refresh) {

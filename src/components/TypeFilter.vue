@@ -21,7 +21,7 @@ export default {
   data() {
     return {
       typeList: [
-        [{ type: '', label: 'All', active: false }],
+        [{ type: 'all', label: 'All', active: false }],
         [
           { type: 'http', label: 'Http', active: false },
           { type: 'https', label: 'Https', active: false },
