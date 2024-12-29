@@ -11,7 +11,7 @@
       <ls-table-column width="100%">
         <template v-slot="{ row }">
           <div
-            class="message-item"
+            class="message-item aequilate-font"
             :key="row.fragId"
             :class="{left: row.side === RULE_TYPE.RES, right: row.side === RULE_TYPE.REQ}"
           >

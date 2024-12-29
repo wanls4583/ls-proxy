@@ -32,7 +32,7 @@ import {
   MSG_REQ_BODY,
   MSG_RES_HEAD,
   MSG_RES_BODY,
-  MSG_WEB_SOCKET,
+  MSG_WEB_SOCKET_FRAGMENT,
   MSG_DNS,
   MSG_STATUS,
   MSG_TIME,
@@ -263,7 +263,7 @@ export default {
         }
         dataObj = dataIdMap[dataObj.id]
         this.getCipherDataObj(dataObj, u8Array)
-      } else if (msgType === MSG_WEB_SOCKET) {
+      } else if (msgType === MSG_WEB_SOCKET_FRAGMENT) {
         if (!dataIdMap[dataObj.id]) {
           return null
         }
@@ -280,7 +280,7 @@ export default {
         return null
       }
 
-      if (this.detailVisible && dataObj.id === this.activeId && msgType !== MSG_WEB_SOCKET) {
+      if (this.detailVisible && dataObj.id === this.activeId && msgType !== MSG_WEB_SOCKET_FRAGMENT) {
         this.onClickRow(dataObj, true)
       }
 
@@ -297,13 +297,13 @@ export default {
     },
     getResBodyDataObj(dataObj, u8Array) {
       let sizeBytes = u8Array[0]
-      dataObj.reqBodySize = dataObj.reqBodySize || 0
+      dataObj.resBodySize = dataObj.resBodySize || 0
       if (sizeBytes === 8) {
-        dataObj.reqBodySize += Number(u8To64Uint(u8Array, 1) + '')
+        dataObj.resBodySize += Number(u8To64Uint(u8Array, 1) + '')
       } else {
-        dataObj.reqBodySize += u8To32Uint(u8Array, 1)
+        dataObj.resBodySize += u8To32Uint(u8Array, 1)
       }
-      dataObj.size = this.getSize(dataObj.reqBodySize + '')
+      dataObj.size = this.getSize(dataObj.resBodySize)
     },
     getIpDataObj(dataObj, u8Array) {
       dataObj.ip = getStringFromU8Array(u8Array)
@@ -315,13 +315,13 @@ export default {
     },
     getTimeDataObj(dataObj, u8Array) {
       let timeType = u8Array[0]
-      let time = u8To64Uint(u8Array.slice(1)) + ''
+      let time = Number(u8To64Uint(u8Array.slice(1)) + '')
       dataObj.times = dataObj.times || {}
       dataObj.times[timeType] = time
       // console.log(dataObj.id + ':', timeType, time, u8Array.slice(1).toString())
 
       if (timeType === TIME_RES_END) {
-        let startTime = 0n
+        let startTime = 0
         if (dataObj.times[TIME_DNS_START]) {
           startTime = dataObj.times[TIME_DNS_START]
         } else if (dataObj.times[TIME_CONNECT_START]) {
@@ -350,7 +350,7 @@ export default {
     getWebsocketDataObj(dataObj, u8Array) {
       getWsDataObj({ dataObj, u8Array })
       if (dataObj.opCode === 0x02) {
-        dataObj.size = this.getSize(dataObj.fragmentSize)
+        dataObj.size = this.getSize(dataObj.fragmentDataSize)
       }
       if (dataObj.id === this.activeId) {
         this.eventBus.$emit('show-websocket', dataObj)
@@ -378,8 +378,8 @@ export default {
       const H = 60 * 60 * 1000
       const M = 60 * 1000
       const S = 1000
-      let result = '',
-        unit = ''
+      let result = ''
+      let unit = ''
       duration = duration + '' // BigInt转换成字符串
       duration = Math.floor(duration / 1000) // 毫秒
       if (duration >= H) {
@@ -402,8 +402,9 @@ export default {
       const G = 1024 * 1024 * 1024
       const M = 1024 * 1024
       const K = 1024
-      let result = '',
-        unit = ''
+      let result = ''
+      let unit = ''
+      size = Number(size + '')
       if (size >= G) {
         result = (size / G).toFixed(1)
         unit = 'GB'
@@ -507,7 +508,7 @@ export default {
             let message = {}
             index = getWsDataObj({ dataObj: message, u8Array, hasBobdy: true })
             u8Array = u8Array.slice(index)
-            message.size = this.getSize(message.fragmentSize)
+            message.size = this.getSize(message.fragmentDataSize)
             messages.push(message)
           }
           rawData.wsMessages = messages

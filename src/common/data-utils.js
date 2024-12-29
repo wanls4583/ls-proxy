@@ -4,7 +4,6 @@ import {
   MSG_REQ_HEAD,
   MSG_RULE_BREAK_REQ,
   MSG_RULE_SCRIPT_REQ,
-  MSG_WEB_SOCKET,
   MSG_RULE_SCRIPT_RES,
 } from '../common/const'
 // import { gunzip, inflate } from 'fflate';
@@ -257,22 +256,60 @@ export function getWsDataObj({ dataObj, u8Array, hasBobdy }) {
   // 0xB-F：保留的操作代码，用于后续定义的控制帧
   dataObj.opCode = u8Array[index++]
 
+  let endIndex = 0
+  let fragmentSize = 0
   let sizeBytes = u8Array[index++]
   if (sizeBytes === 8) {
-    dataObj.fragmentSize = u8To64Uint(u8Array, index) + ''
+    fragmentSize = Number(u8To64Uint(u8Array, index) + '')
   } else {
-    dataObj.fragmentSize = u8To32Uint(u8Array, index) + ''
+    fragmentSize = u8To32Uint(u8Array, index)
   }
   index += sizeBytes
+  endIndex = index + fragmentSize
 
-  if (dataObj.opCode === 0x01) {
-    dataObj.wsMessage = getStringFromU8Array(u8Array.slice(index, index + dataObj.fragmentSize))
-  } else if (dataObj.opCode === 0x02 && hasBobdy) {
-    dataObj.wsBinary = u8Array.slice(index, index + dataObj.fragmentSize)
+  dataObj.fragmentList = []
+  if (dataObj.opCode === 0x02 && !hasBobdy) { // 实时消息只返回了长度
+    dataObj.fragmentDataSize = fragmentSize
+    index += fragmentSize
+  } else {
+    let fragment = {}
+    while (index < fragmentSize) {
+      sizeBytes = u8Array[index++]
+      if (sizeBytes === 8) {
+        fragment.fragmentHeadSize = Number(u8To64Uint(u8Array, index) + '')
+      } else {
+        fragment.fragmentHeadSize = u8To32Uint(u8Array, index)
+      }
+      index += sizeBytes
+
+      fragment.fragmentHead = u8Array.slice(index, index + fragment.fragmentHeadSize)
+      index += fragment.fragmentHeadSize
+
+      sizeBytes = u8Array[index++]
+      if (sizeBytes === 8) {
+        fragment.fragmentDataSize = Number(u8To64Uint(u8Array, index) + '')
+      } else {
+        fragment.fragmentDataSize = u8To32Uint(u8Array, index)
+      }
+      index += sizeBytes
+
+      fragment.fragmentData = u8Array.slice(index, index + fragment.fragmentDataSize)
+      index += fragment.fragmentDataSize
+
+      dataObj.fragmentList.push(fragment)
+    }
+
+    dataObj.fragmentData = new Uint8Array()
+    dataObj.fragmentList.forEach((fragment) => {
+      dataObj.fragmentData = dataObj.fragmentData.concat(fragment.fragmentData)
+    })
+    dataObj.fragmentDataSize = dataObj.fragmentData.length
+    if (dataObj.opCode === 0x01) {
+      dataObj.wsMessage = getStringFromU8Array(dataObj.fragmentData)
+    }
   }
-  index += Number(dataObj.fragmentSize)
 
-  return index
+  return endIndex
 }
 
 export function getHttpHeader(reqHeader, head) {

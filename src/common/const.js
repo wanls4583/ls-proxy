@@ -134,7 +134,6 @@ export const [
   MSG_RES_HEAD,
   MSG_RES_BODY,
   MSG_RES_BODY_END,
-  MSG_WEB_SOCKET,
   MSG_WEB_SOCKET_FRAGMENT,
   MSG_DNS,
   MSG_STATUS,
@@ -145,7 +144,7 @@ export const [
   MSG_RULE_BREAK_RES,
   MSG_RULE_SCRIPT_REQ,
   MSG_RULE_SCRIPT_RES,
-] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
+] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
 
 export const [STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT] = [1, 2]
 
