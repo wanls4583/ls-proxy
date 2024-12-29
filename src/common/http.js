@@ -145,3 +145,11 @@ export function getReqBody(reqId) {
 export function getResBody(reqId) {
   return request(`${api}/get/res_body/${reqId}`)
 }
+
+export function getWebsocket(reqId) {
+  return request(`${api}/get/websocket/${reqId}`)
+}
+
+export function getWebsocketFragment(reqId, fragId) {
+  return request(`${api}/get/fragment/${reqId}/${fragId}`)
+}

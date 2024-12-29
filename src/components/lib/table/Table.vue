@@ -1,9 +1,17 @@
 <template>
-  <div class="table-wrap" :style="{height: tableHeight}">
+  <div
+    class="table-wrap"
+    :style="{height: tableHeight}"
+    :class="{ 
+      'enable-hover': enableHover, 
+      'enable-striped': enableStriped, 
+      'enable-active': enableActive 
+    }"
+  >
     <div class="hidden-columns">
       <slot :columns="columns"></slot>
     </div>
-    <div class="table-title-wrap" ref="title">
+    <div class="table-title-wrap" ref="title" v-if="!hiddenTitle">
       <div class="th-row">
         <div
           class="th-cell"
@@ -30,8 +38,11 @@
           class="row"
           v-for="(row,  index) in renderList"
           :key="index"
-          :style="{ top: row.$_top }"
-          :class="{ even: (index + 1) % 2 === 0 , active: enableActive && activeLine === row.$_line }"
+          :style="{ top: row.$_top, width: contentWidth + 'px' }"
+          :class="{ 
+            even: enableStriped && (row.$_line) % 2 === 0 , 
+            active: enableActive && activeLine === row.$_line 
+          }"
           @click="onClickRow(row)"
         >
           <div
@@ -89,6 +100,10 @@ export default {
   },
   props: {
     height: [Number, String],
+    cellHeight: {
+      type: Number,
+      default: 22
+    },
     data: {
       type: Array,
       default: () => []
@@ -97,7 +112,22 @@ export default {
       type: Boolean,
       default: true
     },
-    clickRow: Function,
+    enableHover: {
+      type: Boolean,
+      default: true
+    },
+    enableStriped: {
+      type: Boolean,
+      default: true
+    },
+    hiddenTitle: {
+      type: Boolean,
+      default: false
+    },
+    clickRow: {
+      type: Function,
+      default: () => { }
+    },
   },
   data() {
     return {
@@ -108,7 +138,6 @@ export default {
       wrapWidth: 0,
       contentHeight: 0,
       contentWidth: 0,
-      cellheight: 22,
       scrollTop: 0,
       deltaTop: 0,
       scrollLeft: 0,
@@ -135,7 +164,9 @@ export default {
     },
     cellStyle() {
       return column => {
-        let style = {}
+        let style = {
+          height: this.cellHeight + 'px',
+        }
         if (column.width) {
           let width = column.width
           if (typeof width === 'number') {
@@ -151,7 +182,7 @@ export default {
       }
     },
     maxVisibleLines() {
-      return Math.ceil(this.wrapHeight / this.cellheight)
+      return Math.ceil(this.wrapHeight / this.cellHeight)
     }
   },
   watch: {
@@ -169,7 +200,9 @@ export default {
       handler() {
         if (this.$refs.content) {
           this.$refs.content.scrollLeft = this.scrollLeft
-          this.$refs.title.scrollLeft = this.scrollLeft
+          if (!this.hiddenTitle) {
+            this.$refs.title.scrollLeft = this.scrollLeft
+          }
         }
       }
     },
@@ -204,10 +237,14 @@ export default {
     getDomSize() {
       this.wrapHeight = this.$refs.wrap.clientHeight
       this.wrapWidth = this.$refs.wrap.clientWidth
-      this.contentWidth = this.$refs.title.scrollWidth
+      if (this.hiddenTitle) {
+        this.contentWidth = this.wrapWidth
+      } else {
+        this.contentWidth = this.$refs.title.scrollWidth
+      }
     },
     setContentHeight() {
-      this.contentHeight = this.data.length * this.cellheight
+      this.contentHeight = this.data.length * this.cellHeight
     },
     setStartLine(scrollTop) {
       let startLine = 1
@@ -218,8 +255,8 @@ export default {
       if (scrollTop > maxScrollTop) {
         scrollTop = maxScrollTop
       }
-      startLine = Math.floor(scrollTop / this.cellheight)
-      this.deltaTop = startLine * this.cellheight
+      startLine = Math.floor(scrollTop / this.cellHeight)
+      this.deltaTop = startLine * this.cellHeight
       this.startLine = startLine + 1
       this.scrollTop = scrollTop
     },
@@ -279,7 +316,7 @@ export default {
       }
 
       function _getRowObj(item, line) {
-        item.$_top = (line - this.startLine) * this.cellheight + 'px'
+        item.$_top = (line - this.startLine) * this.cellHeight + 'px'
         item.$_line = line
         return item
       }
@@ -327,7 +364,7 @@ export default {
     },
     onClickRow(row) {
       this.activeLine = row.$_line
-      this.clickRow?.(row)
+      this.clickRow(row)
     },
   }
 };
@@ -357,8 +394,6 @@ export default {
       align-items: center;
       overflow: hidden;
       border-right: 1px solid transparent;
-      user-select: none;
-      cursor: pointer;
 
       .label {
         padding: 0 8px;
@@ -379,20 +414,35 @@ export default {
     }
   }
 
-  .row {
-    &.even {
-      .cell {
-        background-color: rgba(255, 255, 255, 0.03);
+  &.enable-striped {
+    .row {
+      &.even {
+        .cell {
+          background-color: rgba(255, 255, 255, 0.03);
+        }
       }
     }
+  }
 
-    &:hover {
-      background-color: rgba(255, 255, 255, 0.1);
+  &.enable-hover {
+    .row {
+      &:hover {
+        background-color: rgba(255, 255, 255, 0.1);
+      }
     }
+  }
 
-    &:active,
-    &.active {
-      background-color: rgba(255, 255, 255, 0.2);
+  &.enable-active {
+    .row {
+      &:active,
+      &.active {
+        background-color: rgba(255, 255, 255, 0.2);
+      }
+    }
+    .th-cell,
+    .cell {
+      user-select: none;
+      cursor: pointer;
     }
   }
 

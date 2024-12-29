@@ -20,13 +20,27 @@
 import DialogDetail from './detail/DialogDetail.vue'
 import Socket from '../common/socket'
 import { mapState } from 'vuex'
+import { getDataInfo, getReqDataObj, getResDataObj, getWsDataObj } from '../common/data-utils'
 import { getStringFromU8Array, u8To64Uint, u8To32Uint, getUUID } from '../common/utils'
-import { getDataInfo, getReqDataObj, getResDataObj } from '../common/data-utils'
+import { getReqHead, getResHead, getReqBody, getResBody, getCert, getWebsocket, clearData } from '../common/http'
 import { RULE_TYPE } from '../common/const'
 import { STATUS_FAIL_CONNECT, STATUS_FAIL_SSL_CONNECT } from '../common/const'
 import { TIME_DNS_START, TIME_CONNECT_START, TIME_REQ_START, TIME_RES_END } from '../common/const'
-import { MSG_REQ_HEAD, MSG_REQ_BODY, MSG_REQ_BODY_END, MSG_RES_HEAD, MSG_RES_BODY, MSG_RES_BODY_END, MSG_DNS, MSG_STATUS, MSG_TIME, MSG_CIPHER, MSG_CERT, MSG_RULE_BREAK_REQ, MSG_RULE_BREAK_RES, MSG_RULE_SCRIPT_REQ, MSG_RULE_SCRIPT_RES } from '../common/const'
-import { getReqHead, getResHead, getReqBody, getResBody, getCert, clearData } from '../common/http'
+import {
+  MSG_REQ_HEAD,
+  MSG_REQ_BODY,
+  MSG_RES_HEAD,
+  MSG_RES_BODY,
+  MSG_WEB_SOCKET,
+  MSG_DNS,
+  MSG_STATUS,
+  MSG_TIME,
+  MSG_CIPHER,
+  MSG_RULE_BREAK_REQ,
+  MSG_RULE_BREAK_RES,
+  MSG_RULE_SCRIPT_REQ,
+  MSG_RULE_SCRIPT_RES
+} from '../common/const'
 
 let dataList = []
 let dataIdMap = {}
@@ -148,9 +162,9 @@ export default {
               if (!dataObj) {
                 return
               }
-              if (!dataObj.url) {
-                console.log('eror data:', dataObj)
-              }
+              // if (!dataObj.url) {
+              //   console.log('eror data:', dataObj)
+              // }
               if (!dataIdMap[dataObj.id]) {
                 dataIdMap[dataObj.id] = dataObj
                 dataObj.lineId = dataObj.id
@@ -206,13 +220,6 @@ export default {
         }
         dataObj = dataIdMap[dataObj.id]
         this.getReqBodyDataObj(dataObj, u8Array)
-      } else if (msgType == MSG_REQ_BODY_END) {
-        // req-body-end
-        if (!dataIdMap[dataObj.id]) {
-          return null
-        }
-        dataObj = dataIdMap[dataObj.id]
-        this.getReqBodyEndDataObj(dataObj, u8Array)
       } else if (msgType == MSG_RES_HEAD) {
         // res
         if (!dataIdMap[dataObj.id]) {
@@ -227,13 +234,6 @@ export default {
         }
         dataObj = dataIdMap[dataObj.id]
         this.getResBodyDataObj(dataObj, u8Array)
-      } else if (msgType == MSG_RES_BODY_END) {
-        // res-body-end
-        if (!dataIdMap[dataObj.id]) {
-          return null
-        }
-        dataObj = dataIdMap[dataObj.id]
-        this.getResBodyEndDataObj(dataObj, u8Array)
       } else if (msgType == MSG_DNS) {
         // ip
         if (!dataIdMap[dataObj.id]) {
@@ -262,13 +262,11 @@ export default {
         }
         dataObj = dataIdMap[dataObj.id]
         this.getCipherDataObj(dataObj, u8Array)
-      } else if (msgType == MSG_CERT) {
-        // cert
+      } else if (msgType === MSG_WEB_SOCKET) {
         if (!dataIdMap[dataObj.id]) {
           return null
         }
-        dataObj = dataIdMap[dataObj.id]
-        this.getCertDataObj(dataObj, u8Array)
+        this.getWebsocketDataObj(dataObj, u8Array)
       } else {
         if (msgType == MSG_RULE_BREAK_REQ || msgType == MSG_RULE_BREAK_RES) {
           // 断点
@@ -281,7 +279,7 @@ export default {
         return null
       }
 
-      if (this.detailVisible && dataObj.id === this.activeId) {
+      if (this.detailVisible && dataObj.id === this.activeId && msgType !== MSG_WEB_SOCKET) {
         this.onClickRow(dataObj, true)
       }
 
@@ -296,8 +294,6 @@ export default {
         dataObj.reqBodySize += u8To32Uint(u8Array, 1)
       }
     },
-    getReqBodyEndDataObj(dataObj) {
-    },
     getResBodyDataObj(dataObj, u8Array) {
       let sizeBytes = u8Array[0]
       dataObj.reqBodySize = dataObj.reqBodySize || 0
@@ -307,8 +303,6 @@ export default {
         dataObj.reqBodySize += u8To32Uint(u8Array, 1)
       }
       dataObj.size = this.getSize(dataObj.reqBodySize + '')
-    },
-    getResBodyEndDataObj(dataObj) {
     },
     getIpDataObj(dataObj, u8Array) {
       dataObj.ip = getStringFromU8Array(u8Array)
@@ -352,7 +346,14 @@ export default {
         dataObj.cipherList = list.slice(2)
       }
     },
-    getCertDataObj(dataObj, u8Array) {
+    getWebsocketDataObj(dataObj, u8Array) {
+      getWsDataObj({ dataObj, u8Array })
+      if (dataObj.opCode === 0x02) {
+        dataObj.size = this.getSize(dataObj.fragmentSize)
+      }
+      if (dataObj.id === this.activeId) {
+        this.eventBus.$emit('show-websocket', dataObj)
+      }
     },
     getBreakDataObj(dataObj, u8Array, msgType) {
       dataObj.breakType = msgType == MSG_RULE_BREAK_REQ ? RULE_TYPE.REQ : RULE_TYPE.RES
@@ -490,6 +491,26 @@ export default {
       //   dataObj.pem = obj.pem
       // }
     },
+    async getWebsocketFromDb(dataObj) {
+      if (dataObj.protocol == 'ws:' || dataObj.protocol == 'wss:') {
+        let res = await getWebsocket(dataObj.id)
+        if (res.status === 200) {
+          let u8Array = new Uint8Array(res.data)
+          let messages = []
+          while (u8Array.length) {
+            let index = 0
+            let message = {}
+            index = getWsDataObj({ dataObj: message, u8Array, hasBobdy: true })
+            u8Array = u8Array.slice(index)
+            message.size = this.getSize(message.fragmentSize)
+            messages.push(message)
+          }
+          rawData.wsMessages = messages
+        }
+      } else {
+        rawData.wsMessages = []
+      }
+    },
     async getDataInfo(dataObj) {
       rawData = { id: dataObj.id }
       await Promise.all([
@@ -497,7 +518,8 @@ export default {
         this.getReqBodyFromDb(dataObj),
         this.getResHeadFromDb(dataObj),
         this.getResBodyFromDb(dataObj),
-        this.getCertFromDb(dataObj)
+        this.getCertFromDb(dataObj),
+        this.getWebsocketFromDb(dataObj),
       ])
       return rawData
     },

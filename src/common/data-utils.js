@@ -1,5 +1,12 @@
 import { getStringFromU8Array, u8To64Uint, u8To32Uint, u8To16Uint } from '../common/utils'
-import { MSG_REQ_HEAD, MSG_RULE_BREAK_REQ, MSG_RULE_SCRIPT_REQ, MSG_RULE_SCRIPT_RES, extList } from '../common/const'
+import { RULE_TYPE, extList } from '../common/const'
+import {
+  MSG_REQ_HEAD,
+  MSG_RULE_BREAK_REQ,
+  MSG_RULE_SCRIPT_REQ,
+  MSG_WEB_SOCKET,
+  MSG_RULE_SCRIPT_RES,
+} from '../common/const'
 // import { gunzip, inflate } from 'fflate';
 // import brotliPromise from 'brotli-wasm'
 import { remoteDecode } from './http'
@@ -224,6 +231,45 @@ export function getResDataObj({ dataObj, u8Array, hasBobdy }) {
 
   dataObj.ext = getExt(dataObj).toUpperCase()
   dataObj.type = getFileType(dataObj.resHeader).toUpperCase() || '?'
+}
+
+export function getWsDataObj({ dataObj, u8Array, hasBobdy }) {
+  let index = 0
+  let fragIdBtyes = u8Array[index++]
+  if (fragIdBtyes === 8) {
+    dataObj.fragId = u8To64Uint(u8Array, index) + ''
+  } else {
+    dataObj.fragId = u8To32Uint(u8Array, index) + ''
+  }
+  index += fragIdBtyes
+
+  dataObj.side = u8Array[index++] == 0x01 ? RULE_TYPE.REQ : RULE_TYPE.RES
+  // 0x0：表示一个延续帧。当Opcode为0时，表示本次数据传输采用了数据分片，当前收到的数据帧为其中一个数据分片
+  // 0x1：表示这是一个文本帧（frame）
+  // 0x2：表示这是一个二进制帧（frame）
+  // 0x3-7：保留的操作代码，用于后续定义的非控制帧
+  // 0x8：表示连接断开
+  // 0x9：表示这是一个ping操作
+  // 0xA：表示这是一个pong操作
+  // 0xB-F：保留的操作代码，用于后续定义的控制帧
+  dataObj.opCode = u8Array[index++]
+
+  let sizeBytes = u8Array[index++]
+  if (sizeBytes === 8) {
+    dataObj.fragmentSize = u8To64Uint(u8Array, index) + ''
+  } else {
+    dataObj.fragmentSize = u8To32Uint(u8Array, index) + ''
+  }
+  index += sizeBytes
+
+  if (dataObj.opCode === 0x01) {
+    dataObj.wsMessage = getStringFromU8Array(u8Array.slice(index, index + dataObj.fragmentSize))
+  } else if (dataObj.opCode === 0x02 && hasBobdy) {
+    dataObj.wsBinary = u8Array.slice(index, index + dataObj.fragmentSize)
+  }
+  index += Number(dataObj.fragmentSize)
+
+  return index
 }
 
 export function getHttpHeader(reqHeader, head) {

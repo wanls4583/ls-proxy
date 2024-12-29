@@ -38,15 +38,19 @@
         <el-tab-pane label="响应头" name="响应头">
           <ObjectView title="响应头头列表" :data="data.resHeader" />
         </el-tab-pane>
-        <el-tab-pane label="预览" name="预览">
+        <el-tab-pane :label="resLable" name="预览">
           <div v-if="resImgUrl" class="img-wrap">
             <img :src="resImgUrl" />
           </div>
-          <div v-if="resVideoUrl" class="video-wrap">
+          <div v-else-if="resVideoUrl" class="video-wrap">
             <video ref="resVideo" controls>
               <source :src="resVideoUrl" type="video/mp4" />
             </video>
           </div>
+          <WebsocketView
+            v-else-if="data.protocol === 'ws:' || data.protocol === 'wss:'"
+            ref="wsView"
+          />
           <SourceView v-show="resPreViewVisible" ref="resPreView" :languageId="resLanguageId" />
         </el-tab-pane>
         <el-tab-pane label="响应体" name="响应体">
@@ -61,6 +65,7 @@ import OverView from './OverView.vue'
 import ObjectView from './ObjectView.vue'
 import HexView from './HexView.vue'
 import SourceView from './SourceView.vue'
+import WebsocketView from './WebsocketView.vue'
 import { getDecoededBody } from '../../common/data-utils'
 import { getStringFromU8ArrayWithCheck, getU8ArrayFromString } from '../../common/utils'
 
@@ -71,6 +76,7 @@ export default {
     ObjectView,
     HexView,
     SourceView,
+    WebsocketView,
   },
   props: {
     visible: Boolean,
@@ -84,7 +90,21 @@ export default {
       reqLanguageId: '',
       resImgUrl: '',
       resVideoUrl: '',
-      resPreViewVisible: false,
+      hasResPreView: false,
+    }
+  },
+  computed: {
+    resLable() {
+      if (this.data.protocol === 'ws:' || this.data.protocol === 'wss:') {
+        return 'Webscoket'
+      }
+      return this.resImgUrl ? '图片' : (this.resVideoUrl ? '视频' : '预览')
+    },
+    resPreViewVisible() {
+      return this.hasResPreView &&
+        !this.resImgUrl &&
+        !this.resVideoUrl &&
+        !(this.data.protocol === 'ws:' || this.data.protocol === 'wss:')
     }
   },
   async created() {
@@ -100,6 +120,7 @@ export default {
       if (rawData.resHead !== oldRawData.resHead || rawData.resBody !== oldRawData.resBody) {
         this.initResData(rawData)
       }
+      this.initWsData(rawData)
       oldRawData = rawData
     },
     async initReqData(rawData) {
@@ -164,10 +185,17 @@ export default {
           })
         }
       }
-      this.resPreViewVisible = resPreView.length > 0
+      this.hasResPreView = resPreView.length > 0
       this.$refs.resPreView.render(resPreView)
       this.$refs.resHead.render(rawData.resHead || new Uint8Array())
       this.$refs.resHex.render(resBody)
+    },
+    initWsData(rawData) {
+      if (this.data.protocol === 'ws:' || this.data.protocol === 'wss:') {
+        this.$nextTick(() => {
+          this.$refs.wsView && this.$refs.wsView.initData(rawData.wsMessages)
+        })
+      }
     },
     getIfText(header) {
       let contentType = header?.['Content-Type'] || ''
