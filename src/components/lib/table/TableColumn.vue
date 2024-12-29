@@ -15,6 +15,7 @@ export default {
       type: String,
       default: ''
     },
+    showProp: Function,
     cellStyle: {
       type: Object,
       default: () => ({})
@@ -45,7 +46,7 @@ export default {
       if (_this.$scopedSlots.default) {
         return _this.$scopedSlots.default({ row })
       } else {
-        return row[_this.prop]
+        return row.showProp?.(row) || row[_this.prop]
       }
     }
     this.$parent.columns.push(column)

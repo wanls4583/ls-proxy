@@ -178,9 +178,13 @@ export function getReqDataObj({ dataObj, u8Array, hasBobdy }) {
   dataObj.reqHeader = {}
   getHttpHeader(dataObj.reqHeader, head)
 
-  dataObj.status = 'Pending'
   dataObj.params = {}
-  dataObj.reqType = getFileType(dataObj.reqHeader).toUpperCase() || '?'
+  dataObj.reqType = getFileType(dataObj.reqHeader, dataObj).toUpperCase() || '?'
+  // 先添加上需要渲染的属性，使其可响应，避免异步设置属性时没有更新视图
+  dataObj.status = 'Pending'
+  dataObj.ext = ''
+  dataObj.type = ''
+  dataObj.duration = ''
 
   if (dataObj.reqHeader.Host) {
     let port = dataObj.reqHeader.Host.indexOf(':')
@@ -228,9 +232,8 @@ export function getResDataObj({ dataObj, u8Array, hasBobdy }) {
 
   dataObj.resHeader = {}
   getHttpHeader(dataObj.resHeader, head)
-
   dataObj.ext = getExt(dataObj).toUpperCase()
-  dataObj.type = getFileType(dataObj.resHeader).toUpperCase() || '?'
+  dataObj.type = getFileType(dataObj.resHeader, dataObj).toUpperCase() || '?'
 }
 
 export function getWsDataObj({ dataObj, u8Array, hasBobdy }) {
@@ -316,33 +319,33 @@ export function getExt(dataObj) {
   return ''
 }
 
-export function getFileType(header) {
+export function getFileType(header, dataObj) {
   let contentType = header['Content-Type'] || ''
   let type = null
-  if (!type) {
-    if (contentType.startsWith('application/json')) {
-      type = 'json'
-    } else if (contentType.startsWith('application/javascript')) {
-      type = 'js'
-    } else if (contentType.startsWith('text/')) {
-      if (contentType.indexOf('html') > -1) {
-        type = 'html'
-      } else if (contentType.indexOf('xml') > -1) {
-        type = 'xml'
-      } else if (contentType.indexOf('css') > -1) {
-        type = 'css'
-      } else {
-        type = 'txt'
-      }
-    } else if (contentType.startsWith('image/')) {
-      type = 'image'
-    } else if (contentType.startsWith('audio/')) {
-      type = 'audio'
-    } else if (contentType.startsWith('video/')) {
-      type = 'video'
+  if (dataObj.protocol === 'ws:' || dataObj.protocol === 'wss:') {
+    type = dataObj.protocol === 'ws:' ? 'ws' : 'wss'
+  } else if (contentType.startsWith('application/json')) {
+    type = 'json'
+  } else if (contentType.startsWith('application/javascript')) {
+    type = 'js'
+  } else if (contentType.startsWith('text/')) {
+    if (contentType.indexOf('html') > -1) {
+      type = 'html'
+    } else if (contentType.indexOf('xml') > -1) {
+      type = 'xml'
+    } else if (contentType.indexOf('css') > -1) {
+      type = 'css'
     } else {
-      type = ''
+      type = 'txt'
     }
+  } else if (contentType.startsWith('image/')) {
+    type = 'image'
+  } else if (contentType.startsWith('audio/')) {
+    type = 'audio'
+  } else if (contentType.startsWith('video/')) {
+    type = 'video'
+  } else {
+    type = ''
   }
   return type
 }

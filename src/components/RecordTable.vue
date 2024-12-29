@@ -7,6 +7,7 @@
           :label="item.label"
           :width="item.width"
           :prop="item.prop"
+          :show-prop="item.showProp"
           :cell-style="item.cellStyle"
           :cell-class="item.cellClass"
         ></ls-table-column>
@@ -424,6 +425,7 @@ export default {
       let obj = {}
       if (res.status === 200) {
         obj.reqHead = new Uint8Array(res.data)
+        Object.seal(obj.reqHead)
       }
       if (dataObj.id === this.activeId && !rawData.reqHead) {
         rawData.reqHead = obj.reqHead
@@ -434,6 +436,7 @@ export default {
       let obj = {}
       if (res.status === 200) {
         obj.reqBody = new Uint8Array(res.data)
+        Object.seal(obj.reqBody)
       }
       if (dataObj.id === this.activeId && !rawData.reqBody) {
         rawData.reqBody = obj.reqBody
@@ -444,6 +447,7 @@ export default {
       let obj = {}
       if (res.status === 200) {
         obj.resHead = new Uint8Array(res.data)
+        Object.seal(obj.resHead)
       }
       if (dataObj.id === this.activeId && !rawData.resHead) {
         rawData.resHead = obj.resHead
@@ -454,6 +458,7 @@ export default {
       let obj = {}
       if (res.status === 200) {
         obj.resBody = new Uint8Array(res.data)
+        Object.seal(obj.resBody)
       }
       if (dataObj.id === this.activeId && !rawData.resBody) {
         rawData.resBody = obj.resBody
@@ -552,7 +557,6 @@ export default {
       this.detailData = dataObj
       this.detailVisible = true
       this.$nextTick(() => {
-        Object.freeze(rawData)
         this.eventBus.$emit('refresh-detail-data')
         this.$refs.detail.initData(rawData)
       })
