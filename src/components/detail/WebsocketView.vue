@@ -80,7 +80,7 @@ export default {
       color: #dfdfdf;
     }
     .contnet {
-      padding: 8px;
+      padding: 8px 12px;
       background-color: #363636;
       border: 1px solid #464646;
       border-radius: 4px;

@@ -228,6 +228,7 @@ export default {
             this.getDomSize()
             this.setStartLine(this.scrollTop)
             this.onHScroll(this.scrollLeft)
+            this.render()
           }
           this.resizeTimer = null
         }, 30)
