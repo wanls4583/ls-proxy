@@ -1,7 +1,7 @@
 <template>
   <div class="detail-source-view" ref="detail">
     <div class="title-wrap" v-if="!hideTitle">
-      <span class="title">原始报文</span>
+      <span class="title">{{title || languageIdTitle}}</span>
       <span class="op-wrap">
         <i class="icon icon-copy"></i>
       </span>
@@ -22,6 +22,10 @@ import { getCharWidth } from '@/common/utils'
 
 export default {
   props: {
+    title: {
+      type: String,
+      default: ''
+    },
     hideTitle: {
       type: Boolean,
       default: false
@@ -57,6 +61,17 @@ export default {
       clientWidth: 0,
       clientHeight: 0,
       nowLanguageId: '',
+    }
+  },
+  computed: {
+    languageIdTitle() {
+      if (this.nowLanguageId === 'sourceLanguage') {
+        return '原始报文'
+      }
+      if (this.nowLanguageId === 'plaintext') {
+        return '文本'
+      }
+      return this.nowLanguageId?.toUpperCase()
     }
   },
   created() {

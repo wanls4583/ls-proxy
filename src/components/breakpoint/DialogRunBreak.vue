@@ -266,5 +266,10 @@ export default {
       }
     }
   }
+  .detail-object-view {
+    .title-wrap {
+      height: 35px;
+    }
+  }
 }
 </style>

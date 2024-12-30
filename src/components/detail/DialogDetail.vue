@@ -8,14 +8,14 @@
         <el-tab-pane label="标头" name="标头">
           <SourceView ref="reqHead" />
         </el-tab-pane>
-        <el-tab-pane label="参数" name="参数">
-          <ObjectView title="参数头列表" :data="data.params" />
-        </el-tab-pane>
         <el-tab-pane label="请求头" name="请求头">
           <ObjectView title="请求头列表" :data="data.reqHeader" />
         </el-tab-pane>
-        <el-tab-pane label="载荷" name="载荷">
-          <SourceView ref="reqPreView" :languageId="reqLanguageId" />
+        <el-tab-pane label="参数" name="参数">
+          <ObjectView title="参数头列表" :data="data.params" />
+        </el-tab-pane>
+        <el-tab-pane :label="reqLabel" name="预览" v-if="hasReqPreView">
+          <SourceView v-show="hasReqPreView" ref="reqPreView" :languageId="reqLanguageId" />
         </el-tab-pane>
         <el-tab-pane label="请求体" name="请求体">
           <HexView ref="reqHex" />
@@ -90,10 +90,14 @@ export default {
       reqLanguageId: '',
       resImgUrl: '',
       resVideoUrl: '',
+      hasReqPreView: false,
       hasResPreView: false,
     }
   },
   computed: {
+    reqLabel() {
+      return this.reqLanguageId?.toUpperCase() || '预览'
+    },
     resLable() {
       if (this.data.protocol === 'ws:' || this.data.protocol === 'wss:') {
         return 'Webscoket'
@@ -125,7 +129,7 @@ export default {
     },
     async initReqData(rawData) {
       let reqBody = await getDecoededBody(this.data?.reqHeader, rawData.reqBody || new Uint8Array())
-      let reqPreView = reqBody
+      let reqPreView = []
       this.reqLanguageId = 'plaintext'
       if (rawData.reqBody?.length) {
         let text = getStringFromU8ArrayWithCheck(reqBody)
@@ -139,17 +143,16 @@ export default {
               console.log('JSON.parse fail')
             }
           }
-        } else {
-          reqPreView = []
         }
       }
+      this.hasReqPreView = reqPreView.length > 0
+      this.$refs.reqPreView?.render(reqPreView)
       this.$refs.reqHead.render(rawData.reqHead || new Uint8Array())
-      this.$refs.reqPreView.render(reqPreView)
       this.$refs.reqHex.render(reqBody)
     },
     async initResData(rawData) {
       let resBody = await getDecoededBody(this.data?.resHeader, rawData.resBody || new Uint8Array())
-      let resPreView = resBody
+      let resPreView = []
       this.resLanguageId = 'plaintext'
       this.resImgUrl = ''
       this.resVideoUrl = ''
@@ -174,7 +177,6 @@ export default {
             }
           }
         } else {
-          resPreView = []
           this.$nextTick(() => {
             if (this.data.resHeader['Content-Type']?.startsWith('image/')) {
               this.resImgUrl = URL.createObjectURL(new Blob([resBody], { type: this.data.resHeader['Content-Type'] }))
