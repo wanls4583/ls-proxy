@@ -348,7 +348,7 @@ export default {
       }
     },
     getWebsocketDataObj(dataObj, u8Array) {
-      getWsDataObj({ dataObj, u8Array })
+      getWsDataObj({ dataObj, u8Array, hasBobdy: false })
       if (dataObj.opCode === 0x02) {
         dataObj.size = this.getSize(dataObj.fragmentDataSize)
       }

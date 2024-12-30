@@ -16,7 +16,7 @@
             :class="{left: row.side === RULE_TYPE.RES, right: row.side === RULE_TYPE.REQ}"
           >
             <div class="name">{{row.side === RULE_TYPE.RES ? 'S' : 'C'}}</div>
-            <div class="contnet">
+            <div class="contnet" @click="onShowDetail(row)">
               <span v-if="row.opCode==0x01">{{row.wsMessage}}</span>
               <span v-else-if="row.opCode==0x02">二进制数据 {{row.size}}</span>
               <span v-else-if="row.opCode==0x08">close</span>
@@ -27,16 +27,23 @@
         </template>
       </ls-table-column>
     </ls-table>
+    <DialogFragment v-if="detailDialogVisible" :visible.sync="detailDialogVisible" :data="detailRow" />
   </div>
 </template>
 
 <script>
 import { RULE_TYPE } from '../../common/const';
+import DialogFragment from './DialogFragment.vue'
 export default {
+  components: {
+    DialogFragment
+  },
   data() {
     return {
       RULE_TYPE,
-      messages: []
+      messages: [],
+      detailRow: {},
+      detailDialogVisible: false
     };
   },
   created() {
@@ -52,6 +59,10 @@ export default {
     },
     onWsMessage(dataObj) {
       this.messages.push(dataObj)
+    },
+    onShowDetail(row) {
+      this.detailRow = row
+      this.detailDialogVisible = true
     }
   }
 };
@@ -65,6 +76,7 @@ export default {
     display: flex;
     padding: 10px;
     height: 58px;
+    user-select: none;
     .name {
       width: 38px;
       height: 38px;
@@ -89,6 +101,7 @@ export default {
       overflow: hidden;
       white-space: nowrap;
       text-overflow: ellipsis;
+      cursor: pointer;
     }
     &.left {
       padding-right: 58px;

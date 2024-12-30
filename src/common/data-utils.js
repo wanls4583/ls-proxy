@@ -273,7 +273,7 @@ export function getWsDataObj({ dataObj, u8Array, hasBobdy }) {
     index += fragmentSize
   } else {
     let fragment = {}
-    while (index < fragmentSize) {
+    while (index < endIndex) {
       sizeBytes = u8Array[index++]
       if (sizeBytes === 8) {
         fragment.fragmentHeadSize = Number(u8To64Uint(u8Array, index) + '')
