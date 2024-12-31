@@ -62,6 +62,11 @@ export default class {
       this.socket.send(data)
     } catch (e) { }
   }
+  close() {
+    try {
+      this.socket.close()
+    } catch (e) { }
+  }
   state() {
     return this.socketState
   }

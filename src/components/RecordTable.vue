@@ -130,6 +130,7 @@ export default {
     init() {
       this.initEvent()
       this.initSocket()
+      this.initWebSocket()
       this.clearTable()
     },
     initDB() {
@@ -137,6 +138,7 @@ export default {
     initEvent() {
       this.eventBus.$on('start-listen', (val) => {
         this.socket.startSocket(val)
+        this.wsSocket.startSocket(val)
       })
       this.eventBus.$on('clear-table', () => {
         this.clearTable()
@@ -174,6 +176,22 @@ export default {
                   this.filterList.push(dataObj)
                 }
               }
+            })
+          }
+        }
+      })
+    },
+    initWebSocket() {
+      this.wsSocket = new Socket({
+        url: 'ws://localhost:8000/proxy/websocket',
+        closeCb: event => {
+          this.eventBus.$emit('socket-close')
+        },
+        messageCb: (event) => {
+          const data = event.data
+          if (data instanceof Blob) {
+            data.arrayBuffer().then(buffer => {
+              this.getDataObj(new Uint8Array(buffer))
             })
           }
         }
@@ -348,7 +366,7 @@ export default {
       }
     },
     getWebsocketDataObj(dataObj, u8Array) {
-      getWsDataObj({ dataObj, u8Array, hasBobdy: false })
+      getWsDataObj({ dataObj, u8Array, hasBobdy: true })
       if (dataObj.opCode === 0x02) {
         dataObj.size = this.getSize(dataObj.fragmentDataSize)
       }
