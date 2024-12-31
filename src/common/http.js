@@ -98,32 +98,8 @@ export function getGateway() {
   return request(`${api}/get/gateway`, undefined, { responseType: 'json' })
 }
 
-export function getRootCertStatus() {
-  return request(`${api}/get/cert_status`, undefined, { responseType: 'json' })
-}
-
-export function getRuleOnOff() {
-  return request(`${api}/get/rule/on_off`, undefined, { responseType: 'json' })
-}
-
-export function getBreakOnOff() {
-  return request(`${api}/get/break/on_off`, undefined, { responseType: 'json' })
-}
-
-export function getScriptOnOff() {
-  return request(`${api}/get/script/on_off`, undefined, { responseType: 'json' })
-}
-
-export function getMirrorOnOff() {
-  return request(`${api}/get/mirror/on_off`, undefined, { responseType: 'json' })
-}
-
-export function getGatewayOnOff() {
-  return request(`${api}/get/gateway/on_off`, undefined, { responseType: 'json' })
-}
-
-export function getProxyOnOff() {
-  return request(`${api}/get/proxy/on_off`, undefined, { responseType: 'json' })
+export function getStatus() {
+  return request(`${api}/get/status`, undefined, { responseType: 'json' })
 }
 
 export function getCert(reqId) {

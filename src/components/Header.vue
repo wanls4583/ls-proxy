@@ -176,7 +176,16 @@
 </template>
 <script>
 import { mapState, mapMutations } from 'vuex'
-import { getRuleOnOff, getBreakOnOff, getScriptOnOff, getRootCertStatus, saveMirrorOnOff, saveGatewayOnOff, saveRuleOnOff, saveBreakOnOff, saveScriptOnOff, getProxyOnOff, saveProxyOnOff, addRootCert, getMirrorOnOff, getGatewayOnOff } from '../common/http'
+import {
+  saveMirrorOnOff,
+  saveGatewayOnOff,
+  saveRuleOnOff,
+  saveBreakOnOff,
+  saveScriptOnOff,
+  saveProxyOnOff,
+  addRootCert,
+  getStatus
+} from '../common/http'
 export default {
   name: 'Header',
   data() {
@@ -204,31 +213,7 @@ export default {
     ...mapMutations(['changeMirrorEnable', 'changeGatewayEnable', 'changeRuleEnable', 'changeBreakEnable', 'changeAutoPopBreak', 'changeScriptEnable']),
     init() {
       this.initEvent()
-      getGatewayOnOff().then(res => {
-        this.changeGatewayEnable(!!res.data)
-      })
-      getMirrorOnOff().then(res => {
-        this.changeMirrorEnable(!!res.data)
-      })
-      getRuleOnOff().then(res => {
-        this.changeRuleEnable(!!res.data)
-      })
-      getBreakOnOff().then(res => {
-        this.changeBreakEnable(!!res.data)
-      })
-      getScriptOnOff().then(res => {
-        this.changeScriptEnable(!!res.data)
-      })
-      getProxyOnOff().then(res => {
-        let httpEnable = !!res.data?.http
-        let httpsEnable = !!res.data?.https
-        let socketEnable = !!res.data?.socket
-        this.networkAactive = httpEnable && httpsEnable && socketEnable
-        this.networkHalfAactive = !this.networkAactive && (httpEnable || httpsEnable || socketEnable)
-      })
-      getRootCertStatus().then(res => {
-        this.sslAactive = !!res.data
-      })
+      this.getStatus()
       if (this.isMac) {
         this.headerMarginLeft = '55px'
       }
@@ -252,6 +237,30 @@ export default {
           }
         });
       }
+    },
+    getStatus() {
+      const _getStatus = () => {
+        getStatus().then(res => {
+          this.changeGatewayEnable(!!res.data?.gateway)
+          this.changeMirrorEnable(!!res.data?.mirror)
+          this.changeRuleEnable(!!res.data?.rule)
+          this.changeBreakEnable(!!res.data?.break)
+          this.changeScriptEnable(!!res.data?.script)
+          this.sslAactive = !!res.data?.cert
+
+          let httpEnable = !!res.data?.proxy?.http
+          let httpsEnable = !!res.data?.proxy?.https
+          let socketEnable = !!res.data?.proxy?.socket
+          this.networkAactive = httpEnable && httpsEnable && socketEnable
+          this.networkHalfAactive = !this.networkAactive && (httpEnable || httpsEnable || socketEnable)
+        })
+        clearTimeout(this.getStatusTimer)
+        this.getStatusTimer = setTimeout(() => {
+          _getStatus()
+        }, 5000)
+      }
+
+      _getStatus()
     },
     async onGatewayEnableChange() {
       if (this.loading.gateway) {
