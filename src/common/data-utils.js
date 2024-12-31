@@ -237,6 +237,15 @@ export function getResDataObj({ dataObj, u8Array, hasBobdy }) {
 
 export function getWsDataObj({ dataObj, u8Array, hasBobdy }) {
   let index = 0
+
+  let timeBtyes = u8Array[index++]
+  if (timeBtyes === 8) {
+    dataObj.time = u8To64Uint(u8Array, index) + ''
+  } else {
+    dataObj.time = u8To32Uint(u8Array, index) + ''
+  }
+  index += timeBtyes
+
   let fragIdBtyes = u8Array[index++]
   if (fragIdBtyes === 8) {
     dataObj.fragId = u8To64Uint(u8Array, index) + ''

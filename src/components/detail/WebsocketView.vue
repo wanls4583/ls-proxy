@@ -1,7 +1,7 @@
 <template>
   <div class="detial-websocket-view">
     <ls-table
-      :data="messages"
+      :data="renderList"
       :hidden-title="true"
       :cellHeight="58"
       :enableHover="false"
@@ -10,7 +10,11 @@
     >
       <ls-table-column width="100%">
         <template v-slot="{ row }">
+          <div class="message-item aequilate-font" v-if="row.type==='time'">
+            <div class="time">{{row.timeDisplay}}</div>
+          </div>
           <div
+            v-else
             class="message-item aequilate-font"
             :key="row.fragId"
             :class="{left: row.side === RULE_TYPE.RES, right: row.side === RULE_TYPE.REQ}"
@@ -27,12 +31,17 @@
         </template>
       </ls-table-column>
     </ls-table>
-    <DialogFragment v-if="detailDialogVisible" :visible.sync="detailDialogVisible" :data="detailRow" />
+    <DialogFragment
+      v-if="detailDialogVisible"
+      :visible.sync="detailDialogVisible"
+      :data="detailRow"
+    />
   </div>
 </template>
 
 <script>
 import { RULE_TYPE } from '../../common/const';
+import { formatTime } from '../../common/utils';
 import DialogFragment from './DialogFragment.vue'
 export default {
   components: {
@@ -41,7 +50,9 @@ export default {
   data() {
     return {
       RULE_TYPE,
-      messages: [],
+      preTime: 0,
+      gap: 10 * 1000 * 1000, // 10s
+      renderList: [],
       detailRow: {},
       detailDialogVisible: false
     };
@@ -55,10 +66,33 @@ export default {
   },
   methods: {
     initData(messages) {
-      this.messages = messages || []
+      this.renderList = []
+      this.preTime = 0
+
+      messages?.forEach((item, index) => {
+        item.timeDisplay = formatTime(item.time - 0, '-', true).result
+        if (item.time - this.preTime > this.gap) {
+          this.preTime = item.time
+          this.renderList.push({
+            type: 'time',
+            time: item.time,
+            timeDisplay: item.timeDisplay
+          })
+        }
+        this.renderList.push(item)
+      })
     },
-    onWsMessage(dataObj) {
-      this.messages.push(dataObj)
+    onWsMessage(item) {
+      item.timeDisplay = formatTime(item.time - 0, '-', true).result
+      if (item.time - this.preTime > this.gap) {
+        this.preTime = item.time
+        this.renderList.push({
+          type: 'time',
+          time: item.time,
+          timeDisplay: item.timeDisplay
+        })
+      }
+      this.renderList.push(item)
     },
     onShowDetail(row) {
       this.detailRow = row
@@ -102,6 +136,14 @@ export default {
       white-space: nowrap;
       text-overflow: ellipsis;
       cursor: pointer;
+    }
+    .time {
+      display: flex;
+      width: 100%;
+      height: 100%;
+      align-items: center;
+      justify-content: center;
+      color: #999;
     }
     &.left {
       padding-right: 58px;
