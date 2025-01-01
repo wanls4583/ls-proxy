@@ -28,6 +28,7 @@
   }
 
   .editor-wrap {
+    position: relative;
     width: 100%;
     flex-grow: 1;
     border: 1px solid #464646;
@@ -77,6 +78,26 @@
         .detail-hex-selection {
           background-color: #EFAE22BB;
         }
+      }
+    }
+
+    .load-more {
+      pointer-events: none;
+      opacity: 0;
+      position: absolute;
+      z-index: 99;
+      left: 0;
+      right: 20px;
+      bottom: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding-left: 20px;
+      transition: all .5s;
+
+      &.visible {
+        pointer-events: all;
+        opacity: 1;
       }
     }
   }

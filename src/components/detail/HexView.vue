@@ -8,6 +8,9 @@
     </div>
     <div class="editor-wrap">
       <div class="editor" ref="editor"></div>
+      <div class="load-more" :class="{visible: loadMoreVisible && scrollToBottom}">
+        <span class="btn btn-text" @click="onAddValue">加载更多...</span>
+      </div>
     </div>
   </div>
 </template>
@@ -32,6 +35,9 @@ export default {
       value: '',
       hexId: '',
       maxRnederByte: 512 * 1024,
+      renderLenth: 0,
+      loadMoreVisible: false,
+      scrollToBottom: false
     }
   },
   computed: {
@@ -117,6 +123,12 @@ export default {
         contextmenu: false,
         matchBrackets: 'never',
         useShadowDOM: false,
+        lineNumbers: (line) => {
+          if (this.loadMoreVisible && line >= editor.getModel()?.getLineCount() - 1) {
+            return ''
+          }
+          return line
+        },
         language: 'text/plain',
       });
 
@@ -143,16 +155,29 @@ export default {
         }
       });
 
+      editor.onDidScrollChange(e => {
+        if (e.scrollHeight > 30 && e.scrollHeight - e.scrollTop - this.$refs.editor?.clientHeight < 18) {
+          this.scrollToBottom = true
+        } else {
+          this.scrollToBottom = false
+        }
+      })
+
       editor.onMouseDown(e => {
         this.decorations && this.decorations.clear()
         this.preStartPos = null
+        this.mousedeDown = true
       })
 
       editor.onMouseUp(e => {
         this.startPos = null
+        this.mousedeDown = false
       })
 
       editor.onDidChangeCursorPosition(e => {
+        if (!this.mousedeDown) {
+          return
+        }
         const width = this.hexWidth
         const leftEndColumn = width * 3
         const rightStartColumn = leftEndColumn + 4
@@ -247,16 +272,21 @@ export default {
       return text
     },
     render(data) {
+      if (data) {
+        this.rendered = false
+        this.renderLenth = 0
+        this.loadMoreVisible = false
+      }
       data = data || this.dataStore.needRenderData
       this.dataStore.needRenderData = data
       if (this.$refs.detail.clientHeight) {
         this.editor.layout()
       }
-      if (!data || !this.$refs.detail.clientHeight) {
+      if (!data || !this.$refs.detail.clientHeight || this.rendered) {
         return
       }
-      data = data.subarray(0, this.maxRnederByte) // 最大渲染512KB
-      requestAnimationFrame(() => {
+      cancelAnimationFrame(this.renderTimer)
+      this.renderTimer = requestAnimationFrame(() => {
         this.charObj = getCharWidth(this.$refs.detail.querySelector('.view-lines'), '<div class="view-line">[dom]</div>')
         if (this.charObj.charWidth) {
           let value = ''
@@ -264,16 +294,49 @@ export default {
           let width = Math.floor((wrapWidth - 3 * this.charObj.charWidth - 10) / (4 * this.charObj.charWidth))
           this.hexWidth = width < 1 ? 1 : width
 
+          this.maxRnederByte = Math.floor(this.maxRnederByte / this.hexWidth) * this.hexWidth
+          data = data.subarray(0, this.maxRnederByte)
+          this.renderLenth += data.length
+          this.loadMoreVisible = this.dataStore.needRenderData.length > this.renderLenth
+          this.rendered = true
+
           value = hexy.hexy(data, { littleEndian: true, numbering: 'none', format: 'twos', radix: 16, width: this.hexWidth })
           value = value[value.length - 1] == '\n' ? value.slice(0, -1) : value
+          value = value[value.length - 1] == '\n' ? value.slice(0, -1) : value
+          if (this.loadMoreVisible) {
+            value += '\n\n'
+          }
           this.value = value
           this.editor.setValue(value)
           this.decorations && this.decorations.clear()
-          document.activeElement?.blur()
-          this.dataStore.needRenderData = null
+          this.decorations = null
           this.startPos = null
+          document.activeElement?.blur()
         }
       })
+    },
+    onAddValue() {
+      if (this.renderLenth >= this.dataStore.needRenderData.length) {
+        return
+      }
+      let line = this.editor.getModel()?.getLineCount() - 1
+      let data = this.dataStore.needRenderData.subarray(this.renderLenth, this.renderLenth + this.maxRnederByte)
+      this.renderLenth += data.length
+      this.loadMoreVisible = this.dataStore.needRenderData.length > this.renderLenth
+
+      let value = hexy.hexy(data, { littleEndian: true, numbering: 'none', format: 'twos', radix: 16, width: this.hexWidth })
+      value = value[value.length - 1] == '\n' ? value.slice(0, -1) : value
+      value = value[value.length - 1] == '\n' ? value.slice(0, -1) : value
+      if (this.loadMoreVisible) {
+        value += '\n\n'
+      }
+
+      this.editor.updateOptions({ readOnly: false })
+      this.editor.executeEdits('', [{
+        range: new monaco.Range(line, 1, line + 2, 1),
+        text: value
+      }])
+      this.editor.updateOptions({ readOnly: true })
     }
   }
 }
