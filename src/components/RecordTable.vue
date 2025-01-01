@@ -298,7 +298,9 @@ export default {
         return null
       }
 
-      if (this.detailVisible && dataObj.id === this.activeId && msgType !== MSG_WEB_SOCKET_FRAGMENT) {
+      if (this.detailVisible && dataObj.id === this.activeId &&
+        msgType !== MSG_RES_BODY && msgType !== MSG_REQ_BODY &&
+        msgType !== MSG_WEB_SOCKET_FRAGMENT) {
         this.onClickRow(dataObj, true)
       }
 
