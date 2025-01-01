@@ -9,7 +9,7 @@
     <div class="editor-wrap">
       <div class="editor" ref="editor"></div>
       <div class="load-more" :class="{visible: loadMoreVisible && scrollToBottom}">
-        <span class="btn btn-text" @click="onAddValue">加载更多...</span>
+        <i class="icon icon-loadmore" @click="onAddValue"></i>
       </div>
     </div>
   </div>
@@ -155,6 +155,15 @@ export default {
         }
       });
 
+      editor.addAction({
+        id: 'selectAll',
+        label: 'selectAll',
+        keybindings: [monaco.KeyMod.CtrlCmd | monaco.KeyCode.KeyA],
+        run: () => {
+          this.selectAll()
+        }
+      });
+
       editor.onDidScrollChange(e => {
         if (e.scrollHeight > 30 && e.scrollHeight - e.scrollTop - this.$refs.editor?.clientHeight < 18) {
           this.scrollToBottom = true
@@ -165,25 +174,32 @@ export default {
 
       editor.onMouseDown(e => {
         this.decorations && this.decorations.clear()
+        this.startPos = null
         this.preStartPos = null
         this.mousedeDown = true
       })
 
       editor.onMouseUp(e => {
-        this.startPos = null
         this.mousedeDown = false
       })
 
       editor.onDidChangeCursorPosition(e => {
-        if (!this.mousedeDown) {
-          return
-        }
         const width = this.hexWidth
-        const leftEndColumn = width * 3
-        const rightStartColumn = leftEndColumn + 4
-        const rightEndColumn = rightStartColumn + width
+        let leftEndColumn = width * 3
+        let rightStartColumn = leftEndColumn + 4
+        let rightEndColumn = rightStartColumn + width
+        let originLeftEndColumn = leftEndColumn
         let cols = 0, needUpdate = false
         let { lineNumber, column } = e.position
+
+        if (lineNumber >= this.maxLineNumber) {
+          lineNumber = this.maxLineNumber
+          leftEndColumn = (this.renderLenth % width) * 3
+          leftEndColumn = leftEndColumn === 0 ? originLeftEndColumn : leftEndColumn
+          if (e.position.lineNumber > this.maxLineNumber) { // 预留的两行用来显示加载更多
+            column = leftEndColumn
+          }
+        }
 
         if (column < leftEndColumn) {
           cols = Math.floor((column - 1) / 3)
@@ -205,8 +221,12 @@ export default {
         this.startPos = this.startPos || this.nowPos
         this.preStartPos = this.startPos
 
-        if (needUpdate && column !== e.position.column) {
+        if (needUpdate && column !== e.position.column) { // 修正光标位置，使其和16进制对齐
           editor.setPosition(this.nowPos)
+          return
+        }
+
+        if (!this.mousedeDown) {
           return
         }
 
@@ -225,10 +245,10 @@ export default {
           ranges.push(new monaco.Range(startLineNumber, startColumn, endLineNumber, endColumn))
           ranges.push(new monaco.Range(startLineNumber, startColumn2, endLineNumber, endColumn2))
         } else {
-          ranges.push(new monaco.Range(startLineNumber, startColumn, startLineNumber, leftEndColumn))
+          ranges.push(new monaco.Range(startLineNumber, startColumn, startLineNumber, originLeftEndColumn))
           ranges.push(new monaco.Range(startLineNumber, startColumn / 3 + rightStartColumn, startLineNumber, rightEndColumn))
           for (let line = startLineNumber + 1; line < endLineNumber; line++) {
-            ranges.push(new monaco.Range(line, 1, line, leftEndColumn))
+            ranges.push(new monaco.Range(line, 1, line, originLeftEndColumn))
             ranges.push(new monaco.Range(line, rightStartColumn, line, rightEndColumn))
           }
           ranges.push(new monaco.Range(endLineNumber, 1, endLineNumber, endColumn))
@@ -245,6 +265,19 @@ export default {
       })
 
       return editor
+    },
+    selectAll() {
+      if (this.maxLineNumber > 10 * 10000) { // 数据太大时候，屏蔽全选，避免卡顿
+        return
+      }
+      const width = this.hexWidth
+      const leftEndColumn = width * 3
+      this.startPos = { lineNumber: 1, column: 1 }
+      this.preStartPos = this.startPos
+      this.mousedeDown = true
+      this.editor.setPosition({ lineNumber: this.maxLineNumber, column: leftEndColumn })
+      this.mousedeDown = false
+      this.startPos = null
     },
     getText(startPos, nowPos, value) {
       const leftEndColumn = this.hexWidth * 3
@@ -308,6 +341,8 @@ export default {
           }
           this.value = value
           this.editor.setValue(value)
+          this.maxLineNumber = this.editor.getModel()?.getLineCount()
+          this.maxLineNumber = this.loadMoreVisible ? this.maxLineNumber - 2 : this.maxLineNumber
           this.decorations && this.decorations.clear()
           this.decorations = null
           this.startPos = null
@@ -337,6 +372,8 @@ export default {
         text: value
       }])
       this.editor.updateOptions({ readOnly: true })
+      this.maxLineNumber = this.editor.getModel()?.getLineCount()
+      this.maxLineNumber = this.loadMoreVisible ? this.maxLineNumber - 2 : this.maxLineNumber
     }
   }
 }

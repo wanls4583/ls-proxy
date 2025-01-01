@@ -10,7 +10,7 @@ import Node from './common/node';
 import { saveGateway, getGateway, saveMirror, getMirror, saveRule, getRule, saveBreak, getBreak } from './common/http';
 import 'element-ui/lib/theme-chalk/index.css';
 import './scss/index.scss';
-import './assets/font/icon'
+import './assets/font/iconfont'
 import './assets/font/ext-icon'
 import LsTable from './components/lib/table/Table.vue'
 import LsTableColumn from './components/lib/table/TableColumn.vue'
