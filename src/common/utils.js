@@ -58,15 +58,15 @@ export const getU8ArrayFromString = function (str) {
 }
 
 export const u8To16Uint = function (uint8array, offset = 0) {
-  return new DataView(uint8array.buffer).getUint16(offset)
+  return new DataView(uint8array.buffer).getUint16(offset + uint8array.byteOffset)
 }
 
 export const u8To32Uint = function (uint8array, offset = 0) {
-  return new DataView(uint8array.buffer).getUint32(offset)
+  return new DataView(uint8array.buffer).getUint32(offset + uint8array.byteOffset)
 }
 
 export const u8To64Uint = function (uint8array, offset = 0) {
-  return new DataView(uint8array.buffer).getBigUint64(offset)
+  return new DataView(uint8array.buffer).getBigUint64(offset + uint8array.byteOffset)
 }
 
 export const bigintToUint8Array = function (value, len) {
@@ -303,7 +303,7 @@ export function scriptWorker() {
       }
 
       self.postMessage({ id, type, header: newHeader, body: newBody }, [newBody.buffer])
-    } catch (e) { 
+    } catch (e) {
       console.log(e)
     }
   }

@@ -118,10 +118,10 @@ export default {
           this.$refs.source.render([])
           if (text === false) {
             this.type = 2
-            this.$refs.hex.render(this.hex.slice(0, this.maxRnederByte)) // 最大渲染512KB
+            this.$refs.hex.render(this.hex.subarray(0, this.maxRnederByte)) // 最大渲染512KB
           } else {
             this.type = 1
-            this.$refs.source.render(this.hex.slice())
+            this.$refs.source.render(this.hex.subarray())
           }
         }
       })
@@ -133,25 +133,25 @@ export default {
       if (index == -1) {
         return
       }
-      body = body.slice(index + boundaryArr.length + 2)
+      body = body.subarray(index + boundaryArr.length + 2)
       while (body.length) {
         let part = {}
         index = body.kmpSearch([13, 10, 13, 10])
         if (index == -1) {
           return
         }
-        part.header = _parseHeader(body.slice(0, index + 2))
-        body = body.slice(index + 4)
+        part.header = _parseHeader(body.subarray(0, index + 2))
+        body = body.subarray(index + 4)
         index = body.kmpSearch(boundaryArr)
         if (index == -1) {
           return
         }
-        part.body = _parseBody(body.slice(0, index - 2))
+        part.body = _parseBody(body.subarray(0, index - 2))
         this.partList.push(part)
         if (body[index + boundaryArr.length] !== 13) {
           break
         }
-        body = body.slice(index + boundaryArr.length + 2)
+        body = body.subarray(index + boundaryArr.length + 2)
       }
 
       function _parseHeader(data) {
@@ -199,7 +199,7 @@ export default {
       reader.onload = (e) => {
         let buffer = e.target.result
         this.hex = new Uint8Array(buffer)
-        this.$refs.hex.render(this.hex.slice(0, this.maxRnederByte))
+        this.$refs.hex.render(this.hex.subarray(0, this.maxRnederByte))
       }
     },
     onAddPart() {

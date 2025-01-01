@@ -12,31 +12,44 @@ import { remoteDecode } from './http'
 
 export function getDecoededBody(header, body) {
   let data = new Uint8Array()
+  let dataArr = []
   header = header || {}
   if (header['Transfer-Encoding'] === 'chunked') {
     let index = -1
     while ((index = body.kmpSearch([13, 10])) > -1) {
-      let num = getStringFromU8Array(new Uint8Array(body.slice(0, index)))
+      let num = getStringFromU8Array(new Uint8Array(body.subarray(0, index)))
       num = parseInt(num, 16)
       if (!num) {
         break
       }
-      data = data.concat(body.slice(index + 2, index + 2 + num))
-      body = body.slice(index + 2 + num + 2)
+      dataArr.push(body.subarray(index + 2, index + 2 + num))
+      body = body.subarray(index + 2 + num + 2)
     }
   } else if (header['Content-Type']?.indexOf('boundary=') > -1) {
     let index = header['Content-Type'].indexOf('boundary=')
     let boundary = header['Content-Type'].slice(index + 'boundary='.length)
-    body = body.slice(boundary.length + 2)
+    body = body.subarray(boundary.length + 2)
     while ((index = body.kmpSearch(boundary)) > -1) {
-      if (getStringFromU8Array(new Uint8Array(body.slice(index + boundary.length, index + boundary.length + 4))) === '--\r\n') {
+      if (getStringFromU8Array(body.subarray(index + boundary.length, index + boundary.length + 4)) === '--\r\n') {
         break
       }
-      data.push(body.slice(0, index))
-      body = body.slice(index + boundary.length + 2)
+      dataArr.push(body.subarray(0, index))
+      body = body.subarray(index + boundary.length + 2)
     }
   } else {
     data = body
+  }
+  if (dataArr.length) {
+    let size = 0
+    for (let i = 0; i < dataArr.length; i++) {
+      size += dataArr[i].length
+    }
+    data = new Uint8Array(size)
+    size = 0
+    for (let i = 0; i < dataArr.length; i++) {
+      data.set(dataArr[i], size)
+      size += dataArr[i].length
+    }
   }
   let encoding = header['Content-Encoding']
   if (data.length && ['gzip', 'br', 'deflate'].includes(encoding)) {
@@ -115,7 +128,7 @@ export function getDataInfo(dataObj, u8Array) {
         break
     }
     let ptSize = u8Array[index++]
-    let portU8Array = u8Array.slice(index, index + ptSize)
+    let portU8Array = u8Array.subarray(index, index + ptSize)
     if (ptSize === 4) {
       dataObj.clntPort = u8To32Uint(portU8Array) // 客户端端口号
     } else {
@@ -124,7 +137,7 @@ export function getDataInfo(dataObj, u8Array) {
     index += ptSize
 
     let ipSize = u8Array[index++]
-    dataObj.clntIp = getStringFromU8Array(u8Array.slice(index, index + ipSize))
+    dataObj.clntIp = getStringFromU8Array(u8Array.subarray(index, index + ipSize))
     index += ipSize
 
     let pathLenBytes = u8Array[index++]
@@ -136,7 +149,7 @@ export function getDataInfo(dataObj, u8Array) {
     }
     index += pathLenBytes
     if (pathLen) {
-      let processPath = getStringFromU8Array(u8Array.slice(index, index + pathLen))
+      let processPath = getStringFromU8Array(u8Array.subarray(index, index + pathLen))
       let divIndex = processPath.indexOf('.app')
       if (divIndex > -1) {
         processPath = processPath.slice(0, divIndex)
@@ -147,7 +160,7 @@ export function getDataInfo(dataObj, u8Array) {
     }
     index += pathLen
   }
-  u8Array = u8Array.slice(index)
+  u8Array = u8Array.subarray(index)
 
   return { msgType, u8Array }
 }
@@ -156,24 +169,24 @@ export function getReqDataObj({ dataObj, u8Array, hasBobdy }) {
   let index = u8Array.kmpSearch([13, 10, 13, 10]) // \r\n\r\n
   let head, spaceIndex, lineIndex
 
-  head = u8Array.slice(0, index + 4)
+  head = u8Array.subarray(0, index + 4)
   hasBobdy && (dataObj.head = head)
-  hasBobdy && (dataObj.body = u8Array.slice(index + 4))
+  hasBobdy && (dataObj.body = u8Array.subarray(index + 4))
   dataObj.size = '0 B'
   dataObj.reqBodyIndex = 0
 
   spaceIndex = u8Array.kmpSearch(32)
-  dataObj.method = getStringFromU8Array(head.slice(0, spaceIndex))
+  dataObj.method = getStringFromU8Array(head.subarray(0, spaceIndex))
 
-  head = head.slice(spaceIndex + 1)
+  head = head.subarray(spaceIndex + 1)
   spaceIndex = head.kmpSearch(32)
-  dataObj.path = getStringFromU8Array(head.slice(0, spaceIndex))
+  dataObj.path = getStringFromU8Array(head.subarray(0, spaceIndex))
 
-  head = head.slice(spaceIndex + 1)
+  head = head.subarray(spaceIndex + 1)
   lineIndex = head.kmpSearch([13, 10]) // \r\n
-  dataObj.version = getStringFromU8Array(head.slice(0, lineIndex))
+  dataObj.version = getStringFromU8Array(head.subarray(0, lineIndex))
 
-  head = head.slice(lineIndex + 2)
+  head = head.subarray(lineIndex + 2)
   dataObj.reqHeader = {}
   getHttpHeader(dataObj.reqHeader, head)
 
@@ -199,7 +212,7 @@ export function getReqDataObj({ dataObj, u8Array, hasBobdy }) {
 
 export function getResDataObj({ dataObj, u8Array, hasBobdy }) {
   let urlLenSize = u8Array[0]
-  let urlLenU8Array = u8Array.slice(1, urlLenSize + 1)
+  let urlLenU8Array = u8Array.subarray(1, urlLenSize + 1)
   let urlLen = 0
   if (urlLenSize === 4) {
     urlLen = u8To32Uint(urlLenU8Array)
@@ -207,27 +220,27 @@ export function getResDataObj({ dataObj, u8Array, hasBobdy }) {
     urlLen = u8To16Uint(urlLenU8Array)
   }
   if (urlLen) {
-    dataObj.url = dataObj.url || getStringFromU8Array(u8Array.slice(urlLenSize + 1, urlLenSize + 1 + urlLen))
+    dataObj.url = dataObj.url || getStringFromU8Array(u8Array.subarray(urlLenSize + 1, urlLenSize + 1 + urlLen))
   }
-  u8Array = u8Array.slice(urlLenSize + 1 + urlLen)
+  u8Array = u8Array.subarray(urlLenSize + 1 + urlLen)
 
   let index = u8Array.kmpSearch([13, 10, 13, 10]) // \r\n\r\n
   let head, spaceIndex, lineIndex
 
-  head = u8Array.slice(0, index + 4)
+  head = u8Array.subarray(0, index + 4)
   hasBobdy && (dataObj.head = head)
-  hasBobdy && (dataObj.body = u8Array.slice(index + 4))
+  hasBobdy && (dataObj.body = u8Array.subarray(index + 4))
   dataObj.resBodySize = u8Array.length
   dataObj.resBodyIndex = 0
 
   spaceIndex = u8Array.kmpSearch(32)
-  dataObj.version = getStringFromU8Array(head.slice(0, spaceIndex))
-  head = head.slice(spaceIndex + 1)
+  dataObj.version = getStringFromU8Array(head.subarray(0, spaceIndex))
+  head = head.subarray(spaceIndex + 1)
   spaceIndex = head.kmpSearch(32)
-  dataObj.status = getStringFromU8Array(head.slice(0, spaceIndex))
+  dataObj.status = getStringFromU8Array(head.subarray(0, spaceIndex))
 
   lineIndex = head.kmpSearch([13, 10])
-  head = head.slice(lineIndex + 2)
+  head = head.subarray(lineIndex + 2)
 
   dataObj.resHeader = {}
   getHttpHeader(dataObj.resHeader, head)
@@ -291,7 +304,7 @@ export function getWsDataObj({ dataObj, u8Array, hasBobdy }) {
       }
       index += sizeBytes
 
-      fragment.fragmentHead = u8Array.slice(index, index + fragment.fragmentHeadSize)
+      fragment.fragmentHead = u8Array.subarray(index, index + fragment.fragmentHeadSize)
       index += fragment.fragmentHeadSize
 
       sizeBytes = u8Array[index++]
@@ -302,7 +315,7 @@ export function getWsDataObj({ dataObj, u8Array, hasBobdy }) {
       }
       index += sizeBytes
 
-      fragment.fragmentData = u8Array.slice(index, index + fragment.fragmentDataSize)
+      fragment.fragmentData = u8Array.subarray(index, index + fragment.fragmentDataSize)
       index += fragment.fragmentDataSize
 
       dataObj.fragmentList.push(fragment)
@@ -333,14 +346,14 @@ export function getHttpHeader(reqHeader, head) {
     if (lineIndex < 0) {
       break
     }
-    line = head.slice(0, lineIndex)
+    line = head.subarray(0, lineIndex)
     if (line.length) {
       colonIndex = line.kmpSearch([58, 32]) //': '
-      prop = getStringFromU8Array(line.slice(0, colonIndex))
-      value = getStringFromU8Array(line.slice(colonIndex + 2))
+      prop = getStringFromU8Array(line.subarray(0, colonIndex))
+      value = getStringFromU8Array(line.subarray(colonIndex + 2))
       reqHeader[prop] = value
     }
-    head = head.slice(lineIndex + 2)
+    head = head.subarray(lineIndex + 2)
   }
 }
 

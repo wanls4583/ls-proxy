@@ -333,10 +333,9 @@ export default {
     },
     getTimeDataObj(dataObj, u8Array) {
       let timeType = u8Array[0]
-      let time = Number(u8To64Uint(u8Array.slice(1)) + '')
+      let time = Number(u8To64Uint(u8Array.subarray(1)) + '')
       dataObj.times = dataObj.times || {}
       dataObj.times[timeType] = time
-      // console.log(dataObj.id + ':', timeType, time, u8Array.slice(1).toString())
 
       if (timeType === TIME_RES_END) {
         let startTime = 0
@@ -525,7 +524,7 @@ export default {
             let index = 0
             let message = {}
             index = getWsDataObj({ dataObj: message, u8Array, hasBobdy: true })
-            u8Array = u8Array.slice(index)
+            u8Array = u8Array.subarray(index)
             message.size = this.getSize(message.fragmentDataSize)
             messages.push(message)
           }

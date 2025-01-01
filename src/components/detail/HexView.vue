@@ -16,6 +16,7 @@ import hexy from 'hexy'
 import * as monaco from 'monaco-editor';
 import { getCharWidth, writeClipboard } from '@/common/utils'
 
+const dataMap = {}
 export default {
   props: {
     hideTitle: {
@@ -29,20 +30,27 @@ export default {
       clientWidth: 0,
       clientHeight: 0,
       value: '',
+      hexId: '',
       maxRnederByte: 512 * 1024,
     }
   },
+  computed: {
+    dataStore() {
+      return dataMap[this.hexId]
+    }
+  },
   created() {
+    this.hexId = Math.random().toString(36).slice(2)
+    dataMap[this.hexId] = {}
   },
   mounted() {
     this.editor = this.initEditor()
     this.initResizeEvent()
   },
   beforeDestroy() {
+    delete dataMap[this.hexId]
     this.editor?.dispose()
     this.resizeObserver?.unobserve(this.$refs.detail)
-    this.needRenderData = null
-    this.renderedData = null
     this.startPos = null
     this.nowPos = null
     this.value = ''
@@ -57,7 +65,7 @@ export default {
           if (this.$refs.detail) {
             let clientWidth = this.$refs.detail?.clientWidth
             let clientHeight = this.$refs.detail?.clientHeight
-            if (clientHeight && (this.clientWidth !== clientWidth || this.clientHeight !== clientHeight || this.needRenderData)) {
+            if (clientHeight && (this.clientWidth !== clientWidth || this.clientHeight !== clientHeight || this.dataStore.needRenderData)) {
               this.render()
             }
             this.clientWidth = clientWidth
@@ -239,15 +247,15 @@ export default {
       return text
     },
     render(data) {
-      data = data || this.needRenderData
-      this.needRenderData = data
+      data = data || this.dataStore.needRenderData
+      this.dataStore.needRenderData = data
       if (this.$refs.detail.clientHeight) {
         this.editor.layout()
       }
       if (!data || !this.$refs.detail.clientHeight) {
         return
       }
-      data = data.slice(0, this.maxRnederByte) // 最大渲染512KB
+      data = data.subarray(0, this.maxRnederByte) // 最大渲染512KB
       requestAnimationFrame(() => {
         this.charObj = getCharWidth(this.$refs.detail.querySelector('.view-lines'), '<div class="view-line">[dom]</div>')
         if (this.charObj.charWidth) {
@@ -262,9 +270,8 @@ export default {
           this.editor.setValue(value)
           this.decorations && this.decorations.clear()
           document.activeElement?.blur()
-          this.needRenderData = null
+          this.dataStore.needRenderData = null
           this.startPos = null
-          this.renderedData = data
         }
       })
     }

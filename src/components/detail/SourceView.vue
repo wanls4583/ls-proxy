@@ -20,6 +20,7 @@ import * as monaco from 'monaco-editor';
 import { getStringFromU8Array } from '@/common/utils'
 import { getCharWidth } from '@/common/utils'
 
+const dataMap = {}
 export default {
   props: {
     title: {
@@ -61,6 +62,7 @@ export default {
       clientWidth: 0,
       clientHeight: 0,
       nowLanguageId: '',
+      hexId: '',
     }
   },
   computed: {
@@ -72,19 +74,23 @@ export default {
         return '文本'
       }
       return this.nowLanguageId?.toUpperCase()
+    },
+    dataStore() {
+      return dataMap[this.hexId]
     }
   },
   created() {
+    this.hexId = Math.random().toString(36).slice(2)
+    dataMap[this.hexId] = {}
   },
   mounted() {
     this.editor = this.initEditor()
     this.initResizeEvent()
   },
   beforeDestroy() {
+    delete dataMap[this.hexId]
     this.editor?.dispose()
     this.resizeObserver?.unobserve(this.$refs.detail)
-    this.needRenderData = null
-    this.renderedData = null
   },
   methods: {
     initResizeEvent() {
@@ -96,8 +102,8 @@ export default {
           if (this.$refs.detail) {
             let clientWidth = this.$refs.detail?.clientWidth
             let clientHeight = this.$refs.detail?.clientHeight
-            if (clientHeight && (this.clientWidth !== clientWidth || this.clientHeight !== clientHeight || this.needRenderData)) {
-              this.render(this.needRenderData)
+            if (clientHeight && (this.clientWidth !== clientWidth || this.clientHeight !== clientHeight || this.dataStore.needRenderData)) {
+              this.render()
             }
             this.clientWidth = clientWidth
             this.clientHeight = clientHeight
@@ -182,8 +188,8 @@ export default {
       return editor
     },
     render(data) {
-      data = data || this.needRenderData
-      this.needRenderData = data
+      data = data || this.dataStore.needRenderData
+      this.dataStore.needRenderData = data
       if (this.$refs.detail.clientHeight) {
         this.editor.layout()
       }
@@ -196,14 +202,13 @@ export default {
         if (this.charObj.charWidth) {
           this.editor.setValue(getStringFromU8Array(new Uint8Array(data)))
           document.activeElement?.blur()
-          this.needRenderData = null
-          this.renderedData = data
+          this.dataStore.needRenderData = null
         }
       })
     },
     getValue() {
-      if (this.needRenderData) {
-        return getStringFromU8Array(new Uint8Array(this.needRenderData))
+      if (this.dataStore.needRenderData) {
+        return getStringFromU8Array(new Uint8Array(this.dataStore.needRenderData))
       } else {
         return this.editor.getValue()
       }

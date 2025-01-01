@@ -129,13 +129,14 @@ export default {
     },
     async initReqData(rawData) {
       let reqBody = await getDecoededBody(this.data?.reqHeader, rawData.reqBody || new Uint8Array())
-      let reqPreView = []
+      let reqPreView = reqBody
       this.reqLanguageId = 'plaintext'
       if (rawData.reqBody?.length) {
         let text = getStringFromU8ArrayWithCheck(reqBody)
         if (text !== false) {
           if (this.data.reqType === 'JSON') {
             try {
+              reqPreView = []
               text = JSON.stringify(JSON.parse(text), null, 4)
               this.reqLanguageId = 'json'
               reqPreView = getU8ArrayFromString(text)
@@ -143,6 +144,8 @@ export default {
               console.log('JSON.parse fail')
             }
           }
+        } else {
+          reqPreView = []
         }
       }
       this.hasReqPreView = reqPreView.length > 0
@@ -152,7 +155,7 @@ export default {
     },
     async initResData(rawData) {
       let resBody = await getDecoededBody(this.data?.resHeader, rawData.resBody || new Uint8Array())
-      let resPreView = []
+      let resPreView = resBody
       this.resLanguageId = 'plaintext'
       this.resImgUrl = ''
       this.resVideoUrl = ''
@@ -169,6 +172,7 @@ export default {
             this.resLanguageId = 'xml'
           } else if (this.data.type === 'JSON') {
             try {
+              resPreView = []
               text = JSON.stringify(JSON.parse(text), null, 4)
               this.resLanguageId = 'json'
               resPreView = getU8ArrayFromString(text)
@@ -177,6 +181,7 @@ export default {
             }
           }
         } else {
+          resPreView = []
           this.$nextTick(() => {
             if (this.data.resHeader['Content-Type']?.startsWith('image/')) {
               this.resImgUrl = URL.createObjectURL(new Blob([resBody], { type: this.data.resHeader['Content-Type'] }))
